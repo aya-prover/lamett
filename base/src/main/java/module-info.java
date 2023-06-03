@@ -1,4 +1,4 @@
-module aya.anqur.base {
+module aya.lamett.base {
   requires static org.jetbrains.annotations;
 
   requires transitive aya.pretty;
