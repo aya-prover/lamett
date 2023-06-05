@@ -11,5 +11,5 @@ dependencies {
   val deps = Properties()
   deps.load(rootDir.resolve("../gradle/deps.properties").reader())
   api("org.aya-prover.upstream", "build-util", deps.getProperty("version.build-util"))
-  implementation("de.jflex", "jflex", deps.getProperty("version.jflex"))
+  api("org.aya-prover.upstream", "build-util-jflex", deps.getProperty("version.build-util"))
 }

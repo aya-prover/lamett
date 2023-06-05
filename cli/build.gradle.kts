@@ -17,9 +17,7 @@ idea.module {
 
 val lexer = tasks.register<JFlexTask>("lexer") {
   outputDir = genDir.resolve("org/aya/lamett/parser")
-  val grammar = file("src/main/grammar")
-  jflex = grammar.resolve("AyaPsiLexer.flex")
-  skel = grammar.resolve("aya-jflex.skeleton")
+  jflex = file("src/main/grammar/AyaPsiLexer.flex")
 }
 
 val genVer = tasks.register<GenerateVersionTask>("genVer") {
