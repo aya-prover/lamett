@@ -318,49 +318,41 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // KW_COERCE? weakId tele* type? partialBlock?
+  // weakId tele* type? partialBlock?
   public static boolean dataCtor(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "dataCtor")) return false;
-    if (!nextTokenIs(b, "<data ctor>", ID, KW_COERCE)) return false;
+    if (!nextTokenIs(b, ID)) return false;
     boolean r;
-    Marker m = enter_section_(b, l, _NONE_, DATA_CTOR, "<data ctor>");
-    r = dataCtor_0(b, l + 1);
-    r = r && weakId(b, l + 1);
+    Marker m = enter_section_(b);
+    r = weakId(b, l + 1);
+    r = r && dataCtor_1(b, l + 1);
     r = r && dataCtor_2(b, l + 1);
     r = r && dataCtor_3(b, l + 1);
-    r = r && dataCtor_4(b, l + 1);
-    exit_section_(b, l, m, r, false, null);
+    exit_section_(b, m, DATA_CTOR, r);
     return r;
   }
 
-  // KW_COERCE?
-  private static boolean dataCtor_0(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "dataCtor_0")) return false;
-    consumeToken(b, KW_COERCE);
-    return true;
-  }
-
   // tele*
-  private static boolean dataCtor_2(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "dataCtor_2")) return false;
+  private static boolean dataCtor_1(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "dataCtor_1")) return false;
     while (true) {
       int c = current_position_(b);
       if (!tele(b, l + 1)) break;
-      if (!empty_element_parsed_guard_(b, "dataCtor_2", c)) break;
+      if (!empty_element_parsed_guard_(b, "dataCtor_1", c)) break;
     }
     return true;
   }
 
   // type?
-  private static boolean dataCtor_3(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "dataCtor_3")) return false;
+  private static boolean dataCtor_2(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "dataCtor_2")) return false;
     type(b, l + 1);
     return true;
   }
 
   // partialBlock?
-  private static boolean dataCtor_4(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "dataCtor_4")) return false;
+  private static boolean dataCtor_3(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "dataCtor_3")) return false;
     partialBlock(b, l + 1);
     return true;
   }

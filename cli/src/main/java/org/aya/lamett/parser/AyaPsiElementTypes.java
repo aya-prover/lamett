@@ -73,7 +73,6 @@ public interface AyaPsiElementTypes {
   IElementType KW_CLASS = new AyaPsiTokenType("class");
   IElementType KW_CLASSIFIYING = new AyaPsiTokenType("classifying");
   IElementType KW_CODATA = new AyaPsiTokenType("codata");
-  IElementType KW_COERCE = new AyaPsiTokenType("KW_COERCE");
   IElementType KW_DATA = new AyaPsiTokenType("data");
   IElementType KW_DEF = new AyaPsiTokenType("def");
   IElementType KW_EXTENDS = new AyaPsiTokenType("extends");

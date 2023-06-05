@@ -84,6 +84,7 @@
 
     // used for bootstrapping lexer
     ID = 'regexp:[a-zA-Z_][a-zA-Z0-9_]*'
+    NUMBER = 'regexp:[0-9]+'
   ]
 
   // IMPORTANT: when editing extends(..), please also modify `AyaGKProducer` accordingly!
@@ -138,7 +139,7 @@ dataBody ::= BAR (dataCtorClause | dataCtor) {
   pin=1
 }
 
-dataCtor ::= KW_COERCE? weakId tele* type? partialBlock?
+dataCtor ::= weakId tele* type? partialBlock?
 partialBlock ::= <<braced partialInner>>
 
 dataCtorClause ::= patterns IMPLIES dataCtor
