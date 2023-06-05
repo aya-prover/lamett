@@ -7,4 +7,4 @@ dependencyResolutionManagement {
   }
 }
 
-include("base")
+include("base", "cli")

@@ -22,7 +22,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         .map(Normalizer::rename)
         .map(this::term).getOrDefault(ref);
       case Term.UI u -> u;
-      case Term.Lam lam -> new Term.Lam(lam.x(), term(lam.body()));
+      case Term.Lam(var x, var body) -> new Term.Lam(x, term(body));
       case Term.DT dt -> new Term.DT(dt.isPi(), param(dt.param()), term(dt.cod()));
       case Term.Two two -> {
         var f = term(two.f());
