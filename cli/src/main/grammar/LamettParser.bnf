@@ -1,0 +1,236 @@
+/*
+ * Copyright (c) 2020-2023 Tesla (Yinsen) Zhang.
+ * Use of this source code is governed by the MIT license that can be found in the LICENSE.md file.
+ */
+
+{
+  // only for the compiler, not the IDE
+  generate=[
+    java='11'
+    psi-factory='no'
+    visitor='no'
+  ]
+  generatePsi=false
+
+  // we only need the parser and element types.
+  parserClass='org.aya.lamett.parser.AyaPsiParser'
+  elementTypeHolderClass='org.aya.lamett.parser.AyaPsiElementTypes'
+  elementTypeClass='org.aya.lamett.parser.AyaPsiElementType'
+  tokenTypeClass='org.aya.lamett.parser.AyaPsiTokenType'
+
+  tokens = [
+    // universe
+    KW_ULIFT = 'regexp:ulift|\u2191'
+    KW_TYPE = 'Type'
+    KW_ISET = 'ISet'
+
+    KW_DEF = 'def'
+    KW_CLASS = 'class'
+    KW_CLASSIFIYING = 'classifying'
+    KW_DATA = 'data'
+    KW_EXTENDS = 'extends'
+    KW_NEW = 'new'
+    KW_SELF = 'self'
+    KW_OVERRIDE = 'override'
+
+    // Unimplemented but reserved
+    KW_CODATA = 'codata'
+
+    // symbols
+    KW_SIGMA =  'regexp:Sig|\u03a3'
+    // KW_SIGMA =  'Sig'
+    KW_LAMBDA = 'fn'
+    KW_PI = 'Fn'
+    KW_FORALL = 'regexp:forall|\u2200'
+    // KW_FORALL = 'forall'
+
+    // ---- AyaLexer end: Keywords
+
+    // TO = 'regexp:->|\u2192'
+    TO = '->'
+    // LARROW = 'regexp:<-|\u2190'
+    LARROW = '<-'
+    // IMPLIES = 'regexp:=>|\u21d2'
+    IMPLIES = '=>'
+    DEFINE_AS = ':='
+    SUCHTHAT = '**'
+    DOT = '.'
+    BAR = '|'
+    COMMA = ','
+    COLON = ':'
+
+    // markers
+    LBRACE = '{'
+    RBRACE = '}'
+    LPAREN = '('
+    RPAREN = ')'
+    // LIDIOM = 'regexp:\(\||\u2987'
+    LIDIOM = '(|'
+    // RIDIOM = 'regexp:\|\)|\u2988'
+    RIDIOM = '|)'
+    LGOAL = '{?'
+    RGOAL = '?}'
+    // LPARTIAL = 'regexp:\{\||\u2983'
+    LPARTIAL = '{|'
+    // RPARTIAL = 'regexp:\|}|\u2984'
+    RPARTIAL = '|}'
+    // LPATH = 'regexp:\[\||\u27E6'
+    LPATH = '[|'
+    // RPATH = 'regexp:\|]|\u27E7'
+    RPATH = '|]'
+    AT = '@'
+
+    CALM_FACE = '_'
+
+    // used for bootstrapping lexer
+    ID = 'regexp:[a-zA-Z_][a-zA-Z0-9_]*'
+  ]
+
+  // IMPORTANT: when editing extends(..), please also modify `AyaGKProducer` accordingly!
+  extends("newExpr|piExpr|forallExpr|sigmaExpr|lambdaExpr|atomExpr|appExpr|arrowExpr|projExpr|selfExpr|partialExpr|pathExpr") = expr
+  extends("literal") = expr
+  extends("refExpr|holeExpr|univExpr") = literal
+  extends("goalExpr|calmFaceExpr") = holeExpr
+
+  extends(".+Atom") = atomExpr
+  extends(".*Decl") = decl
+}
+
+program ::= stmts
+private stmts ::= stmt_with_recover*
+private stmt_with_recover ::= !(<<eof>>) decl {
+  pin=1
+  recoverWhile = stmt_recover
+}
+private stmt_recover ::= !(stmt_first)
+private stmt_first ::= DOC_COMMENT | KW_DEF | KW_CLASS | KW_DATA
+
+// statements
+
+// declarations
+
+decl ::= fnDecl | classDecl | dataDecl {
+  mixin="org.aya.intellij.psi.impl.AyaPsiGenericDeclImpl"
+  implements="org.aya.intellij.psi.AyaPsiGenericDecl"
+}
+
+fnDecl ::=
+ KW_DEF weakId
+ tele* type? fnBody
+
+private simpleBody ::= IMPLIES expr { pin=1 }
+fnBody ::= simpleBody
+         | barredClause*
+
+classDecl
+  ::= KW_CLASS weakId (KW_EXTENDS <<commaSep weakId>>)?
+      (BAR classMember)*
+
+classMember
+  ::= KW_CLASSIFIYING? weakId tele* type? IMPLIES expr
+
+dataDecl ::= KW_DATA weakId?
+ tele* type? dataBody* { pin=2 }
+
+dataBody ::= BAR (dataCtorClause | dataCtor) {
+  mixin="org.aya.intellij.psi.impl.AyaPsiGenericDeclImpl"
+  implements="org.aya.intellij.psi.AyaPsiGenericDecl"
+  pin=1
+}
+
+dataCtor ::= KW_COERCE? weakId tele* type? partialBlock?
+partialBlock ::= <<braced partialInner>>
+
+dataCtorClause ::= patterns IMPLIES dataCtor
+
+// expressions
+expr ::= newExpr
+       | piExpr
+       | forallExpr
+       | sigmaExpr
+       | lambdaExpr
+       | selfExpr
+       | pathExpr
+       | atomExpr
+       // put rules that do not start with `expr` above this line
+       | arrowExpr
+       | appExpr
+       | projExpr
+
+atomExpr ::= tupleAtom | partialAtom
+tupleAtom ::= LPAREN exprList RPAREN
+
+newExpr ::= KW_NEW expr newBody?
+appExpr ::= expr argument+
+arrowExpr ::= expr TO expr { rightAssociative = true }
+projExpr ::= expr projFix
+piExpr ::= KW_PI tele+ TO expr
+forallExpr ::= KW_FORALL lambdaTele+ TO expr
+sigmaExpr ::= KW_SIGMA tele+ SUCHTHAT expr
+lambdaExpr ::= KW_LAMBDA lambdaTele+ (IMPLIES expr)?
+selfExpr ::= KW_SELF (AT weakId)?
+pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
+
+partialAtom ::= LPARTIAL partialInner? RPARTIAL
+private partialInner ::= bareSubSystem? barredSubSystem*
+subSystem ::= expr DEFINE_AS expr
+bareSubSystem ::= subSystem
+barredSubSystem ::= BAR subSystem
+
+newArgField ::= weakId
+newArg ::= BAR newArgField weakId* IMPLIES expr
+// New body new body but you!
+newBody ::= <<braced newArg*>>
+
+argument ::= atomExpr projFix*
+
+projFix ::= DOT (NUMBER | projFixId)
+// kiva: Used in IntelliJ IDEA
+projFixId ::= weakId
+
+// barredClause and bareClause made inspection quick fix easier
+// see: DominationInspection
+barredClause ::= BAR clause
+clause ::= patterns (IMPLIES expr)?
+
+patterns ::= <<commaSep pattern>>
+pattern ::= unitPattern+
+unitPattern ::= <<paren patterns>>
+              | LPAREN RPAREN
+              | weakId
+
+literal ::= refExpr | holeExpr | univExpr
+holeExpr ::= goalExpr | calmFaceExpr
+calmFaceExpr ::= CALM_FACE
+
+goalExpr ::= LGOAL expr? RGOAL
+refExpr ::= weakId
+univExpr ::= KW_TYPE | KW_ISET
+
+// tele is always typed
+tele ::= literal | <<paren teleBinder>>
+
+// Explicit arguments may be anonymous
+teleBinder ::= teleBinderTyped
+             | teleBinderAnonymous
+teleBinderUntyped ::= weakId+
+teleBinderTyped ::= teleBinderUntyped type
+teleBinderAnonymous ::= expr
+
+// lambda tele is always named
+lambdaTele ::= weakId | <<paren lambdaTeleBinder>>
+
+lambdaTeleBinder ::= teleBinderTyped
+                   | teleBinderUntyped
+
+// utilities
+private exprList ::= <<commaSep expr>>
+type ::= COLON expr { pin=1 }
+private weakId ::= ID
+
+// meta rules
+
+// we can improve the parsing by producing generically from a 'commaSep' rule
+meta commaSep ::= <<param>> (',' <<param>>) *
+meta paren ::= LPAREN <<param>> RPAREN
+private meta braced ::= LBRACE <<param>> RBRACE
