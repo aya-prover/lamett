@@ -1,10 +1,13 @@
 import kala.collection.mutable.MutableMap;
 import org.aya.lamett.cli.CliMain;
 import org.aya.lamett.cli.Parser;
+import org.aya.lamett.parse.LamettProducer;
 import org.aya.lamett.syntax.Expr;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.tyck.Resolver;
 import org.aya.util.error.SourceFile;
+import org.aya.util.prettier.PrettierOptions;
+import org.aya.util.reporter.ThrowingReporter;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -58,6 +61,6 @@ public class ExprsTest {
   }
 
   private static @NotNull Expr parse(String s) {
-    return new Parser(SourceFile.NONE).expr(CliMain.parser(s).expr());
+    return new LamettProducer(SourceFile.NONE, new ThrowingReporter(new DebugPrettierOptions())).expr(CliMain.parser(s).expr());
   }
 }

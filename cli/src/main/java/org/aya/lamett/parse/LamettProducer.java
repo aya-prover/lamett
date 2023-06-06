@@ -66,8 +66,118 @@ public record LamettProducer(
     //   | appExpr
     //   | projExpr
 
-    // TODO: (EXPR : TokenSet) also contains (EXPR : IElementType), should we handle it?
+    var pos = sourcePosOf(node);
+    if (node.is(NEW_EXPR)) {
+      return todo();
+    }
 
+    if (node.is(PI_EXPR)) {
+      // piExpr ::= KW_PI tele+ TO expr
+
+      var tele = telescopeOf(node);
+      var expr = expr(node.child(EXPR));
+      return tele.scope().foldRight(expr, (l, r) -> {
+        // l : GenericNode<?> in TELE type
+        // r : Expr
+        // Goal : l -> r
+        // TODO: subpos
+        return new Expr.DT(true, pos, l, r);
+      });
+    }
+
+    if (node.is(FORALL_EXPR)) {
+      // forallExpr ::= KW_FORALL lambdaTele+ TO expr
+
+      var tele = lambdaTelescopeOf(node);
+      var expr = expr(node.child(EXPR));
+      return tele.scope().foldRight(expr, (l, r) -> new Expr.Lam(pos, l.x(), r));
+    }
+
+    if (node.is(SIGMA_EXPR)) {
+      // sigmaExpr ::= KW_SIGMA tele+ SUCHTHAT expr
+      var tele = telescopeOf(node);
+      var such = expr(node.child(EXPR));
+
+      // TODO: correct data of Sigma
+      return tele.scope().foldRight(such, (l, r) -> new Expr.DT(false, pos, l, r));
+    }
+
+    if (node.is(LAMBDA_EXPR)) {
+      // lambdaExpr ::= KW_LAMBDA lambdaTele+ (IMPLIES expr)?
+      var tele = lambdaTelescopeOf(node);
+      var body = node.peekChild(EXPR);
+      if (body == null) {
+        // TODO: how??
+        return todo();
+      }
+
+      return tele.scope().foldRight(expr(body), (l, r) -> new Expr.Lam(pos, l.x(), r));
+    }
+
+    if (node.is(SELF_EXPR)) {
+      return todo();
+    }
+
+    if (node.is(PATH_EXPR)) {
+      // pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
+      return todo();
+    }
+
+    if (node.is(ATOM_EXPR)) {
+      // atomExpr ::= tupleAtom | partialAtom
+      return atomExpr(node);
+    }
+
+    if (node.is(ARROW_EXPR)) {
+      var app = node.childrenOfType(EXPR);
+      assert app.sizeEquals(2);
+      var of = unnamedParam(app.get(0));
+      var arg = expr(app.get(1));
+
+      return new Expr.DT(true, pos, of, arg);
+    }
+
+    if (node.is(APP_EXPR)) {
+      // appExpr ::= expr argument+
+      return todo();
+    }
+
+    if (node.is(PROJ_EXPR)) {
+      // projExpr ::= expr projFix
+      return todo();
+    }
+
+    return todo();
+  }
+
+  public @NotNull Expr atomExpr(@NotNull GenericNode<?> node) {
+    var pos = sourcePosOf(node);
+    var tuple = node.peekChild(TUPLE_ATOM);
+    if (tuple != null) {
+      // tupleAtom ::= LPAREN exprList RPAREN
+      var exprs = exprListOf(node);
+      // TODO: is it correct?
+      exprs.reduce((l, r) -> new Expr.Two(false, pos, l, r));
+    }
+
+    var partial = node.peekChild(PARTIAL_ATOM);
+    if (partial != null) {
+      return todo();
+    }
+
+    return unreachable(node);
+  }
+
+  public @NotNull Expr argument(@NotNull GenericNode<?> node) {
+    // argument ::= atomExpr projFix*
+    var expr = node.child(ATOM_EXPR);
+    var projFix = node.childrenOfType(PROJ_FIX).map(this::projFix);
+
+    return todo();
+  }
+
+  public @NotNull Expr projFix(@NotNull GenericNode<?> node) {
+    // projFix ::= DOT (NUMBER | projFixId)
     return todo();
   }
 
@@ -222,6 +332,10 @@ public record LamettProducer(
     return ctor.apply(node.child(type));
   }
 
+  public @NotNull ImmutableSeq<Expr> exprListOf(@NotNull GenericNode<?> node) {
+    return node.child(COMMA_SEP).childrenOfType(EXPR).map(this::expr).toImmutableSeq();
+  }
+
   public @NotNull ImmutableSeq<Param<Expr>> teleBinder(@NotNull GenericNode<?> node) {
     var typed = node.peekChild(TELE_BINDER_TYPED);
     if (typed != null) return teleBinderTyped(typed);
@@ -243,10 +357,46 @@ public record LamettProducer(
   }
 
   private @NotNull Param<Expr> teleBinderAnonymous(@NotNull GenericNode<?> node) {
-    return new Param<>(
-      Constants.randomlyNamed(sourcePosOf(node)),
-      expr(node.child(EXPR))
-    );
+    return unnamedParam(node.child(EXPR));
+  }
+
+  public @NotNull Decl.Tele lambdaTelescopeOf(@NotNull GenericNode<?> node) {
+    return lambdaTelescope(node.childrenOfType(LAMBDA_TELE).map(x -> x));
+  }
+
+  public @NotNull Decl.Tele lambdaTelescope(SeqView<? extends GenericNode<?>> telescope) {
+    return new Decl.Tele(telescope.flatMap(this::lambdaTele).toImmutableSeq());
+  }
+
+  public @NotNull ImmutableSeq<Param<Expr>> lambdaTele(@NotNull GenericNode<?> node) {
+    var teleParamName = node.peekChild(WEAK_ID);
+    if (teleParamName != null) {
+      var ctx = ImmutableSeq.<LocalVar>of();   // TODO: ctx
+      var id = weakId(teleParamName);
+      var type = typeOrHole(null, ctx, id.sourcePos());
+      return ImmutableSeq.of(new Param<>(LocalVar.from(id), type));
+    }
+
+    var paren = node.child(PAREN);
+    return paren(paren, LAMBDA_TELE_BINDER, this::lambdaTeleBinder);
+  }
+
+
+  public @NotNull ImmutableSeq<Param<Expr>> lambdaTeleBinder(@NotNull GenericNode<?> node) {
+    // | teleBinderTyped
+    var typed = node.peekChild(TELE_BINDER_TYPED);
+    if (typed != null) return teleBinderTyped(typed);
+
+    // | teleBinderUntyped
+    var ids = node.child(TELE_BINDER_UNTYPED);
+    return teleBinderUntyped(ids).view()
+      .map(id -> new Param<>(LocalVar.from(id), typeOrHole(null, ImmutableSeq.of(), id.sourcePos())))   // TODO: ctx
+      .toImmutableSeq();
+  }
+
+  public @NotNull Param<Expr> unnamedParam(@NotNull GenericNode<?> node) {
+    var pos = sourcePosOf(node);
+    return new Param<>(Constants.randomlyNamed(pos), expr(node));
   }
 
   // TODO: delete this
