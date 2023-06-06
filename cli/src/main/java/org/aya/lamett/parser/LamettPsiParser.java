@@ -3,7 +3,7 @@ package org.aya.lamett.parser;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.lang.PsiBuilder.Marker;
-import static org.aya.lamett.parser.AyaPsiElementTypes.*;
+import static org.aya.lamett.parser.LamettPsiElementTypes.*;
 import static com.intellij.lang.parser.GeneratedParserUtilBase.*;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.lang.ASTNode;
@@ -12,7 +12,7 @@ import com.intellij.lang.PsiParser;
 import com.intellij.lang.LightPsiParser;
 
 @SuppressWarnings({"SimplifiableIfStatement", "UnusedAssignment"})
-public class AyaPsiParser implements PsiParser, LightPsiParser {
+public class LamettPsiParser implements PsiParser, LightPsiParser {
 
   public ASTNode parse(IElementType t, PsiBuilder b) {
     parseLight(t, b);
@@ -160,7 +160,7 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
     boolean r;
     Marker m = enter_section_(b);
     r = consumeToken(b, KW_EXTENDS);
-    r = r && commaSep(b, l + 1, AyaPsiParser::weakId);
+    r = r && commaSep(b, l + 1, LamettPsiParser::weakId);
     exit_section_(b, m, null, r);
     return r;
   }
@@ -545,7 +545,7 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
     boolean r;
     Marker m = enter_section_(b, l, _NONE_, LAMBDA_TELE, "<lambda tele>");
     r = weakId(b, l + 1);
-    if (!r) r = paren(b, l + 1, AyaPsiParser::lambdaTeleBinder);
+    if (!r) r = paren(b, l + 1, LamettPsiParser::lambdaTeleBinder);
     exit_section_(b, l, m, r, false, null);
     return r;
   }
@@ -623,7 +623,7 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
     if (!nextTokenIs(b, LBRACE)) return false;
     boolean r;
     Marker m = enter_section_(b);
-    r = braced(b, l + 1, AyaPsiParser::newBody_0_0);
+    r = braced(b, l + 1, LamettPsiParser::newBody_0_0);
     exit_section_(b, m, NEW_BODY, r);
     return r;
   }
@@ -681,7 +681,7 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
     if (!nextTokenIs(b, LBRACE)) return false;
     boolean r;
     Marker m = enter_section_(b);
-    r = braced(b, l + 1, AyaPsiParser::partialInner);
+    r = braced(b, l + 1, LamettPsiParser::partialInner);
     exit_section_(b, m, PARTIAL_BLOCK, r);
     return r;
   }
@@ -740,7 +740,7 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
     if (!nextTokenIs(b, "<patterns>", ID, LPAREN)) return false;
     boolean r;
     Marker m = enter_section_(b, l, _NONE_, PATTERNS, "<patterns>");
-    r = commaSep(b, l + 1, AyaPsiParser::pattern);
+    r = commaSep(b, l + 1, LamettPsiParser::pattern);
     exit_section_(b, l, m, r, false, null);
     return r;
   }
@@ -853,7 +853,7 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
     r = stmt_with_recover_0(b, l + 1);
     p = r; // pin = 1
     r = r && decl(b, l + 1);
-    exit_section_(b, l, m, r, p, AyaPsiParser::stmt_recover);
+    exit_section_(b, l, m, r, p, LamettPsiParser::stmt_recover);
     return r || p;
   }
 
@@ -904,7 +904,7 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
     boolean r;
     Marker m = enter_section_(b, l, _NONE_, TELE, "<tele>");
     r = literal(b, l + 1);
-    if (!r) r = paren(b, l + 1, AyaPsiParser::teleBinder);
+    if (!r) r = paren(b, l + 1, LamettPsiParser::teleBinder);
     exit_section_(b, l, m, r, false, null);
     return r;
   }
@@ -1000,7 +1000,7 @@ public class AyaPsiParser implements PsiParser, LightPsiParser {
     if (!nextTokenIs(b, "<unit pattern>", ID, LPAREN)) return false;
     boolean r;
     Marker m = enter_section_(b, l, _NONE_, UNIT_PATTERN, "<unit pattern>");
-    r = paren(b, l + 1, AyaPsiParser::patterns);
+    r = paren(b, l + 1, LamettPsiParser::patterns);
     if (!r) r = parseTokens(b, 0, LPAREN, RPAREN);
     if (!r) r = weakId(b, l + 1);
     exit_section_(b, l, m, r, false, null);

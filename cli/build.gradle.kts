@@ -24,4 +24,4 @@ val genVer = tasks.register<GenerateVersionTask>("genVer") {
   basePackage = "org.aya.lamett"
   outputDir = file(genDir).resolve("org/aya/lamett/prelude")
 }
-listOf(tasks.sourcesJar, tasks.compileJava).forEach { it.configure { dependsOn(genVer) } }
+listOf(tasks.sourcesJar, tasks.compileJava).forEach { it.configure { dependsOn(genVer, lexer) } }

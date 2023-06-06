@@ -13,10 +13,10 @@
   generatePsi=false
 
   // we only need the parser and element types.
-  parserClass='org.aya.lamett.parser.AyaPsiParser'
-  elementTypeHolderClass='org.aya.lamett.parser.AyaPsiElementTypes'
-  elementTypeClass='org.aya.lamett.parser.AyaPsiElementType'
-  tokenTypeClass='org.aya.lamett.parser.AyaPsiTokenType'
+  parserClass='org.aya.lamett.parser.LamettPsiParser'
+  elementTypeHolderClass='org.aya.lamett.parser.LamettPsiElementTypes'
+  elementTypeClass='org.aya.lamett.parser.LamettPsiElementType'
+  tokenTypeClass='org.aya.lamett.parser.LamettPsiTokenType'
 
   tokens = [
     // universe
@@ -110,10 +110,7 @@ private stmt_first ::= DOC_COMMENT | KW_DEF | KW_CLASS | KW_DATA
 
 // declarations
 
-decl ::= fnDecl | classDecl | dataDecl {
-  mixin="org.aya.intellij.psi.impl.AyaPsiGenericDeclImpl"
-  implements="org.aya.intellij.psi.AyaPsiGenericDecl"
-}
+decl ::= fnDecl | classDecl | dataDecl
 
 fnDecl ::=
  KW_DEF weakId
@@ -134,8 +131,6 @@ dataDecl ::= KW_DATA weakId?
  tele* type? dataBody* { pin=2 }
 
 dataBody ::= BAR (dataCtorClause | dataCtor) {
-  mixin="org.aya.intellij.psi.impl.AyaPsiGenericDeclImpl"
-  implements="org.aya.intellij.psi.AyaPsiGenericDecl"
   pin=1
 }
 
