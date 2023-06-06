@@ -10,10 +10,7 @@ import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.control.Either;
 import org.aya.lamett.parser.LamettPsiParser;
-import org.aya.lamett.syntax.Decl;
-import org.aya.lamett.syntax.DefVar;
-import org.aya.lamett.syntax.Expr;
-import org.aya.lamett.syntax.Pat;
+import org.aya.lamett.syntax.*;
 import org.aya.lamett.util.Constants;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
@@ -30,12 +27,16 @@ import java.util.function.Function;
 import static org.aya.lamett.parser.LamettPsiElementTypes.*;
 
 public record LamettProducer(
-  @NotNull SourceFile source,
+  @NotNull Either<SourceFile, SourcePos> source,
   @NotNull Reporter reporter
-  ) {
+) {
 
   public static final @NotNull TokenSet DECL = LamettPsiParser.EXTENDS_SETS_[0];
   public static final @NotNull TokenSet EXPR = LamettPsiParser.EXTENDS_SETS_[1];
+
+  public @NotNull ImmutableSeq<Decl> program(@NotNull GenericNode<?> node) {
+    return node.childrenOfType(DECL).map(this::decl).toImmutableSeq();
+  }
 
   public @NotNull Decl decl(@NotNull GenericNode<?> node) {
     if (node.is(DATA_DECL)) {
@@ -65,6 +66,7 @@ public record LamettProducer(
     //   | arrowExpr
     //   | appExpr
     //   | projExpr
+    // literal ::= refExpr | holeExpr | univExpr
 
     var pos = sourcePosOf(node);
     if (node.is(NEW_EXPR)) {
@@ -122,11 +124,6 @@ public record LamettProducer(
       return todo();
     }
 
-    if (node.is(ATOM_EXPR)) {
-      // atomExpr ::= tupleAtom | partialAtom
-      return atomExpr(node);
-    }
-
     if (node.is(ARROW_EXPR)) {
       var app = node.childrenOfType(EXPR);
       assert app.sizeEquals(2);
@@ -138,7 +135,10 @@ public record LamettProducer(
 
     if (node.is(APP_EXPR)) {
       // appExpr ::= expr argument+
-      return todo();
+      var of = expr(node.child(EXPR));
+      var arg = node.childrenOfType(ARGUMENT).map(this::argument);
+
+      return arg.foldLeft(of, (l, r) -> new Expr.Two(true, pos, l, r));
     }
 
     if (node.is(PROJ_EXPR)) {
@@ -146,7 +146,48 @@ public record LamettProducer(
       return todo();
     }
 
-    return todo();
+    if (node.is(REF_EXPR)) {
+      var id = weakId(node.child(WEAK_ID));
+      return new Expr.Unresolved(id.sourcePos(), id.data());
+    }
+
+    if (node.is(HOLE_EXPR)) {
+      // TODO: We need a Context argument 🤔
+      return new Expr.Hole(pos, ImmutableSeq.of());
+    }
+
+    if (node.is(UNIV_EXPR)) {
+      // univExpr ::= KW_TYPE | KW_ISET
+      var isType = node.peekChild(KW_TYPE) != null;
+      if (isType) {
+        return new Expr.K(pos, Keyword.U);
+      }
+
+      var isISet = node.peekChild(KW_ISET) != null;
+      if (isISet) {
+        // TODO: IDK 😥
+        return todo();
+      }
+
+      return unreachable(node);
+    }
+
+    /// region atomExpr
+
+    if (node.is(TUPLE_ATOM)) {
+      // tupleAtom ::= LPAREN exprList RPAREN
+      var exprs = exprListOf(node);
+      // TODO: is it correct?
+      return exprs.reduce((l, r) -> new Expr.Two(false, pos, l, r));
+    }
+
+    if (node.is(PARTIAL_ATOM)) {
+      return todo();
+    }
+
+    /// endregion atomExpr
+
+    return unreachable(node);
   }
 
   public @NotNull Expr atomExpr(@NotNull GenericNode<?> node) {
@@ -164,19 +205,26 @@ public record LamettProducer(
       return todo();
     }
 
+    var lit = node.peekChild(EXPR);
+    if (lit != null) {
+      return expr(lit);
+    }
+
     return unreachable(node);
   }
 
   public @NotNull Expr argument(@NotNull GenericNode<?> node) {
     // argument ::= atomExpr projFix*
-    var expr = node.child(ATOM_EXPR);
+    var expr = expr(node.child(EXPR));
     var projFix = node.childrenOfType(PROJ_FIX).map(this::projFix);
 
-    return todo();
+    // TODO: projFix
+    return expr;
   }
 
   public @NotNull Expr projFix(@NotNull GenericNode<?> node) {
     // projFix ::= DOT (NUMBER | projFixId)
+    // TODO
     return todo();
   }
 
@@ -399,8 +447,8 @@ public record LamettProducer(
   }
 
   // TODO: delete this
-  @Deprecated(forRemoval = true)
-  private <T> T todo() {
+  @Deprecated
+  public <T> T todo() {
     throw new UnsupportedOperationException("TODO");
   }
 
@@ -414,7 +462,7 @@ public record LamettProducer(
   }
 
   private @NotNull SourcePos sourcePosOf(@NotNull GenericNode<?> node) {
-    return sourcePosOf(node, source);
+    return source.fold(file -> sourcePosOf(node, file), pos -> pos);
   }
 
   public static @NotNull SourcePos sourcePosOf(@NotNull GenericNode<?> node, @NotNull SourceFile file) {

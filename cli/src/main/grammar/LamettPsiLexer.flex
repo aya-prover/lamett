@@ -1,5 +1,6 @@
 package org.aya.lamett.parser;
 
+import com.intellij.lexer.FlexLexer;
 import com.intellij.psi.tree.IElementType;
 
 import static com.intellij.psi.TokenType.BAD_CHARACTER;
@@ -9,13 +10,13 @@ import static org.aya.lamett.parser.LamettPsiElementTypes.*;
 %%
 
 %{
-  public _AyaPsiLexer() {
+  public _LamettPsiLexer() {
     this((java.io.Reader)null);
   }
 %}
 
 %public
-%class _AyaPsiLexer
+%class _LamettPsiLexer
 %implements FlexLexer
 %function advance
 %type IElementType

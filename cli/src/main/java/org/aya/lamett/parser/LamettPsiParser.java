@@ -48,7 +48,6 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   // atomExpr projFix*
   public static boolean argument(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "argument")) return false;
-    if (!nextTokenIs(b, "<argument>", LPAREN, LPARTIAL)) return false;
     boolean r;
     Marker m = enter_section_(b, l, _NONE_, ARGUMENT, "<argument>");
     r = atomExpr(b, l + 1);
@@ -1350,14 +1349,14 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     return true;
   }
 
-  // tupleAtom | partialAtom
+  // tupleAtom | partialAtom | literal
   public static boolean atomExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "atomExpr")) return false;
-    if (!nextTokenIsSmart(b, LPAREN, LPARTIAL)) return false;
     boolean r;
     Marker m = enter_section_(b, l, _COLLAPSE_, ATOM_EXPR, "<atom expr>");
     r = tupleAtom(b, l + 1);
     if (!r) r = partialAtom(b, l + 1);
+    if (!r) r = literal(b, l + 1);
     exit_section_(b, l, m, r, false, null);
     return r;
   }

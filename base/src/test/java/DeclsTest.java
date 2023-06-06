@@ -79,6 +79,6 @@ public class DeclsTest {
   }
 
   private static @NotNull Elaborator tyck(@Language("TEXT") String s) {
-    return CliMain.tyck(s, false);
+    return CliMain.tyck(s, false, CliMain.newReporter());
   }
 }

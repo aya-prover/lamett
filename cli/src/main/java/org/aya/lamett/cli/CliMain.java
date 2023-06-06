@@ -2,14 +2,18 @@ package org.aya.lamett.cli;
 
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
+import org.aya.lamett.parse.LamettParserImpl;
 import org.aya.lamett.prelude.GeneratedVersion;
 import org.aya.lamett.syntax.Decl;
 import org.aya.lamett.syntax.Def;
 import org.aya.lamett.tyck.Elaborator;
+import org.aya.util.error.SourceFile;
+import org.aya.util.reporter.Reporter;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 
@@ -34,7 +38,7 @@ public class CliMain implements Callable<Integer> {
       return 1;
     }
     try {
-      var ak = tyck(Files.readString(Paths.get(inputFile)), true);
+      var ak = tyck(Files.readString(Paths.get(inputFile)), true, newReporter());
       System.out.println("Tycked " + ak.sigma().size() + " definitions, phew.");
       return 0;
     } catch (RuntimeException re) {
@@ -44,16 +48,22 @@ public class CliMain implements Callable<Integer> {
     }
   }
 
+  // TODO: delete this
+  @Deprecated
+  public static @NotNull Reporter newReporter() {
+    return new StreamReporter(System.err);
+  }
+
   public static @NotNull Elaborator andrasKovacs() {
     return new Elaborator(MutableMap.create(), MutableMap.create());
   }
 
-  public static @NotNull ImmutableSeq<Decl> def(String s) {
-    throw new UnsupportedOperationException("TODO");
+  public static @NotNull ImmutableSeq<Decl> def(String s, @NotNull Reporter reporter) {
+    return new LamettParserImpl(reporter).program(new SourceFile("Mian", Path.of("/home/senpai/114514.lamett"), s));
   }
 
-  public static @NotNull Elaborator tyck(String code, boolean verbose) {
-    var artifact = def(code);
+  public static @NotNull Elaborator tyck(String code, boolean verbose, @NotNull Reporter reporter) {
+    var artifact = def(code, reporter);
     var akJr = andrasKovacs();
     for (var def : artifact) {
       var tycked = akJr.def(def);
