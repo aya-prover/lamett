@@ -57,5 +57,6 @@ public sealed interface Term extends Docile {
     return new Term.DT(true, new Param<>(new LocalVar("_"), dom), cod);
   }
   @NotNull Term U = new UI(Keyword.U);
+  @NotNull Term I = new UI(Keyword.I);
   record UI(@NotNull Keyword keyword) implements Term {}
 }

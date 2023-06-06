@@ -23,7 +23,7 @@ public interface Distiller {
   }
   static @NotNull Doc expr(@NotNull Expr expr, Prec envPrec) {
     return switch (expr) {
-      case Expr.PrimTy u -> Doc.plain(u.keyword().name());
+      case Expr.K u -> Doc.plain(u.keyword().name());
       case Expr.Two two when two.isApp() -> {
         var inner = Doc.sep(expr(two.f(), AppHead), expr(two.a(), AppSpine));
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(inner) : inner;
