@@ -59,6 +59,7 @@ public interface LamettPsiElementTypes {
   IElementType TYPE = new LamettPsiElementType("TYPE");
   IElementType UNIT_PATTERN = new LamettPsiElementType("UNIT_PATTERN");
   IElementType UNIV_EXPR = new LamettPsiElementType("UNIV_EXPR");
+  IElementType WEAK_ID = new LamettPsiElementType("WEAK_ID");
 
   IElementType AT = new LamettPsiTokenType("@");
   IElementType BAR = new LamettPsiTokenType("|");

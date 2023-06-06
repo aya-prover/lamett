@@ -222,7 +222,7 @@ lambdaTeleBinder ::= teleBinderTyped
 // utilities
 private exprList ::= <<commaSep expr>>
 type ::= COLON expr { pin=1 }
-private weakId ::= ID
+weakId ::= ID
 
 // meta rules
 
