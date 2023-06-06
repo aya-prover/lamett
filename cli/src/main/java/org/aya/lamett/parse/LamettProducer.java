@@ -98,7 +98,6 @@ public record LamettProducer(
       var tele = telescopeOf(node);
       var such = expr(node.child(EXPR));
 
-      // TODO: correct data of Sigma
       return tele.scope().foldRight(such, (l, r) -> new Expr.DT(false, pos, l, r));
     }
 
