@@ -110,11 +110,13 @@ private stmt_first ::= DOC_COMMENT | KW_DEF | KW_CLASS | KW_DATA
 
 // declarations
 
-decl ::= fnDecl | classDecl | dataDecl
+decl ::= fnDecl | classDecl | dataDecl | printDecl
+
+printDecl ::= KW_PRINT tele* type simpleBody
 
 fnDecl ::=
  KW_DEF weakId
- tele* type? fnBody
+ tele* type fnBody
 
 private simpleBody ::= IMPLIES expr { pin=1 }
 fnBody ::= simpleBody
@@ -125,16 +127,16 @@ classDecl
       (BAR classMember)*
 
 classMember
-  ::= KW_CLASSIFIYING? weakId tele* type? IMPLIES expr
+  ::= KW_CLASSIFIYING? weakId tele* type IMPLIES expr
 
 dataDecl ::= KW_DATA weakId?
- tele* type? dataBody* { pin=2 }
+ tele* dataBody* { pin=2 }
 
 dataBody ::= BAR (dataCtorClause | dataCtor) {
   pin=1
 }
 
-dataCtor ::= weakId tele* type? partialBlock?
+dataCtor ::= weakId tele* type partialBlock?
 partialBlock ::= <<braced partialInner>>
 
 dataCtorClause ::= patterns IMPLIES dataCtor
@@ -187,11 +189,10 @@ projFixId ::= weakId
 // barredClause and bareClause made inspection quick fix easier
 // see: DominationInspection
 barredClause ::= BAR clause
-clause ::= patterns (IMPLIES expr)?
+clause ::= <<commaSep patterns>> (IMPLIES expr)?
 
-patterns ::= <<commaSep pattern>>
-pattern ::= unitPattern+
-unitPattern ::= <<paren patterns>>
+patterns ::= pattern+
+pattern ::= <<paren patterns>>
               | LPAREN RPAREN
               | weakId
 

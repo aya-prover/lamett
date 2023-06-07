@@ -43,6 +43,7 @@ public interface LamettPsiElementTypes {
   IElementType PATTERN = new LamettPsiElementType("PATTERN");
   IElementType PATTERNS = new LamettPsiElementType("PATTERNS");
   IElementType PI_EXPR = new LamettPsiElementType("PI_EXPR");
+  IElementType PRINT_DECL = new LamettPsiElementType("PRINT_DECL");
   IElementType PROJ_EXPR = new LamettPsiElementType("PROJ_EXPR");
   IElementType PROJ_FIX = new LamettPsiElementType("PROJ_FIX");
   IElementType PROJ_FIX_ID = new LamettPsiElementType("PROJ_FIX_ID");
@@ -57,7 +58,6 @@ public interface LamettPsiElementTypes {
   IElementType TELE_BINDER_UNTYPED = new LamettPsiElementType("TELE_BINDER_UNTYPED");
   IElementType TUPLE_ATOM = new LamettPsiElementType("TUPLE_ATOM");
   IElementType TYPE = new LamettPsiElementType("TYPE");
-  IElementType UNIT_PATTERN = new LamettPsiElementType("UNIT_PATTERN");
   IElementType UNIV_EXPR = new LamettPsiElementType("UNIV_EXPR");
   IElementType WEAK_ID = new LamettPsiElementType("WEAK_ID");
 
@@ -83,6 +83,7 @@ public interface LamettPsiElementTypes {
   IElementType KW_NEW = new LamettPsiTokenType("new");
   IElementType KW_OVERRIDE = new LamettPsiTokenType("override");
   IElementType KW_PI = new LamettPsiTokenType("Fn");
+  IElementType KW_PRINT = new LamettPsiTokenType("KW_PRINT");
   IElementType KW_SELF = new LamettPsiTokenType("self");
   IElementType KW_SIGMA = new LamettPsiTokenType("KW_SIGMA");
   IElementType KW_TYPE = new LamettPsiTokenType("Type");

@@ -39,19 +39,16 @@ public record LamettProducer(
   }
 
   public @NotNull Decl decl(@NotNull GenericNode<?> node) {
-    if (node.is(DATA_DECL)) {
-      return dataDecl(node);
-    }
-
-    if (node.is(FN_DECL)) {
-      return fnDecl(node);
-    }
-
-    if (node.is(CLASS_DECL)) {
-      return todo();
-    }
+    if (node.is(DATA_DECL)) return dataDecl(node);
+    if (node.is(FN_DECL)) return fnDecl(node);
+    if (node.is(CLASS_DECL)) return todo();
+    if (node.is(PRINT_DECL)) return printDecl(node);
 
     return unreachable(node);
+  }
+
+  private Decl printDecl(GenericNode<?> node) {
+    return new Decl.Print(telescopeOf(node), type(node.child(TYPE)), expr(node.child(EXPR)));
   }
 
   public @NotNull Expr expr(@NotNull GenericNode<?> node) {
@@ -258,15 +255,14 @@ public record LamettProducer(
     );
   }
 
-  public @NotNull Decl.Fn fnDecl(@NotNull GenericNode<?> node) {
+  public @Nullable Decl.Fn fnDecl(@NotNull GenericNode<?> node) {
     // fnDecl ::=
     //   KW_DEF weakId
     // tele* type? fnBody
 
     var pos = sourcePosOf(node);
     var id = weakId(node.child(WEAK_ID));
-    var telescope = telescopeOf(node);
-    var type = typeOrHole(node.peekChild(TYPE), telescope.scope().map(Param::x), pos);
+    var type = typeOrHole(node.peekChild(TYPE), telescopeOf(node).scope().map(Param::x), pos);
     var fnBody = fnBody(node.child(FN_BODY));
 
     if (fnBody == null) {
@@ -274,12 +270,7 @@ public record LamettProducer(
       return null;
     }
 
-    return new Decl.Fn(
-      new DefVar<>(id.data()),
-      telescope,
-      type,
-      fnBody
-    );
+    return new Decl.Fn(new DefVar<>(id.data()), telescopeOf(node), type, fnBody);
   }
 
   public @Nullable Either<Expr, Either<Pat.ClauseSet<Expr>, ImmutableSeq<Pat.UnresolvedClause>>> fnBody(@NotNull GenericNode<?> node) {
@@ -300,25 +291,34 @@ public record LamettProducer(
   }
 
   public @NotNull Pat.UnresolvedClause clause(@NotNull GenericNode<?> node) {
-    // clause ::= patterns (IMPLIES expr)?
-    return todo();
+    // clause ::= <<commaSep patterns>> (IMPLIES expr)?
+    return new Pat.UnresolvedClause(
+      node.child(COMMA_SEP).childrenOfType(PATTERNS)
+        .map(this::patterns).toImmutableSeq(),
+      node.peekChild(IMPLIES) == null ? null : expr(node.child(EXPR))
+    );
   }
 
-  public @NotNull ImmutableSeq<Pat.Unresolved> patterns(@NotNull GenericNode<?> node) {
-    return todo();
+  private @NotNull SeqView<Pat.Unresolved> patternsRaw(@NotNull GenericNode<?> node) {
+    return node.childrenOfType(PATTERN).map(this::pattern);
   }
 
-  public @NotNull Pat.Unresolved unitPattern(@NotNull GenericNode<?> node) {
-    // TODO: ice1000 will fix this
-    // unitPattern ::= <<paren patterns>>
-    //               | LPAREN RPAREN
-    //               | weakId
+  public @NotNull Pat.Unresolved patterns(@NotNull GenericNode<?> node) {
+    var raw = patternsRaw(node);
+    var head = raw.first();
+    if (head.pats().isNotEmpty())
+      throw new IllegalStateException("Unsupported syntax: " + node.tokenText());
+    var tail = raw.drop(1).toImmutableSeq();
+    return new Pat.Unresolved(sourcePosOf(node), head.name(), tail);
+  }
+
+  public @NotNull Pat.Unresolved pattern(@NotNull GenericNode<?> node) {
+    // pattern ::= <<paren patterns>>
+    //         | LPAREN RPAREN
+    //         | weakId
 
     var paren = node.peekChild(PAREN);
-    if (paren != null) {
-      var pos = sourcePosOf(paren);
-      return new Pat.Unresolved(pos, null, paren(paren, PATTERNS, this::patterns));
-    }
+    if (paren != null) return paren(paren, PATTERNS, this::patterns);
 
     var id = node.peekChild(WEAK_ID);
     if (id != null) {
@@ -326,7 +326,8 @@ public record LamettProducer(
       return new Pat.Unresolved(weakId.sourcePos(), weakId.data(), ImmutableSeq.of());
     }
 
-    return new Pat.Unresolved(sourcePosOf(node), null, ImmutableSeq.of());
+    // TODO: absurd patterns
+    return todo();
   }
 
   public @NotNull WithPos<String> weakId(@NotNull GenericNode<?> node) {
@@ -371,11 +372,7 @@ public record LamettProducer(
     return new Expr.Hole(holePos, ctx);
   }
 
-  public @NotNull <R> R paren(
-    @NotNull GenericNode<?> node,
-    @NotNull IElementType type,
-    @NotNull Function<GenericNode<?>, R> ctor
-  ) {
+  public @NotNull <R> R paren(@NotNull GenericNode<?> node, @NotNull IElementType type, @NotNull Function<GenericNode<?>, R> ctor) {
     return ctor.apply(node.child(type));
   }
 

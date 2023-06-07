@@ -18,5 +18,6 @@ public sealed interface Pat {
       return clauses.view();
     }
   }
+  // TODO: support nullable expr (in case of absurdity)
   record UnresolvedClause(@NotNull ImmutableSeq<Pat.Unresolved> unsols, @NotNull Expr body) {}
 }

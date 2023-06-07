@@ -36,7 +36,8 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   public static final TokenSet[] EXTENDS_SETS_ = new TokenSet[] {
-    create_token_set_(CLASS_DECL, DATA_DECL, DECL, FN_DECL),
+    create_token_set_(CLASS_DECL, DATA_DECL, DECL, FN_DECL,
+      PRINT_DECL),
     create_token_set_(APP_EXPR, ARROW_EXPR, ATOM_EXPR, CALM_FACE_EXPR,
       EXPR, FORALL_EXPR, GOAL_EXPR, HOLE_EXPR,
       LAMBDA_EXPR, LITERAL, NEW_EXPR, PARTIAL_ATOM,
@@ -187,7 +188,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // KW_CLASSIFIYING? weakId tele* type? IMPLIES expr
+  // KW_CLASSIFIYING? weakId tele* type IMPLIES expr
   public static boolean classMember(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "classMember")) return false;
     if (!nextTokenIs(b, "<class member>", ID, KW_CLASSIFIYING)) return false;
@@ -196,7 +197,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     r = classMember_0(b, l + 1);
     r = r && weakId(b, l + 1);
     r = r && classMember_2(b, l + 1);
-    r = r && classMember_3(b, l + 1);
+    r = r && type(b, l + 1);
     r = r && consumeToken(b, IMPLIES);
     r = r && expr(b, l + 1, -1);
     exit_section_(b, l, m, r, false, null);
@@ -221,21 +222,14 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     return true;
   }
 
-  // type?
-  private static boolean classMember_3(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "classMember_3")) return false;
-    type(b, l + 1);
-    return true;
-  }
-
   /* ********************************************************** */
-  // patterns (IMPLIES expr)?
+  // <<commaSep patterns>> (IMPLIES expr)?
   public static boolean clause(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "clause")) return false;
     if (!nextTokenIs(b, "<clause>", ID, LPAREN)) return false;
     boolean r;
     Marker m = enter_section_(b, l, _NONE_, CLAUSE, "<clause>");
-    r = patterns(b, l + 1);
+    r = commaSep(b, l + 1, LamettPsiParser::patterns);
     r = r && clause_1(b, l + 1);
     exit_section_(b, l, m, r, false, null);
     return r;
@@ -317,7 +311,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // weakId tele* type? partialBlock?
+  // weakId tele* type partialBlock?
   public static boolean dataCtor(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "dataCtor")) return false;
     if (!nextTokenIs(b, ID)) return false;
@@ -325,7 +319,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b);
     r = weakId(b, l + 1);
     r = r && dataCtor_1(b, l + 1);
-    r = r && dataCtor_2(b, l + 1);
+    r = r && type(b, l + 1);
     r = r && dataCtor_3(b, l + 1);
     exit_section_(b, m, DATA_CTOR, r);
     return r;
@@ -339,13 +333,6 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
       if (!tele(b, l + 1)) break;
       if (!empty_element_parsed_guard_(b, "dataCtor_1", c)) break;
     }
-    return true;
-  }
-
-  // type?
-  private static boolean dataCtor_2(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "dataCtor_2")) return false;
-    type(b, l + 1);
     return true;
   }
 
@@ -372,7 +359,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
 
   /* ********************************************************** */
   // KW_DATA weakId?
-  //  tele* type? dataBody*
+  //  tele* dataBody*
   public static boolean dataDecl(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "dataDecl")) return false;
     if (!nextTokenIs(b, KW_DATA)) return false;
@@ -382,8 +369,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     r = r && dataDecl_1(b, l + 1);
     p = r; // pin = 2
     r = r && report_error_(b, dataDecl_2(b, l + 1));
-    r = p && report_error_(b, dataDecl_3(b, l + 1)) && r;
-    r = p && dataDecl_4(b, l + 1) && r;
+    r = p && dataDecl_3(b, l + 1) && r;
     exit_section_(b, l, m, r, p, null);
     return r || p;
   }
@@ -406,26 +392,19 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     return true;
   }
 
-  // type?
+  // dataBody*
   private static boolean dataDecl_3(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "dataDecl_3")) return false;
-    type(b, l + 1);
-    return true;
-  }
-
-  // dataBody*
-  private static boolean dataDecl_4(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "dataDecl_4")) return false;
     while (true) {
       int c = current_position_(b);
       if (!dataBody(b, l + 1)) break;
-      if (!empty_element_parsed_guard_(b, "dataDecl_4", c)) break;
+      if (!empty_element_parsed_guard_(b, "dataDecl_3", c)) break;
     }
     return true;
   }
 
   /* ********************************************************** */
-  // fnDecl | classDecl | dataDecl
+  // fnDecl | classDecl | dataDecl | printDecl
   public static boolean decl(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "decl")) return false;
     boolean r;
@@ -433,6 +412,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     r = fnDecl(b, l + 1);
     if (!r) r = classDecl(b, l + 1);
     if (!r) r = dataDecl(b, l + 1);
+    if (!r) r = printDecl(b, l + 1);
     exit_section_(b, l, m, r, false, null);
     return r;
   }
@@ -469,7 +449,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
 
   /* ********************************************************** */
   // KW_DEF weakId
-  //  tele* type? fnBody
+  //  tele* type fnBody
   public static boolean fnDecl(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "fnDecl")) return false;
     if (!nextTokenIs(b, KW_DEF)) return false;
@@ -478,7 +458,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     r = consumeToken(b, KW_DEF);
     r = r && weakId(b, l + 1);
     r = r && fnDecl_2(b, l + 1);
-    r = r && fnDecl_3(b, l + 1);
+    r = r && type(b, l + 1);
     r = r && fnBody(b, l + 1);
     exit_section_(b, m, FN_DECL, r);
     return r;
@@ -492,13 +472,6 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
       if (!tele(b, l + 1)) break;
       if (!empty_element_parsed_guard_(b, "fnDecl_2", c)) break;
     }
-    return true;
-  }
-
-  // type?
-  private static boolean fnDecl_3(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "fnDecl_3")) return false;
-    type(b, l + 1);
     return true;
   }
 
@@ -716,32 +689,62 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // unitPattern+
+  // <<paren patterns>>
+  //               | LPAREN RPAREN
+  //               | weakId
   public static boolean pattern(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "pattern")) return false;
     if (!nextTokenIs(b, "<pattern>", ID, LPAREN)) return false;
     boolean r;
     Marker m = enter_section_(b, l, _NONE_, PATTERN, "<pattern>");
-    r = unitPattern(b, l + 1);
+    r = paren(b, l + 1, LamettPsiParser::patterns);
+    if (!r) r = parseTokens(b, 0, LPAREN, RPAREN);
+    if (!r) r = weakId(b, l + 1);
+    exit_section_(b, l, m, r, false, null);
+    return r;
+  }
+
+  /* ********************************************************** */
+  // pattern+
+  public static boolean patterns(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "patterns")) return false;
+    if (!nextTokenIs(b, "<patterns>", ID, LPAREN)) return false;
+    boolean r;
+    Marker m = enter_section_(b, l, _NONE_, PATTERNS, "<patterns>");
+    r = pattern(b, l + 1);
     while (r) {
       int c = current_position_(b);
-      if (!unitPattern(b, l + 1)) break;
-      if (!empty_element_parsed_guard_(b, "pattern", c)) break;
+      if (!pattern(b, l + 1)) break;
+      if (!empty_element_parsed_guard_(b, "patterns", c)) break;
     }
     exit_section_(b, l, m, r, false, null);
     return r;
   }
 
   /* ********************************************************** */
-  // <<commaSep pattern>>
-  public static boolean patterns(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "patterns")) return false;
-    if (!nextTokenIs(b, "<patterns>", ID, LPAREN)) return false;
+  // KW_PRINT tele* type simpleBody
+  public static boolean printDecl(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "printDecl")) return false;
+    if (!nextTokenIs(b, KW_PRINT)) return false;
     boolean r;
-    Marker m = enter_section_(b, l, _NONE_, PATTERNS, "<patterns>");
-    r = commaSep(b, l + 1, LamettPsiParser::pattern);
-    exit_section_(b, l, m, r, false, null);
+    Marker m = enter_section_(b);
+    r = consumeToken(b, KW_PRINT);
+    r = r && printDecl_1(b, l + 1);
+    r = r && type(b, l + 1);
+    r = r && simpleBody(b, l + 1);
+    exit_section_(b, m, PRINT_DECL, r);
     return r;
+  }
+
+  // tele*
+  private static boolean printDecl_1(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "printDecl_1")) return false;
+    while (true) {
+      int c = current_position_(b);
+      if (!tele(b, l + 1)) break;
+      if (!empty_element_parsed_guard_(b, "printDecl_1", c)) break;
+    }
+    return true;
   }
 
   /* ********************************************************** */
@@ -988,22 +991,6 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     r = r && expr(b, l + 1, -1);
     exit_section_(b, l, m, r, p, null);
     return r || p;
-  }
-
-  /* ********************************************************** */
-  // <<paren patterns>>
-  //               | LPAREN RPAREN
-  //               | weakId
-  public static boolean unitPattern(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "unitPattern")) return false;
-    if (!nextTokenIs(b, "<unit pattern>", ID, LPAREN)) return false;
-    boolean r;
-    Marker m = enter_section_(b, l, _NONE_, UNIT_PATTERN, "<unit pattern>");
-    r = paren(b, l + 1, LamettPsiParser::patterns);
-    if (!r) r = parseTokens(b, 0, LPAREN, RPAREN);
-    if (!r) r = weakId(b, l + 1);
-    exit_section_(b, l, m, r, false, null);
-    return r;
   }
 
   /* ********************************************************** */

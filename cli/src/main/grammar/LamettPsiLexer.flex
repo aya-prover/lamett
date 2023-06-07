@@ -40,6 +40,7 @@ NUMBER=[0-9]+
   "def"               { return KW_DEF; }
   "class"             { return KW_CLASS; }
   "classifying"       { return KW_CLASSIFIYING; }
+  "print"             { return KW_PRINT; }
   "data"              { return KW_DATA; }
   "extends"           { return KW_EXTENDS; }
   "new"               { return KW_NEW; }
