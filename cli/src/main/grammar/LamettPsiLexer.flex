@@ -28,6 +28,7 @@ WHITE_SPACE=\s+
 KW_ULIFT=ulift|\u2191
 KW_SIGMA=Sig|\u03a3
 KW_FORALL=forall|\u2200
+KW_LAMBDA=fn|\u03bb
 ID=[a-zA-Z_][a-zA-Z0-9_'-]*
 NUMBER=[0-9]+
 
@@ -35,11 +36,13 @@ NUMBER=[0-9]+
 <YYINITIAL> {
   {WHITE_SPACE}       { return WHITE_SPACE; }
 
-  "Type"              { return KW_TYPE; }
   "ISet"              { return KW_ISET; }
+  "Set"               { return KW_SET; }
+  "U"                 { return KW_TYPE; }
+  "I"                 { return KW_INTERVAL; }
   "def"               { return KW_DEF; }
-  "class"             { return KW_CLASS; }
   "classifying"       { return KW_CLASSIFIYING; }
+  "class"             { return KW_CLASS; }
   "print"             { return KW_PRINT; }
   "data"              { return KW_DATA; }
   "extends"           { return KW_EXTENDS; }
@@ -75,6 +78,7 @@ NUMBER=[0-9]+
   "DOC_COMMENT"       { return DOC_COMMENT; }
 
   {KW_ULIFT}          { return KW_ULIFT; }
+  {KW_LAMBDA}         { return KW_LAMBDA; }
   {KW_SIGMA}          { return KW_SIGMA; }
   {KW_FORALL}         { return KW_FORALL; }
   {ID}                { return ID; }

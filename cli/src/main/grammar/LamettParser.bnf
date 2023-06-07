@@ -90,7 +90,7 @@
   // IMPORTANT: when editing extends(..), please also modify `AyaGKProducer` accordingly!
   extends("newExpr|piExpr|forallExpr|sigmaExpr|lambdaExpr|atomExpr|appExpr|arrowExpr|projExpr|selfExpr|partialExpr|pathExpr") = expr
   extends("literal") = expr
-  extends("refExpr|holeExpr|univExpr") = literal
+  extends("refExpr|holeExpr|constExpr") = literal
   extends("goalExpr|calmFaceExpr") = holeExpr
 
   extends(".+Atom") = atomExpr
@@ -195,13 +195,13 @@ pattern ::= <<paren patterns>>
               | LPAREN RPAREN
               | weakId
 
-literal ::= refExpr | holeExpr | univExpr
+literal ::= refExpr | holeExpr | constExpr
 holeExpr ::= goalExpr | calmFaceExpr
 calmFaceExpr ::= CALM_FACE
 
 goalExpr ::= LGOAL expr? RGOAL
 refExpr ::= weakId
-univExpr ::= KW_TYPE | KW_ISET
+constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL
 
 // tele is always typed
 tele ::= literal | <<paren teleBinder>>

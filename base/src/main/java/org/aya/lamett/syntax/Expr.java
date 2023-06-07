@@ -23,7 +23,7 @@ public sealed interface Expr extends Docile {
 
   /** @param isOne it's a second projection if false */
   record Proj(@Override @NotNull SourcePos pos, @NotNull Expr t, boolean isOne) implements Expr {}
-  record K(@Override @NotNull SourcePos pos, @NotNull Keyword keyword) implements Expr {}
+  record Kw(@Override @NotNull SourcePos pos, @NotNull Keyword keyword) implements Expr {}
   record Hole(@Override @NotNull SourcePos pos, ImmutableSeq<LocalVar> accessible) implements Expr {}
   /** @param isPi it's a sigma if false */
   record DT(boolean isPi, @Override @NotNull SourcePos pos, Param<Expr> param, Expr cod) implements Expr {}

@@ -156,18 +156,10 @@ public record LamettProducer(
       return new Expr.Hole(pos, ImmutableSeq.empty());
     }
 
-    if (node.is(UNIV_EXPR)) {
-      // univExpr ::= KW_TYPE | KW_ISET
-      var isType = node.peekChild(KW_TYPE) != null;
-      if (isType) {
-        return new Expr.K(pos, Keyword.U);
-      }
-
-      var isISet = node.peekChild(KW_ISET) != null;
-      if (isISet) {
-        // TODO: IDK 😥
-        return todo();
-      }
+    if (node.is(CONST_EXPR)) {
+      // constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL
+      if (node.peekChild(KW_TYPE) != null) return new Expr.Kw(pos, Keyword.U);
+      if (node.peekChild(KW_ISET) != null) return todo();
 
       return unreachable(node);
     }

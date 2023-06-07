@@ -26,9 +26,9 @@ public class DeclsTest {
   @Test public void leibniz() {
     tyck("""
       def Eq (A : U) (a b : A) : U => Fn (P : A -> U) -> P a -> P b
-      def refl (A : U) (a : A) : Eq A a a => \\P. \\ pa. pa
+      def refl (A : U) (a : A) : Eq A a a => fn P pa => pa
       def sym (A : U) (a b : A) (e : Eq A a b) : Eq A b a =>
-          e (\\b. Eq A b a) (refl A a)
+          e (fn b => Eq A b a) (refl A a)
       """);
   }
 

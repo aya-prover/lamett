@@ -90,7 +90,7 @@ public record Resolver(@NotNull MutableMap<String, AnyVar> env) {
       case Expr.DT dt -> new Expr.DT(dt.isPi(), dt.pos(), param(dt.param()), bodied(param(dt.param()).x(), dt.cod()));
       case Expr.Two two -> new Expr.Two(two.isApp(), two.pos(), expr(two.f()), expr(two.a()));
       case Expr.Lam lam -> new Expr.Lam(lam.pos(), lam.x(), bodied(lam.x(), lam.a()));
-      case Expr.K primTy -> primTy;
+      case Expr.Kw primTy -> primTy;
       case Expr.Hole hole -> new Expr.Hole(hole.pos(),
         env.valuesView().filterIsInstance(LocalVar.class).toImmutableSeq());
       case Expr.Unresolved unresolved -> env.getOption(unresolved.name())

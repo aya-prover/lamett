@@ -90,11 +90,13 @@ public record Elaborator(
 
   public Synth synth(Expr expr) {
     var synth = switch (expr) {
-      case Expr.K(var $, var kw) when
+      case Expr.Unresolved unresolved ->
+        throw new InternalError("Unresolved expr: " + unresolved);
+      case Expr.Kw(var $, var kw) when
         kw == Keyword.F ||
           kw == Keyword.U ||
           kw == Keyword.I -> new Synth(new Term.UI(kw), Term.U);
-      case Expr.K(var $, var kw) when
+      case Expr.Kw(var $, var kw) when
         kw == Keyword.Zero ||
           kw == Keyword.One -> new Synth(new Term.UI(kw), Term.I);
       case Expr.Resolved resolved -> switch (resolved.ref()) {

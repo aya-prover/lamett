@@ -7,6 +7,7 @@ import org.aya.lamett.prelude.GeneratedVersion;
 import org.aya.lamett.syntax.Decl;
 import org.aya.lamett.syntax.Def;
 import org.aya.lamett.tyck.Elaborator;
+import org.aya.lamett.tyck.Resolver;
 import org.aya.util.error.SourceFile;
 import org.aya.util.reporter.Reporter;
 import org.aya.util.reporter.ThrowingReporter;
@@ -58,7 +59,9 @@ public class CliMain implements Callable<Integer> {
   }
 
   public static @NotNull ImmutableSeq<Decl> def(String s, @NotNull Reporter reporter) {
-    return new LamettParserImpl(reporter).program(new SourceFile("Mian", Path.of("/home/senpai/114514.lamett"), s));
+    var program = new LamettParserImpl(reporter).program(new SourceFile("Mian", Path.of("/home/senpai/114514.lamett"), s));
+    var resolver = new Resolver(MutableMap.create());
+    return program.map(resolver::def);
   }
 
   public static @NotNull Elaborator tyck(String code, boolean verbose, @NotNull Reporter reporter) {

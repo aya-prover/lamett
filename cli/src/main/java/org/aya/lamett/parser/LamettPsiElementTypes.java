@@ -17,6 +17,7 @@ public interface LamettPsiElementTypes {
   IElementType CLASS_MEMBER = new LamettPsiElementType("CLASS_MEMBER");
   IElementType CLAUSE = new LamettPsiElementType("CLAUSE");
   IElementType COMMA_SEP = new LamettPsiElementType("COMMA_SEP");
+  IElementType CONST_EXPR = new LamettPsiElementType("CONST_EXPR");
   IElementType DATA_BODY = new LamettPsiElementType("DATA_BODY");
   IElementType DATA_CTOR = new LamettPsiElementType("DATA_CTOR");
   IElementType DATA_CTOR_CLAUSE = new LamettPsiElementType("DATA_CTOR_CLAUSE");
@@ -58,7 +59,6 @@ public interface LamettPsiElementTypes {
   IElementType TELE_BINDER_UNTYPED = new LamettPsiElementType("TELE_BINDER_UNTYPED");
   IElementType TUPLE_ATOM = new LamettPsiElementType("TUPLE_ATOM");
   IElementType TYPE = new LamettPsiElementType("TYPE");
-  IElementType UNIV_EXPR = new LamettPsiElementType("UNIV_EXPR");
   IElementType WEAK_ID = new LamettPsiElementType("WEAK_ID");
 
   IElementType AT = new LamettPsiTokenType("@");
@@ -78,6 +78,7 @@ public interface LamettPsiElementTypes {
   IElementType KW_DEF = new LamettPsiTokenType("def");
   IElementType KW_EXTENDS = new LamettPsiTokenType("extends");
   IElementType KW_FORALL = new LamettPsiTokenType("KW_FORALL");
+  IElementType KW_INTERVAL = new LamettPsiTokenType("KW_INTERVAL");
   IElementType KW_ISET = new LamettPsiTokenType("ISet");
   IElementType KW_LAMBDA = new LamettPsiTokenType("fn");
   IElementType KW_NEW = new LamettPsiTokenType("new");
@@ -85,6 +86,7 @@ public interface LamettPsiElementTypes {
   IElementType KW_PI = new LamettPsiTokenType("Fn");
   IElementType KW_PRINT = new LamettPsiTokenType("KW_PRINT");
   IElementType KW_SELF = new LamettPsiTokenType("self");
+  IElementType KW_SET = new LamettPsiTokenType("KW_SET");
   IElementType KW_SIGMA = new LamettPsiTokenType("KW_SIGMA");
   IElementType KW_TYPE = new LamettPsiTokenType("Type");
   IElementType KW_ULIFT = new LamettPsiTokenType("KW_ULIFT");
