@@ -3,6 +3,7 @@ module aya.lamett.cli {
   requires aya.lamett.base;
   requires info.picocli;
   requires transitive aya.ij.parsing.core;
+  requires transitive aya.ij.parsing.wrapper;
   requires transitive kala.base;
   requires transitive kala.collection;
   requires transitive aya.pretty;

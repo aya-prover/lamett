@@ -9,7 +9,9 @@ import com.intellij.psi.tree.TokenSet;
 import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.control.Either;
+import org.aya.intellij.GenericNode;
 import org.aya.lamett.parser.LamettPsiParser;
+import org.aya.lamett.parser.LamettPsiTokenType;
 import org.aya.lamett.syntax.*;
 import org.aya.lamett.util.Constants;
 import org.aya.lamett.util.LocalVar;
@@ -458,7 +460,11 @@ public record LamettProducer(
   }
 
   public static @NotNull SourcePos sourcePosOf(@NotNull GenericNode<?> node, @NotNull SourceFile file) {
-    return sourcePosOf(node.range(), file, node.isTerminalNode());
+    return sourcePosOf(node.range(), file, isTerminalNode(node));
+  }
+
+  public static boolean isTerminalNode(@NotNull GenericNode<?> node) {
+    return node.elementType() instanceof LamettPsiTokenType;
   }
 
   public static @NotNull SourcePos sourcePosOf(@NotNull FlexLexer.Token token, @NotNull SourceFile file) {

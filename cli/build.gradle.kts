@@ -6,6 +6,7 @@ dependencies {
   api("info.picocli", "picocli", version = deps.getProperty("version.picocli"))
   implementation(project(":base"))
   implementation("org.aya-prover.upstream", "ij-parsing-core", version = deps.getProperty("version.build-util"))
+  implementation("org.aya-prover.upstream", "ij-parsing-wrapper", version = deps.getProperty("version.build-util"))
   // implementation("org.aya-prover", "tools-repl", version = deps.getProperty("version.aya"))
 }
 

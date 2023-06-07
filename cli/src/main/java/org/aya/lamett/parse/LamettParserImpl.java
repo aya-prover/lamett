@@ -2,18 +2,15 @@
 // Use of this source code is governed by the MIT license that can be found in the LICENSE.md file.
 package org.aya.lamett.parse;
 
-import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.DefaultPsiParser;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.builder.FleetPsiBuilder;
-import com.intellij.psi.builder.MarkerNode;
-import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.tree.IFileElementType;
 import com.intellij.psi.tree.TokenSet;
-import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.control.Either;
-import kala.text.StringSlice;
+import org.aya.intellij.GenericNode;
+import org.aya.intellij.MarkerGenericNode;
 import org.aya.lamett.parser.LamettLanguage;
 import org.aya.lamett.parser.LamettParserDefinitionBase;
 import org.aya.lamett.syntax.Decl;
@@ -33,7 +30,7 @@ public record LamettParserImpl(@NotNull Reporter reporter) implements GenericLam
 
   public @NotNull GenericNode<?> parseNode(@NotNull String code) {
     var parser = new LamettFleetParser();
-    return new NodeWrapper(code, parser.parse(code));
+    return new MarkerGenericNode(code, parser.parse(code));
   }
 
   @Override public @NotNull ImmutableSeq<Decl> program(@NotNull SourceFile sourceFile) {
@@ -65,31 +62,6 @@ public record LamettParserImpl(@NotNull Reporter reporter) implements GenericLam
           "Cannot parse")
         ));
     return node;
-  }
-
-  private record NodeWrapper(
-    @NotNull MarkerNode node,
-    @Override @NotNull StringSlice tokenText
-  ) implements GenericNode<NodeWrapper> {
-    public NodeWrapper(@NotNull String code, @NotNull MarkerNode node) {
-      this(node, StringSlice.of(code, node.range().getStartOffset(), node.range().getEndOffset()));
-    }
-
-    @Override public @NotNull IElementType elementType() {
-      return node.elementType();
-    }
-
-    @SuppressWarnings("UnstableApiUsage") @Override public @NotNull SeqView<NodeWrapper> childrenView() {
-      return node.children().view().map(c -> new NodeWrapper(tokenText.source(), c));
-    }
-
-    @Override public @NotNull TextRange range() {
-      return node.range();
-    }
-
-    @Override public @NotNull String toDebugString() {
-      return node.toDebugString("  ");
-    }
   }
 
   private static class LamettFleetParser extends DefaultPsiParser {
