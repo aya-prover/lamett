@@ -191,7 +191,7 @@ public record LamettProducer(
       // tupleAtom ::= LPAREN exprList RPAREN
       var exprs = exprListOf(node);
       // TODO: is it correct?
-      exprs.reduce((l, r) -> new Expr.Two(false, pos, l, r));
+      return exprs.reduce((l, r) -> new Expr.Two(false, pos, l, r));
     }
 
     var partial = node.peekChild(PARTIAL_ATOM);
@@ -320,7 +320,7 @@ public record LamettProducer(
     var id = node.peekChild(WEAK_ID);
     if (id != null) {
       var weakId = weakId(id);
-      return new Pat.Unresolved(weakId.sourcePos(), weakId.data(), ImmutableSeq.of());
+      return new Pat.Unresolved(weakId.sourcePos(), weakId.data(), ImmutableSeq.empty());
     }
 
     // TODO: absurd patterns
@@ -412,7 +412,7 @@ public record LamettProducer(
   public @NotNull ImmutableSeq<Param<Expr>> lambdaTele(@NotNull GenericNode<?> node) {
     var teleParamName = node.peekChild(WEAK_ID);
     if (teleParamName != null) {
-      var ctx = ImmutableSeq.<LocalVar>of();   // TODO: ctx
+      var ctx = ImmutableSeq.<LocalVar>empty();   // TODO: ctx
       var id = weakId(teleParamName);
       var type = typeOrHole(null, ctx, id.sourcePos());
       return ImmutableSeq.of(new Param<>(LocalVar.from(id), type));
@@ -431,7 +431,7 @@ public record LamettProducer(
     // | teleBinderUntyped
     var ids = node.child(TELE_BINDER_UNTYPED);
     return teleBinderUntyped(ids).view()
-      .map(id -> new Param<>(LocalVar.from(id), typeOrHole(null, ImmutableSeq.of(), id.sourcePos())))   // TODO: ctx
+      .map(id -> new Param<>(LocalVar.from(id), typeOrHole(null, ImmutableSeq.empty(), id.sourcePos())))   // TODO: ctx
       .toImmutableSeq();
   }
 
