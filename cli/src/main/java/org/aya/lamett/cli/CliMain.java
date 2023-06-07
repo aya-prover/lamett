@@ -9,6 +9,7 @@ import org.aya.lamett.syntax.Def;
 import org.aya.lamett.tyck.Elaborator;
 import org.aya.util.error.SourceFile;
 import org.aya.util.reporter.Reporter;
+import org.aya.util.reporter.ThrowingReporter;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine;
 
@@ -48,10 +49,8 @@ public class CliMain implements Callable<Integer> {
     }
   }
 
-  // TODO: delete this
-  @Deprecated
   public static @NotNull Reporter newReporter() {
-    return new StreamReporter(System.err);
+    return new ThrowingReporter(new DebugPrettierOptions());
   }
 
   public static @NotNull Elaborator andrasKovacs() {

@@ -28,7 +28,7 @@ WHITE_SPACE=\s+
 KW_ULIFT=ulift|\u2191
 KW_SIGMA=Sig|\u03a3
 KW_FORALL=forall|\u2200
-ID=[a-zA-Z_][a-zA-Z0-9_]*
+ID=[a-zA-Z_][a-zA-Z0-9_'-]*
 NUMBER=[0-9]+
 
 %%

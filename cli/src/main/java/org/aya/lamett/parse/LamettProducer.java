@@ -66,10 +66,7 @@ public record LamettProducer(
     // literal ::= refExpr | holeExpr | univExpr
 
     var pos = sourcePosOf(node);
-    if (node.is(NEW_EXPR)) {
-      return todo();
-    }
-
+    if (node.is(NEW_EXPR)) return todo();
     if (node.is(PI_EXPR)) {
       // piExpr ::= KW_PI tele+ TO expr
 
@@ -93,11 +90,14 @@ public record LamettProducer(
     }
 
     if (node.is(SIGMA_EXPR)) {
-      // sigmaExpr ::= KW_SIGMA tele+ SUCHTHAT expr
-      var tele = telescopeOf(node);
+      // sigmaExpr ::= KW_SIGMA tele SUCHTHAT expr
+      var tele = tele(node.child(TELE));
+      if (tele.sizeGreaterThan(1)) {
+        throw new IllegalArgumentException("Sigma is binary");
+      }
       var such = expr(node.child(EXPR));
 
-      return tele.scope().foldRight(such, (l, r) -> new Expr.DT(false, pos, l, r));
+      return tele.foldRight(such, (l, r) -> new Expr.DT(false, pos, l, r));
     }
 
     if (node.is(LAMBDA_EXPR)) {
@@ -112,9 +112,7 @@ public record LamettProducer(
       return tele.scope().foldRight(expr(body), (l, r) -> new Expr.Lam(pos, l.x(), r));
     }
 
-    if (node.is(SELF_EXPR)) {
-      return todo();
-    }
+    if (node.is(SELF_EXPR)) return todo();
 
     if (node.is(PATH_EXPR)) {
       // pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
@@ -140,7 +138,12 @@ public record LamettProducer(
 
     if (node.is(PROJ_EXPR)) {
       // projExpr ::= expr projFix
-      return todo();
+      var proj = node.child(PROJ_FIX);
+      // projFix ::= DOT (NUMBER | projFixId)
+      if (proj.peekChild(NUMBER) != null) {
+        var isOne = proj.child(NUMBER).tokenText().contentEqualsIgnoreCase("1");
+        return new Expr.Proj(pos, expr(node.child(EXPR)), isOne);
+      } else return todo();
     }
 
     if (node.is(REF_EXPR)) {
@@ -150,7 +153,7 @@ public record LamettProducer(
 
     if (node.is(HOLE_EXPR)) {
       // TODO: We need a Context argument 🤔
-      return new Expr.Hole(pos, ImmutableSeq.of());
+      return new Expr.Hole(pos, ImmutableSeq.empty());
     }
 
     if (node.is(UNIV_EXPR)) {
@@ -343,10 +346,10 @@ public record LamettProducer(
   }
 
   public @NotNull Decl.Tele telescopeOf(@NotNull GenericNode<?> node) {
-    return telescope(node.childrenOfType(TELE).map(x -> x));
+    return telescope(node.childrenOfType(TELE));
   }
 
-  public @NotNull Decl.Tele telescope(@NotNull SeqView<GenericNode<?>> node) {
+  public @NotNull Decl.Tele telescope(@NotNull SeqView<? extends GenericNode<?>> node) {
     return new Decl.Tele(node.flatMap(this::tele).toImmutableSeq());
   }
 

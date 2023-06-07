@@ -311,7 +311,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // weakId tele* type partialBlock?
+  // weakId tele* type? partialBlock?
   public static boolean dataCtor(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "dataCtor")) return false;
     if (!nextTokenIs(b, ID)) return false;
@@ -319,7 +319,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b);
     r = weakId(b, l + 1);
     r = r && dataCtor_1(b, l + 1);
-    r = r && type(b, l + 1);
+    r = r && dataCtor_2(b, l + 1);
     r = r && dataCtor_3(b, l + 1);
     exit_section_(b, m, DATA_CTOR, r);
     return r;
@@ -333,6 +333,13 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
       if (!tele(b, l + 1)) break;
       if (!empty_element_parsed_guard_(b, "dataCtor_1", c)) break;
     }
+    return true;
+  }
+
+  // type?
+  private static boolean dataCtor_2(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "dataCtor_2")) return false;
+    type(b, l + 1);
     return true;
   }
 
@@ -358,27 +365,18 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // KW_DATA weakId?
-  //  tele* dataBody*
+  // KW_DATA weakId tele* dataBody*
   public static boolean dataDecl(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "dataDecl")) return false;
     if (!nextTokenIs(b, KW_DATA)) return false;
-    boolean r, p;
-    Marker m = enter_section_(b, l, _NONE_, DATA_DECL, null);
+    boolean r;
+    Marker m = enter_section_(b);
     r = consumeToken(b, KW_DATA);
-    r = r && dataDecl_1(b, l + 1);
-    p = r; // pin = 2
-    r = r && report_error_(b, dataDecl_2(b, l + 1));
-    r = p && dataDecl_3(b, l + 1) && r;
-    exit_section_(b, l, m, r, p, null);
-    return r || p;
-  }
-
-  // weakId?
-  private static boolean dataDecl_1(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "dataDecl_1")) return false;
-    weakId(b, l + 1);
-    return true;
+    r = r && weakId(b, l + 1);
+    r = r && dataDecl_2(b, l + 1);
+    r = r && dataDecl_3(b, l + 1);
+    exit_section_(b, m, DATA_DECL, r);
+    return r;
   }
 
   // tele*

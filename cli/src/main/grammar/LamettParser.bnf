@@ -129,14 +129,13 @@ classDecl
 classMember
   ::= KW_CLASSIFIYING? weakId tele* type IMPLIES expr
 
-dataDecl ::= KW_DATA weakId?
- tele* dataBody* { pin=2 }
+dataDecl ::= KW_DATA weakId tele* dataBody*
 
 dataBody ::= BAR (dataCtorClause | dataCtor) {
   pin=1
 }
 
-dataCtor ::= weakId tele* type partialBlock?
+dataCtor ::= weakId tele* type? partialBlock?
 partialBlock ::= <<braced partialInner>>
 
 dataCtorClause ::= patterns IMPLIES dataCtor
@@ -164,7 +163,7 @@ arrowExpr ::= expr TO expr { rightAssociative = true }
 projExpr ::= expr projFix
 piExpr ::= KW_PI tele+ TO expr
 forallExpr ::= KW_FORALL lambdaTele+ TO expr
-sigmaExpr ::= KW_SIGMA tele+ SUCHTHAT expr
+sigmaExpr ::= KW_SIGMA tele SUCHTHAT expr
 lambdaExpr ::= KW_LAMBDA lambdaTele+ (IMPLIES expr)?
 selfExpr ::= KW_SELF (AT weakId)?
 pathExpr ::= LPATH weakId+ RPATH expr partialBlock?

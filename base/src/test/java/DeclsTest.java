@@ -13,8 +13,9 @@ public class DeclsTest {
   @Test public void dontSayLazy() {
     var akJr = tyck("""
       def uncurry (A B C : U)
-        (t : A ** B) (f : A -> B -> C) : C => f (t.1) (t.2)
-      def uncurry' (A : U) (t : A ** A) (f : A -> A -> A) : A => uncurry A A A t f
+        (t : Sig A ** B) (f : A -> B -> C) : C => f (t.1) (t.2)
+      def uncurry' (A : U) (t : Sig A ** A)
+       (f : A -> A -> A) : A => uncurry A A A t f
       """);
     akJr.sigma().valuesView().forEach(tycked -> {
       var body = ((Def.Fn) tycked).body();
@@ -24,8 +25,8 @@ public class DeclsTest {
 
   @Test public void leibniz() {
     tyck("""
-      def Eq (A : U) (a b : A) : U => Pi (P : A -> U) -> P a -> P b
-      def refl (A : U) (a : A) : Eq A a a => \\P pa. pa
+      def Eq (A : U) (a b : A) : U => Fn (P : A -> U) -> P a -> P b
+      def refl (A : U) (a : A) : Eq A a a => \\P. \\ pa. pa
       def sym (A : U) (a b : A) (e : Eq A a b) : Eq A b a =>
           e (\\b. Eq A b a) (refl A a)
       """);
@@ -58,8 +59,8 @@ public class DeclsTest {
       | succ (n : Nat)
 
       def plus (a : Nat) (b : Nat) : Nat
-      | zero b => b
-      | (succ a) b => succ (plus a b)
+      | zero, b => b
+      | succ a, b => succ (plus a b)
 
       def two : Nat => succ (succ zero)
       def four : Nat => plus two two
@@ -74,7 +75,7 @@ public class DeclsTest {
       | zero
       | succ (n : Nat)
       def plus-bad (a : Nat) (b : Nat) : Nat
-      | (succ a) b => succ (plus-bad a b)
+      | succ a, b => succ (plus-bad a b)
       """));
   }
 
