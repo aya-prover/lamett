@@ -37,10 +37,13 @@ public record LamettProducer(
   public static final @NotNull TokenSet EXPR = LamettPsiParser.EXTENDS_SETS_[1];
 
   public @NotNull ImmutableSeq<Decl> program(@NotNull GenericNode<?> node) {
-    return node.childrenOfType(DECL).map(this::decl).toImmutableSeq();
+    return node.childrenOfType(DECL)
+      .map(this::decl)
+      .filterNotNull()
+      .toImmutableSeq();
   }
 
-  public @NotNull Decl decl(@NotNull GenericNode<?> node) {
+  public @Nullable Decl decl(@NotNull GenericNode<?> node) {
     if (node.is(DATA_DECL)) return dataDecl(node);
     if (node.is(FN_DECL)) return fnDecl(node);
     if (node.is(CLASS_DECL)) return todo();
