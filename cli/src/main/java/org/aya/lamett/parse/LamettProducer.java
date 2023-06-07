@@ -105,13 +105,11 @@ public record LamettProducer(
     if (node.is(LAMBDA_EXPR)) {
       // lambdaExpr ::= KW_LAMBDA lambdaTele+ (IMPLIES expr)?
       var tele = lambdaTelescopeOf(node);
-      var body = node.peekChild(EXPR);
-      if (body == null) {
-        // TODO: how??
-        return todo();
-      }
-
-      return tele.scope().foldRight(expr(body), (l, r) -> new Expr.Lam(pos, l.x(), r));
+      var bodyNode = node.peekChild(EXPR);
+      var body = bodyNode != null
+        ? expr(bodyNode)
+        : new Expr.Hole(pos, ImmutableSeq.empty()); // TODO: accessible
+      return tele.scope().foldRight(body, (l, r) -> new Expr.Lam(pos, l.x(), r));
     }
 
     if (node.is(SELF_EXPR)) return todo();
@@ -140,12 +138,9 @@ public record LamettProducer(
 
     if (node.is(PROJ_EXPR)) {
       // projExpr ::= expr projFix
+      var expr = node.child(EXPR);
       var proj = node.child(PROJ_FIX);
-      // projFix ::= DOT (NUMBER | projFixId)
-      if (proj.peekChild(NUMBER) != null) {
-        var isOne = proj.child(NUMBER).tokenText().contentEqualsIgnoreCase("1");
-        return new Expr.Proj(pos, expr(node.child(EXPR)), isOne);
-      } else return todo();
+      return projFix(expr(expr), pos, proj);
     }
 
     if (node.is(REF_EXPR)) {
@@ -188,16 +183,16 @@ public record LamettProducer(
   public @NotNull Expr argument(@NotNull GenericNode<?> node) {
     // argument ::= atomExpr projFix*
     var expr = expr(node.child(EXPR));
-    var projFix = node.childrenOfType(PROJ_FIX).map(this::projFix);
-
-    // TODO: projFix
-    return expr;
+    return node.childrenOfType(PROJ_FIX).foldLeft(expr,
+      (on, proj) -> projFix(on, sourcePosOf(proj), proj));
   }
 
-  public @NotNull Expr projFix(@NotNull GenericNode<?> node) {
+  public @NotNull Expr projFix(@NotNull Expr on, @NotNull SourcePos pos, @NotNull GenericNode<?> node) {
     // projFix ::= DOT (NUMBER | projFixId)
-    // TODO
-    return todo();
+    if (node.peekChild(NUMBER) != null) {
+      var isOne = node.child(NUMBER).tokenText().contentEqualsIgnoreCase("1");
+      return new Expr.Proj(pos, on, isOne);
+    } else return todo(); // TODO: projFixId
   }
 
   public @NotNull Decl.Data dataDecl(@NotNull GenericNode<?> node) {

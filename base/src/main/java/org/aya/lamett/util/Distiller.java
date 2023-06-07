@@ -31,8 +31,12 @@ public interface Distiller {
       case Expr.Two two /*&& !two.isApp()*/ -> Doc.wrap("<<", ">>",
         Doc.commaList(Seq.of(expr(two.f(), Free), expr(two.a(), Free))));
       case Expr.Lam lam -> {
-        var doc = Doc.sep(Doc.cat(Doc.plain("\\"),
-          Doc.symbol(lam.x().name()), Doc.plain(".")), expr(lam.a(), Free));
+        var doc = Doc.sep(
+          Doc.plain("fn"),
+          Doc.symbol(lam.x().name()),
+          Doc.plain("=>"),
+          expr(lam.a(), Free)
+        );
         yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.Resolved resolved -> Doc.plain(resolved.ref().name());
@@ -59,8 +63,12 @@ public interface Distiller {
       case Term.UI ui -> Doc.plain(ui.keyword().name());
       case Term.Ref ref -> Doc.plain(ref.var().name());
       case Term.Lam lam -> {
-        var doc = Doc.sep(Doc.cat(Doc.plain("\\"),
-          Doc.symbol(lam.x().name()), Doc.plain(".")), term(lam.body(), Free));
+        var doc = Doc.sep(
+          Doc.plain("fn"),
+          Doc.symbol(lam.x().name()),
+          Doc.plain("=>"),
+          term(lam.body(), Free)
+        );
         yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
       }
       case Term.Proj proj -> Doc.cat(term(proj.t(), ProjHead), Doc.plain("." + (proj.isOne() ? 1 : 2)));

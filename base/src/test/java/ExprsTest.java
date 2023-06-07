@@ -33,6 +33,10 @@ public class ExprsTest {
     assertEquals("a b c", distill("a b c"));
     assertEquals("a b c", distill("(a b) c"));
     assertEquals("a (b c)", distill("a (b c)"));
+    assertEquals("a b c", distill("a (b) (c)"));
+    assertEquals("a b.1 c.1", distill("a b.1 c.1"));
+    assertEquals("fn a => b", distill("fn a => b"));
+    assertEquals("fn a => _", distill("fn a"));
     assertEquals("Fn (_ : a b) -> c d", distill("a b -> c d"));
     assertEquals("Fn (_ : a b) -> Fn (_ : c d) -> e f", distill("a b -> c d -> e f"));
     assertEquals("Fn (_ : a b) -> Fn (_ : c d) -> e f", distill("a b -> (c d -> e f)"));
