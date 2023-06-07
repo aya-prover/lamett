@@ -826,7 +826,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // DOC_COMMENT | KW_DEF | KW_CLASS | KW_DATA
+  // DOC_COMMENT | KW_DEF | KW_CLASS | KW_DATA | KW_PRINT
   static boolean stmt_first(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "stmt_first")) return false;
     boolean r;
@@ -834,6 +834,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     if (!r) r = consumeToken(b, KW_DEF);
     if (!r) r = consumeToken(b, KW_CLASS);
     if (!r) r = consumeToken(b, KW_DATA);
+    if (!r) r = consumeToken(b, KW_PRINT);
     return r;
   }
 

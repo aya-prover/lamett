@@ -104,7 +104,7 @@ private stmt_with_recover ::= !(<<eof>>) decl {
   recoverWhile = stmt_recover
 }
 private stmt_recover ::= !(stmt_first)
-private stmt_first ::= DOC_COMMENT | KW_DEF | KW_CLASS | KW_DATA
+private stmt_first ::= DOC_COMMENT | KW_DEF | KW_CLASS | KW_DATA | KW_PRINT
 
 // statements
 
