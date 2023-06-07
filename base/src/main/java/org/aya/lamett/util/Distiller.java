@@ -46,7 +46,7 @@ public interface Distiller {
     };
   }
   private static @NotNull Doc dependentType(boolean isPi, Param<?> param, Docile cod) {
-    return Doc.sep(Doc.plain(isPi ? "Pi" : "Sig"),
+    return Doc.sep(Doc.plain(isPi ? "Fn" : "Sig"),
       param.toDoc(), Doc.symbol(isPi ? "->" : "**"), cod.toDoc());
   }
 

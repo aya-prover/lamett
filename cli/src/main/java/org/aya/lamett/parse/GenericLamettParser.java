@@ -12,5 +12,6 @@ import org.jetbrains.annotations.NotNull;
 
 public interface GenericLamettParser {
   @NotNull ImmutableSeq<Decl> program(@NotNull SourceFile sourceFile);
+  @NotNull Expr expr(@NotNull String code, @NotNull SourcePos pos);
   @NotNull Reporter reporter();
 }

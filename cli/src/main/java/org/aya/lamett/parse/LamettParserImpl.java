@@ -17,11 +17,16 @@ import kala.text.StringSlice;
 import org.aya.lamett.parser.LamettLanguage;
 import org.aya.lamett.parser.LamettParserDefinitionBase;
 import org.aya.lamett.syntax.Decl;
+import org.aya.lamett.syntax.Expr;
 import org.aya.util.error.SourceFile;
+import org.aya.util.error.SourcePos;
 import org.aya.util.reporter.Reporter;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
+
+import static org.aya.lamett.parser.LamettPsiElementTypes.PRINT_DECL;
+import static org.aya.lamett.parser.LamettPsiElementTypes.TYPE;
 
 public record LamettParserImpl(@NotNull Reporter reporter) implements GenericLamettParser {
   private static final @NotNull TokenSet ERROR = TokenSet.create(TokenType.ERROR_ELEMENT, TokenType.BAD_CHARACTER);
@@ -33,6 +38,12 @@ public record LamettParserImpl(@NotNull Reporter reporter) implements GenericLam
 
   @Override public @NotNull ImmutableSeq<Decl> program(@NotNull SourceFile sourceFile) {
     return parse(sourceFile.sourceCode(), sourceFile);
+  }
+
+  @Override public @NotNull Expr expr(@NotNull String code, @NotNull SourcePos pos) {
+    var node = parseNode("print : " + code + " => U");
+    var bud = node.child(PRINT_DECL).child(TYPE);
+    return new LamettProducer(Either.right(pos), reporter).type(bud);
   }
 
   private @NotNull ImmutableSeq<Decl> parse(@NotNull String code, @NotNull SourceFile errorReport) {

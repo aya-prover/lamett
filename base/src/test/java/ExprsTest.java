@@ -1,8 +1,10 @@
 import kala.collection.mutable.MutableMap;
 import org.aya.lamett.cli.CliMain;
+import org.aya.lamett.parse.LamettParserImpl;
 import org.aya.lamett.syntax.Expr;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.tyck.Resolver;
+import org.aya.util.error.SourcePos;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -11,13 +13,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ExprsTest {
   @Test public void tyckUncurry() {
-    var artifact = tyck("\\A B C t f. f (t.1) (t.2)",
-      "Pi (A B C : U) -> Pi (t : A ** B) -> Pi (f : A -> B -> C) -> C");
+    var artifact = tyck("fn A B C t f => f (t.1) (t.2)",
+      "Fn (A B C : U) -> Fn (t : A ** B) -> Fn (f : A -> B -> C) -> C");
     assertNotNull(artifact);
   }
 
   @Test public void resolveId() {
-    var e = (Expr.Lam) resolve("\\x. x");
+    var e = (Expr.Lam) resolve("fn x => x");
     assertNotNull(e);
     assertSame(((Expr.Resolved) e.a()).ref(), e.x());
   }
@@ -26,10 +28,10 @@ public class ExprsTest {
     assertEquals("a b c", distill("a b c"));
     assertEquals("a b c", distill("(a b) c"));
     assertEquals("a (b c)", distill("a (b c)"));
-    assertEquals("Pi (_ : a b) -> c d", distill("a b -> c d"));
-    assertEquals("Pi (_ : a b) -> Pi (_ : c d) -> e f", distill("a b -> c d -> e f"));
-    assertEquals("Pi (_ : a b) -> Pi (_ : c d) -> e f", distill("a b -> (c d -> e f)"));
-    assertEquals("Pi (_ : Pi (_ : a b) -> c d) -> e f", distill("(a b -> c d) -> e f"));
+    assertEquals("Fn (_ : a b) -> c d", distill("a b -> c d"));
+    assertEquals("Fn (_ : a b) -> Fn (_ : c d) -> e f", distill("a b -> c d -> e f"));
+    assertEquals("Fn (_ : a b) -> Fn (_ : c d) -> e f", distill("a b -> (c d -> e f)"));
+    assertEquals("Fn (_ : Fn (_ : a b) -> c d) -> e f", distill("(a b -> c d) -> e f"));
   }
 
   @Test public void parseFail() {
@@ -41,7 +43,7 @@ public class ExprsTest {
   }
 
   @Test public void tyckId() {
-    var artifact = tyck("\\A x. x", "Pi (A : U) -> A -> A");
+    var artifact = tyck("fn A x => x", "Fn (A : U) -> A -> A");
     assertNotNull(artifact);
   }
 
@@ -56,7 +58,7 @@ public class ExprsTest {
   }
 
   private static @NotNull Expr parse(String s) {
-    // return new LamettProducer(Either.left(SourceFile.NONE), new ThrowingReporter(new DebugPrettierOptions())).expr(CliMain.parser(s).expr());
-    return null;
+    var reporter = CliMain.newReporter();
+    return new LamettParserImpl(reporter).expr(s, SourcePos.NONE);
   }
 }
