@@ -171,8 +171,10 @@ public record LamettProducer(
     if (node.is(TUPLE_ATOM)) {
       // tupleAtom ::= LPAREN exprList RPAREN
       var exprs = exprListOf(node);
-      // TODO: is it correct?
-      return exprs.reduce((l, r) -> new Expr.Two(false, pos, l, r));
+      // No unary tuples
+      if (exprs.sizeEquals(1)) return exprs.first();
+      // Now it is correct
+      return exprs.reduce((l, r) -> new Expr.Two(false, l.pos().union(r.pos()), l, r));
     }
 
     if (node.is(PARTIAL_ATOM)) {
@@ -180,30 +182,6 @@ public record LamettProducer(
     }
 
     /// endregion atomExpr
-
-    return unreachable(node);
-  }
-
-  public @NotNull Expr atomExpr(@NotNull GenericNode<?> node) {
-    var pos = sourcePosOf(node);
-    var tuple = node.peekChild(TUPLE_ATOM);
-    if (tuple != null) {
-      // tupleAtom ::= LPAREN exprList RPAREN
-      var exprs = exprListOf(node);
-      // TODO: is it correct?
-      return exprs.reduce((l, r) -> new Expr.Two(false, pos, l, r));
-    }
-
-    var partial = node.peekChild(PARTIAL_ATOM);
-    if (partial != null) {
-      return todo();
-    }
-
-    var lit = node.peekChild(EXPR);
-    if (lit != null) {
-      return expr(lit);
-    }
-
     return unreachable(node);
   }
 
