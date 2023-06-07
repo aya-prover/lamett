@@ -90,13 +90,13 @@ public record Elaborator(
 
   public Synth synth(Expr expr) {
     var synth = switch (expr) {
-      case Expr.K u when
-        u.keyword() == Keyword.F ||
-          u.keyword() == Keyword.U ||
-          u.keyword() == Keyword.I -> new Synth(new Term.UI(u.keyword()), Term.U);
-      case Expr.K u when
-        u.keyword() == Keyword.Zero ||
-          u.keyword() == Keyword.One -> new Synth(new Term.UI(u.keyword()), Term.I);
+      case Expr.K(var $, var kw) when
+        kw == Keyword.F ||
+          kw == Keyword.U ||
+          kw == Keyword.I -> new Synth(new Term.UI(kw), Term.U);
+      case Expr.K(var $, var kw) when
+        kw == Keyword.Zero ||
+          kw == Keyword.One -> new Synth(new Term.UI(kw), Term.I);
       case Expr.Resolved resolved -> switch (resolved.ref()) {
         case DefVar<?> defv -> {
           var def = defv.core;
