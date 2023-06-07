@@ -11,7 +11,6 @@ import org.aya.util.reporter.Reporter;
 import org.jetbrains.annotations.NotNull;
 
 public interface GenericLamettParser {
-  @NotNull Expr expr(@NotNull String code, @NotNull SourcePos overridingSourcePos);
   @NotNull ImmutableSeq<Decl> program(@NotNull SourceFile sourceFile);
   @NotNull Reporter reporter();
 }

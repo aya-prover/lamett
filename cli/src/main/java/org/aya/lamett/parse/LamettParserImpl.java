@@ -17,9 +17,7 @@ import kala.text.StringSlice;
 import org.aya.lamett.parser.LamettLanguage;
 import org.aya.lamett.parser.LamettParserDefinitionBase;
 import org.aya.lamett.syntax.Decl;
-import org.aya.lamett.syntax.Expr;
 import org.aya.util.error.SourceFile;
-import org.aya.util.error.SourcePos;
 import org.aya.util.reporter.Reporter;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,13 +31,7 @@ public record LamettParserImpl(@NotNull Reporter reporter) implements GenericLam
     return new NodeWrapper(code, parser.parse(code));
   }
 
-  @Override public @NotNull Expr expr(@NotNull String code, @NotNull SourcePos sourcePos) {
-    var node = parseNode("prim a : " + code);
-    return new LamettProducer(Either.right(sourcePos), reporter).todo();
-  }
-
-  @Override
-  public @NotNull ImmutableSeq<Decl> program(@NotNull SourceFile sourceFile) {
+  @Override public @NotNull ImmutableSeq<Decl> program(@NotNull SourceFile sourceFile) {
     return parse(sourceFile.sourceCode(), sourceFile);
   }
 
