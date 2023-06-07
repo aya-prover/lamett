@@ -41,7 +41,7 @@ public record LamettParserImpl(@NotNull Reporter reporter) implements GenericLam
   }
 
   @Override public @NotNull Expr expr(@NotNull String code, @NotNull SourcePos pos) {
-    var node = parseNode("print : " + code + " => U");
+    var node = parseNode("print : (" + code + ") => U");
     var bud = node.child(PRINT_DECL).child(TYPE);
     return new LamettProducer(Either.right(pos), reporter).type(bud);
   }

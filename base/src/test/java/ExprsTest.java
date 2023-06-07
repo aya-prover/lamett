@@ -4,17 +4,22 @@ import org.aya.lamett.parse.LamettParserImpl;
 import org.aya.lamett.syntax.Expr;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.tyck.Resolver;
+import org.aya.util.error.Global;
 import org.aya.util.error.SourcePos;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ExprsTest {
+  @BeforeAll public static void init() {
+    Global.NO_RANDOM_NAME = true;
+  }
   @Test public void tyckUncurry() {
     var artifact = tyck("fn A B C t f => f (t.1) (t.2)",
-      "Fn (A B C : U) -> Fn (t : A ** B) -> Fn (f : A -> B -> C) -> C");
+      "Fn (A B C : U) -> Fn (t : Sig A ** B) -> Fn (f : A -> B -> C) -> C");
     assertNotNull(artifact);
   }
 
