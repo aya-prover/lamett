@@ -152,7 +152,6 @@ public record LamettProducer(
     }
 
     if (node.is(HOLE_EXPR)) {
-      // TODO: We need a Context argument 🤔
       return new Expr.Hole(pos, ImmutableSeq.empty());
     }
 
@@ -235,7 +234,8 @@ public record LamettProducer(
 
     var pos = sourcePosOf(node);
     var id = weakId(node.child(WEAK_ID));
-    var type = typeOrHole(node.peekChild(TYPE), telescopeOf(node).scope().map(Param::x), pos);
+    var tele = telescopeOf(node);
+    var type = typeOrHole(node.peekChild(TYPE), tele.scope().map(Param::x), pos);
     var fnBody = fnBody(node.child(FN_BODY));
 
     if (fnBody == null) {
@@ -243,7 +243,7 @@ public record LamettProducer(
       return null;
     }
 
-    return new Decl.Fn(new DefVar<>(id.data()), telescopeOf(node), type, fnBody);
+    return new Decl.Fn(new DefVar<>(id.data()), tele, type, fnBody);
   }
 
   public @Nullable Either<Expr, Either<Pat.ClauseSet<Expr>, ImmutableSeq<Pat.UnresolvedClause>>> fnBody(@NotNull GenericNode<?> node) {
@@ -388,9 +388,8 @@ public record LamettProducer(
   public @NotNull ImmutableSeq<Param<Expr>> lambdaTele(@NotNull GenericNode<?> node) {
     var teleParamName = node.peekChild(WEAK_ID);
     if (teleParamName != null) {
-      var ctx = ImmutableSeq.<LocalVar>empty();   // TODO: ctx
       var id = weakId(teleParamName);
-      var type = typeOrHole(null, ctx, id.sourcePos());
+      var type = typeOrHole(null, ImmutableSeq.empty(), id.sourcePos());
       return ImmutableSeq.of(new Param<>(LocalVar.from(id), type));
     }
 
