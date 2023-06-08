@@ -71,7 +71,7 @@ public class Classifier implements ClassifierUtil<Normalizer, Term, Param<Term>,
       }
       // Note that we cannot have ill-typed patterns such as constructor patterns,
       // since patterns here are already well-typed
-      case Term.DT sigma when !sigma.isPi() -> {
+      case Term.Sigma $ -> {
         throw new UnsupportedOperationException("unimplemented");
       }
       // THE BIG GAME

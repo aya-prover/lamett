@@ -29,17 +29,17 @@ public record Elaborator(
   public Term inherit(Expr expr, Term type) {
     return switch (expr) {
       case Expr.Lam lam -> {
-        if (normalize(type) instanceof Term.DT dt && dt.isPi())
+        if (normalize(type) instanceof Term.Pi dt)
           yield new Term.Lam(lam.x(), hof(lam.x(), dt.param().type(), () ->
             inherit(lam.a(), dt.codomain(new Term.Ref(lam.x())))));
         else throw new SPE(lam.pos(),
           Doc.english("Expects a right adjoint for"), expr, Doc.plain("got"), type);
       }
-      case Expr.Two two when !two.isApp() -> {
-        if (!(normalize(type) instanceof Term.DT dt) || dt.isPi()) throw new SPE(two.pos(),
+      case Expr.Tuple two -> {
+        if (!(normalize(type) instanceof Term.Sigma dt)) throw new SPE(two.pos(),
           Doc.english("Expects a left adjoint for"), expr, Doc.plain("got"), type);
         var lhs = inherit(two.f(), dt.param().type());
-        yield new Term.Two(false, lhs, inherit(two.a(), dt.codomain(lhs)));
+        yield new Term.Tuple(lhs, inherit(two.a(), dt.codomain(lhs)));
       }
       case Expr.Hole hole -> {
         var docs = MutableList.<Doc>create();
@@ -95,10 +95,10 @@ public record Elaborator(
       case Expr.Kw(var $, var kw) when
         kw == Keyword.F ||
           kw == Keyword.U ||
-          kw == Keyword.I -> new Synth(new Term.UI(kw), Term.U);
+          kw == Keyword.I -> new Synth(new Term.Lit(kw), Term.U);
       case Expr.Kw(var $, var kw) when
         kw == Keyword.Zero ||
-          kw == Keyword.One -> new Synth(new Term.UI(kw), Term.I);
+          kw == Keyword.One -> new Synth(new Term.Lit(kw), Term.I);
       case Expr.Resolved resolved -> switch (resolved.ref()) {
         case DefVar<?> defv -> {
           var def = defv.core;
@@ -126,7 +126,7 @@ public record Elaborator(
       };
       case Expr.Proj proj -> {
         var t = synth(proj.t());
-        if (!(t.type instanceof Term.DT dt) || dt.isPi())
+        if (!(t.type instanceof Term.Sigma dt))
           throw new SPE(proj.pos(), Doc.english("Expects a left adjoint, got"), t.type);
         var fst = t.wellTyped.proj(true);
         if (proj.isOne()) yield new Synth(fst, dt.param().type());
@@ -134,22 +134,26 @@ public record Elaborator(
       }
       case Expr.Two two -> {
         var f = synth(two.f());
-        if (two.isApp()) {
-          if (!(f.type instanceof Term.DT dt) || !dt.isPi())
+        if (two instanceof Expr.App) {
+          if (!(f.type instanceof Term.Pi dt))
             throw new SPE(two.pos(), Doc.english("Expects pi, got"), f.type, Doc.plain("when checking"), two);
           var a = hof(dt.param().x(), dt.param().type(), () -> inherit(two.a(), dt.param().type()));
           yield new Synth(f.wellTyped.app(a), dt.codomain(a));
         } else {
           var a = synth(two.a());
-          yield new Synth(new Term.Two(false, f.wellTyped, a.wellTyped),
-            new Term.DT(false, new Param<>(new LocalVar("_"), f.type), a.type));
+          yield new Synth(new Term.Tuple(f.wellTyped, a.wellTyped),
+            new Term.Sigma(new Param<>(new LocalVar("_"), f.type), a.type));
         }
       }
       case Expr.DT dt -> {
         var param = synth(dt.param().type());
         var x = dt.param().x();
         var cod = hof(x, param.wellTyped, () -> synth(dt.cod()));
-        yield new Synth(new Term.DT(dt.isPi(), new Param<>(x, param.wellTyped), cod.wellTyped), cod.type);
+        yield new Synth(
+          dt instanceof Expr.Pi
+            ? new Term.Pi(new Param<>(x, param.wellTyped), cod.wellTyped)
+            : new Term.Sigma(new Param<>(x, param.wellTyped), cod.wellTyped),
+          cod.type);
       }
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };

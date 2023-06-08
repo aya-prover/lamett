@@ -28,9 +28,20 @@ public sealed interface Term extends Docile {
   record DataCall(@NotNull DefVar<Def.Data> fn, @NotNull ImmutableSeq<Term> args) implements Term {}
   record ConCall(@NotNull DefVar<Def.Cons> fn, @NotNull ImmutableSeq<Term> args,
                  @NotNull ImmutableSeq<Term> dataArgs) implements Term {}
-  record Two(boolean isApp, @NotNull Term f, @NotNull Term a) implements Term {
-    @Override public @NotNull Term proj(boolean isOne) {return isOne ? f : a;}
+  sealed interface Two extends Term {
+    @NotNull Term f();
+    @NotNull Term a();
+    @NotNull default Two make(@NotNull Term f, @NotNull Term a) {
+      return switch (this) {
+        case Tuple $ -> new Tuple(f, a);
+        case App $ -> new App(f, a);
+      };
+    }
   }
+  record Tuple(@NotNull Term f, @NotNull Term a) implements Two {
+    @Override @NotNull public Term proj(boolean isOne) {return isOne ? f() : a();}
+  }
+  record App(@NotNull Term f, @NotNull Term a) implements Two {}
   record Proj(@NotNull Term t, boolean isOne) implements Term {}
   record Lam(@NotNull LocalVar x, @NotNull Term body) implements Term {}
 
@@ -39,24 +50,35 @@ public sealed interface Term extends Docile {
   }
   default @NotNull Term app(@NotNull Term... args) {
     var f = this;
-    for (var a : args) f = f instanceof Lam lam ? lam.body.subst(lam.x, a) : new Two(true, f, a);
+    for (var a : args) f = f instanceof Lam lam ? lam.body.subst(lam.x, a) : new App(f, a);
     return f;
   }
   default @NotNull Term proj(boolean isOne) {return new Proj(this, isOne);}
 
-  record DT(boolean isPi, @NotNull Param<Term> param, @NotNull Term cod) implements Term {
-    public @NotNull Term codomain(@NotNull Term term) {
-      return cod.subst(param.x(), term);
+  sealed interface DT extends Term {
+    @NotNull Param<Term> param();
+    @NotNull Term cod();
+    @NotNull default Term codomain(@NotNull Term term) {
+      return cod().subst(param().x(), term);
+    }
+    @NotNull default DT make(@NotNull Param<Term> param, @NotNull Term cod) {
+      return switch (this) {
+        case Pi $ -> new Pi(param, cod);
+        case Sigma $ -> new Sigma(param, cod);
+      };
     }
   }
 
+  record Pi(@NotNull Param<Term> param, @NotNull Term cod) implements DT {}
+  record Sigma(@NotNull Param<Term> param, @NotNull Term cod) implements DT {}
+
   static @NotNull Term mkPi(@NotNull ImmutableSeq<Param<Term>> telescope, @NotNull Term body) {
-    return telescope.view().foldRight(body, (param, term) -> new DT(true, param, term));
+    return telescope.view().foldRight(body, Pi::new);
   }
   static @NotNull Term mkPi(@NotNull Term dom, @NotNull Term cod) {
-    return new Term.DT(true, new Param<>(new LocalVar("_"), dom), cod);
+    return new Pi(new Param<>(new LocalVar("_"), dom), cod);
   }
-  @NotNull Term U = new UI(Keyword.U);
-  @NotNull Term I = new UI(Keyword.I);
-  record UI(@NotNull Keyword keyword) implements Term {}
+  @NotNull Term U = new Lit(Keyword.U);
+  @NotNull Term I = new Lit(Keyword.I);
+  record Lit(@NotNull Keyword keyword) implements Term {}
 }

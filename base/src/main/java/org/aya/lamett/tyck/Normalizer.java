@@ -21,14 +21,14 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.Ref ref -> rho.getOption(ref.var())
         .map(Normalizer::rename)
         .map(this::term).getOrDefault(ref);
-      case Term.UI u -> u;
+      case Term.Lit u -> u;
       case Term.Lam(var x, var body) -> new Term.Lam(x, term(body));
-      case Term.DT dt -> new Term.DT(dt.isPi(), param(dt.param()), term(dt.cod()));
+      case Term.DT dt -> dt.make(param(dt.param()), term(dt.cod()));
       case Term.Two two -> {
         var f = term(two.f());
         var a = term(two.a());
         // Either a tuple or a stuck term is preserved
-        if (!two.isApp() || !(f instanceof Term.Lam lam)) yield new Term.Two(two.isApp(), f, a);
+        if (two instanceof Term.Tuple || !(f instanceof Term.Lam lam)) yield two.make(f, a);
         rho.put(lam.x(), a);
         var body = term(lam.body());
         rho.remove(lam.x());
@@ -37,7 +37,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.Proj proj -> {
         var t = term(proj.t());
         if (!(t instanceof Term.Two tup)) yield new Term.Proj(t, proj.isOne());
-        assert !tup.isApp();
+        assert tup instanceof Term.Tuple;
         yield proj.isOne() ? tup.f() : tup.a();
       }
       case Term.FnCall call -> {
@@ -69,13 +69,13 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
           var param = param(lam.x());
           yield new Term.Lam(param, term(lam.body()));
         }
-        case Term.UI u -> u;
+        case Term.Lit u -> u;
         case Term.Ref ref -> new Term.Ref(vv(ref.var()));
         case Term.DT dt -> {
           var param = param(dt.param());
-          yield new Term.DT(dt.isPi(), param, term(dt.cod()));
+          yield dt.make(param, term(dt.cod()));
         }
-        case Term.Two two -> new Term.Two(two.isApp(), term(two.f()), term(two.a()));
+        case Term.Two two -> two.make(term(two.f()), term(two.a()));
         case Term.Proj proj -> new Term.Proj(term(proj.t()), proj.isOne());
         case Term.FnCall fnCall -> new Term.FnCall(fnCall.fn(), fnCall.args().map(this::term));
         case Term.ConCall conCall ->

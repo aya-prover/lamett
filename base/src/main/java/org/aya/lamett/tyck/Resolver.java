@@ -87,8 +87,8 @@ public record Resolver(@NotNull MutableMap<String, AnyVar> env) {
 
   public @NotNull Expr expr(@NotNull Expr expr) {
     return switch (expr) {
-      case Expr.DT dt -> new Expr.DT(dt.isPi(), dt.pos(), param(dt.param()), bodied(param(dt.param()).x(), dt.cod()));
-      case Expr.Two two -> new Expr.Two(two.isApp(), two.pos(), expr(two.f()), expr(two.a()));
+      case Expr.DT dt -> dt.make(dt.pos(), param(dt.param()), bodied(param(dt.param()).x(), dt.cod()));
+      case Expr.Two two -> two.make(two.pos(), expr(two.f()), expr(two.a()));
       case Expr.Lam lam -> new Expr.Lam(lam.pos(), lam.x(), bodied(lam.x(), lam.a()));
       case Expr.Kw primTy -> primTy;
       case Expr.Hole hole -> new Expr.Hole(hole.pos(),

@@ -82,7 +82,7 @@ public record LamettProducer(
         // r : Expr
         // Goal : l -> r
         // TODO: subpos
-        return new Expr.DT(true, pos, l, r);
+        return new Expr.Pi(pos, l, r);
       });
     }
 
@@ -102,7 +102,7 @@ public record LamettProducer(
       }
       var such = expr(node.child(EXPR));
 
-      return tele.foldRight(such, (l, r) -> new Expr.DT(false, pos, l, r));
+      return tele.foldRight(such, (l, r) -> new Expr.Sigma(pos, l, r));
     }
 
     if (node.is(LAMBDA_EXPR)) {
@@ -128,7 +128,7 @@ public record LamettProducer(
       var of = unnamedParam(app.get(0));
       var arg = expr(app.get(1));
 
-      return new Expr.DT(true, pos, of, arg);
+      return new Expr.Pi(pos, of, arg);
     }
 
     if (node.is(APP_EXPR)) {
@@ -136,7 +136,7 @@ public record LamettProducer(
       var of = expr(node.child(EXPR));
       var arg = node.childrenOfType(ARGUMENT).map(this::argument);
 
-      return arg.foldLeft(of, (l, r) -> new Expr.Two(true, pos, l, r));
+      return arg.foldLeft(of, (l, r) -> new Expr.App(pos, l, r));
     }
 
     if (node.is(PROJ_EXPR)) {
@@ -172,7 +172,7 @@ public record LamettProducer(
       // No unary tuples
       if (exprs.sizeEquals(1)) return exprs.first();
       // Now it is correct
-      return exprs.reduce((l, r) -> new Expr.Two(false, l.pos().union(r.pos()), l, r));
+      return exprs.reduce((l, r) -> new Expr.Tuple(l.pos().union(r.pos()), l, r));
     }
 
     if (node.is(PARTIAL_ATOM)) {

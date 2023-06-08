@@ -19,7 +19,7 @@ public class DeclsTest {
       """);
     akJr.sigma().valuesView().forEach(tycked -> {
       var body = ((Def.Fn) tycked).body();
-      assertTrue(akJr.normalize(body.getLeftValue()) instanceof Term.Two two && two.isApp());
+      assertTrue(akJr.normalize(body.getLeftValue()) instanceof Term.App $);
     });
   }
 

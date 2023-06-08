@@ -17,13 +17,13 @@ public class Unifier {
       case Term ll when r instanceof Term.Lam ram -> eta(ll, ram);
       case Term.Ref lref when r instanceof Term.Ref rref -> lref.var() == rref.var();
       case Term.Two lapp when r instanceof Term.Two rapp ->
-        lapp.isApp() == rapp.isApp() && untyped(lapp.f(), rapp.f()) && untyped(lapp.a(), rapp.a());
-      case Term.DT ldt when r instanceof Term.DT rdt -> ldt.isPi() == rdt.isPi()
+        lapp.getClass().equals(rapp.getClass()) && untyped(lapp.f(), rapp.f()) && untyped(lapp.a(), rapp.a());
+      case Term.DT ldt when r instanceof Term.DT rdt -> ldt.getClass().equals(rdt.getClass())
         && untyped(ldt.param().type(), rdt.param().type())
         && untyped(ldt.cod(), rhs(rdt.cod(), rdt.param().x(), ldt.param().x()));
       case Term.Proj lproj when r instanceof Term.Proj rproj ->
         lproj.isOne() == rproj.isOne() && untyped(lproj.t(), rproj.t());
-      case Term.UI lu when r instanceof Term.UI ru -> lu.keyword() == ru.keyword();
+      case Term.Lit lu when r instanceof Term.Lit ru -> lu.keyword() == ru.keyword();
       case Term.FnCall lcall when r instanceof Term.FnCall rcall -> lcall.fn() == rcall.fn()
         && unifySeq(lcall.args(), rcall.args());
       case Term.DataCall lcall when r instanceof Term.DataCall rcall -> lcall.fn() == rcall.fn()
