@@ -19,7 +19,7 @@ public interface Distiller {
   @FunctionalInterface
   interface PP<E> extends BiFunction<E, Prec, Doc> {}
   enum Prec {
-    Free, Cod, BinOp, UOp, AppHead, AppSpine, UOpSpine, ProjHead
+    Free, Cod, BinOp, BinOpSpine, UOp, AppHead, AppSpine, UOpSpine, ProjHead
   }
   static @NotNull Doc expr(@NotNull Expr expr, Prec envPrec) {
     return switch (expr) {
@@ -51,19 +51,19 @@ public interface Distiller {
         yield envPrec.ordinal() > UOp.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.CofibConj conj -> {
-        var doc = Doc.sep(expr(conj.lhs(), BinOp), Doc.plain("∧"), expr(conj.rhs(), BinOp));
+        var doc = Doc.sep(expr(conj.lhs(), BinOpSpine), Doc.plain("∧"), expr(conj.rhs(), BinOpSpine));
         yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.CofibDisj disj -> {
-        var doc = Doc.sep(expr(disj.lhs(), BinOp), Doc.plain("∨"), expr(disj.rhs(), BinOp));
+        var doc = Doc.sep(expr(disj.lhs(), BinOpSpine), Doc.plain("∨"), expr(disj.rhs(), BinOpSpine));
         yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.CofibEq eq -> {
-        var doc = Doc.sep(expr(eq.lhs(), BinOp), Doc.plain("="), expr(eq.rhs(), BinOp));
-        yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
+        var doc = Doc.sep(expr(eq.lhs(), Free), Doc.plain("="), expr(eq.rhs(), Free));
+        yield envPrec.ordinal() > BinOpSpine.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.CofibForall forall -> {
-        var doc = Doc.sep(Doc.plain("∀"), Doc.cat(Doc.plain(forall.i().name()), Doc.plain(".")), expr(forall.body(), Cod));
+        var doc = Doc.sep(Doc.plain("∀"), Doc.sep(Doc.plain(forall.i().name()), Doc.plain("=>")), expr(forall.body(), Cod));
         yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.Hole ignored -> Doc.symbol("_");

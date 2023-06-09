@@ -175,8 +175,8 @@ selfExpr ::= KW_SELF (AT weakId)?
 pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
 
 // Interval algebra
-ieqExpr ::= expr KW_IEQ expr
-iforallExpr ::= KW_IFORALL weakId+ IMPLIES expr
+ieqExpr ::= expr KW_EQ expr
+iforallExpr ::= KW_FORALL weakId+ IMPLIES expr
 inegExpr ::= KW_INEG expr
 conjExpr ::= expr KW_CONJ expr
 disjExpr ::= expr KW_DISJ expr

@@ -28,8 +28,7 @@ WHITE_SPACE=\s+
 KW_ULIFT=ulift|\u2191
 KW_SIGMA=Sig|\u03a3
 KW_FORALL=forall|\u2200
-KW_IFORALL=iforall|i\u2200
-KW_IEQ=ieq|i=|\u2261
+KW_EQ=eq|=
 KW_LAMBDA=fn|\u03bb
 KW_INEG=ineg|¬
 KW_DISJ="\\/"|\u2228
@@ -87,8 +86,7 @@ NUMBER=[0-9]+
   {KW_LAMBDA}         { return KW_LAMBDA; }
   {KW_SIGMA}          { return KW_SIGMA; }
   {KW_FORALL}         { return KW_FORALL; }
-  {KW_IFORALL}        { return KW_IFORALL; }
-  {KW_IEQ}            { return KW_IEQ; }
+  {KW_EQ}             { return KW_EQ; }
   {KW_DISJ}           { return KW_DISJ; }
   {KW_CONJ}           { return KW_CONJ; }
   {KW_INEG}           { return KW_INEG; }

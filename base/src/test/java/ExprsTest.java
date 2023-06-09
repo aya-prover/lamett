@@ -58,7 +58,7 @@ public class ExprsTest {
   }
 
   @Test public void cubicalCof() {
-    var artifact = tyck("i∀ i => i ≡ ¬ i", "F");
+    var artifact = tyck("∀ i => i = ¬ i", "F");
     assertNotNull(artifact);
   }
 

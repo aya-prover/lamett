@@ -145,8 +145,11 @@ public record LamettProducer(
       if (node.peekChild(KW_SET) != null) return new Expr.Kw(pos, Keyword.Set);
       if (node.peekChild(KW_INTERVAL) != null) return new Expr.Kw(pos, Keyword.I);
       if (node.peekChild(KW_F) != null) return new Expr.Kw(pos, Keyword.F);
-      // TODO: interval literals
-      if (node.peekChild(NUMBER) != null) return todo();
+      if (node.peekChild(NUMBER) != null) {
+        var text = node.child(NUMBER).tokenText();
+        if (text.contentEqualsIgnoreCase("1")) return new Expr.Kw(pos, Keyword.One);
+        if (text.contentEqualsIgnoreCase("0")) return new Expr.Kw(pos, Keyword.Zero);
+      }
 
       return unreachable(node);
     }
