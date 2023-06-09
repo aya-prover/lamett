@@ -45,6 +45,7 @@ NUMBER=[0-9]+
   "Set"               { return KW_SET; }
   "U"                 { return KW_TYPE; }
   "I"                 { return KW_INTERVAL; }
+  "F"                 { return KW_F; }
   "def"               { return KW_DEF; }
   "classifying"       { return KW_CLASSIFIYING; }
   "class"             { return KW_CLASS; }

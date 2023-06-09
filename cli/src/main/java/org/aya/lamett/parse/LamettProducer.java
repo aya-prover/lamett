@@ -144,6 +144,7 @@ public record LamettProducer(
       if (node.peekChild(KW_ISET) != null) return new Expr.Kw(pos, Keyword.ISet);
       if (node.peekChild(KW_SET) != null) return new Expr.Kw(pos, Keyword.Set);
       if (node.peekChild(KW_INTERVAL) != null) return new Expr.Kw(pos, Keyword.I);
+      if (node.peekChild(KW_F) != null) return new Expr.Kw(pos, Keyword.F);
       // TODO: interval literals
       if (node.peekChild(NUMBER) != null) return todo();
 

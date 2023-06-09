@@ -57,6 +57,11 @@ public class ExprsTest {
     assertNotNull(artifact);
   }
 
+  @Test public void cubicalCof() {
+    var artifact = tyck("i∀ i => i ≡ ¬ i", "F");
+    assertNotNull(artifact);
+  }
+
   private static @NotNull Term tyck(@Language("TEXT") String term, @Language("TEXT") String type) {
     var akJr = CliMain.andrasKovacs();
     var Id = akJr.synth(resolve(type));
