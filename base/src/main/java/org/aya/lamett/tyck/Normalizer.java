@@ -65,7 +65,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
 
   public Term.Cofib term(Term.Cofib cofib) {
     var unifier = new Unifier();
-    return new Term.Cofib(cofib.params(), cofib.conjs().mapNotNull(
+    return new Term.Cofib(ImmutableSeq.empty(), cofib.conjs().mapNotNull(
       conj -> {
         // empty is true, null is false
         var eqs = conj.eqs().foldLeft(ImmutableSeq.<Term.Cofib.Eq>empty(),
@@ -90,6 +90,8 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
               // now lhs is `i` or both is lit
               if (unifier.untyped(lhs, rhs)) return acc;
               if (unifier.untyped(lhs, rhs.neg())) return null;
+              // now lhs must be `i`
+              if (cofib.params().contains(((Term.Ref) lhs).var())) return null;
               return acc.appended(new Term.Cofib.Eq(lhs, rhs));
             }
           }

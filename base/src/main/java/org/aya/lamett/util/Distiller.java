@@ -63,7 +63,7 @@ public interface Distiller {
         yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.CofibForall forall -> {
-        var doc = Doc.sep(Doc.plain("∀"), Doc.cat(expr(forall.i(), Free), Doc.plain(".")), expr(forall.body(), Cod));
+        var doc = Doc.sep(Doc.plain("∀"), Doc.cat(Doc.plain(forall.i().name()), Doc.plain(".")), expr(forall.body(), Cod));
         yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.Hole ignored -> Doc.symbol("_");
@@ -111,8 +111,8 @@ public interface Distiller {
         var inner = cofib.conjs().map(
           conj -> conj.eqs()
             .map(eq -> Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp)))
-            .fold(Doc.empty(), (doc1, doc2) -> Doc.sep(doc1, Doc.plain("∧"), doc2))
-        ).fold(Doc.empty(), (doc1, doc2) -> Doc.sep(Doc.parened(doc1), Doc.plain("∨"), Doc.parened(doc2)));
+            .fold(Doc.empty(), (doc1, doc2) -> doc1.isEmpty() ? doc2 : Doc.sep(doc1, Doc.plain("∧"), doc2))
+        ).fold(Doc.empty(), (doc1, doc2) -> doc1.isEmpty() ? doc2 : Doc.sep(Doc.parened(doc1), Doc.plain("∨"), Doc.parened(doc2)));
         var snd = cofib.isFalse() ? Doc.plain("⊥") :
           cofib.isTrue() ? Doc.plain("⊤") :
             fst.isNotEmpty() ? Doc.parened(inner) : inner;

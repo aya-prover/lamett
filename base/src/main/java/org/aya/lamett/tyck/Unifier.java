@@ -9,7 +9,7 @@ public class Unifier {
   public record FailureData(@NotNull Term l, @NotNull Term r) {}
   public FailureData data;
 
-  boolean untyped(@NotNull Term l, @NotNull Term r) {
+  public boolean untyped(@NotNull Term l, @NotNull Term r) {
     if (l == r) return true;
     var happy = switch (l) {
       case Term.Lam lam when r instanceof Term.Lam ram -> untyped(lam.body(), rhs(ram.body(), ram.x(), lam.x()));

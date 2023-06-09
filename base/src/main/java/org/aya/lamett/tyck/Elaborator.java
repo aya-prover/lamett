@@ -174,25 +174,22 @@ public record Elaborator(
     return switch (expr) {
       case Expr.CofibEq eq -> {
         var lhs = inherit(eq.lhs(), Term.I);
-        var rhs = inherit(eq.lhs(), Term.I);
+        var rhs = inherit(eq.rhs(), Term.I);
         yield Term.Cofib.eq(lhs, rhs);
       }
       case Expr.CofibConj conj -> {
         var lhs = checkCofib(conj.lhs());
-        var rhs = checkCofib(conj.lhs());
+        var rhs = checkCofib(conj.rhs());
         yield lhs.conj(rhs);
       }
       case Expr.CofibDisj disj -> {
         var lhs = checkCofib(disj.lhs());
-        var rhs = checkCofib(disj.lhs());
+        var rhs = checkCofib(disj.rhs());
         yield lhs.disj(rhs);
       }
       case Expr.CofibForall forall -> {
-        var i = inherit(forall.i(), Term.I);
         var phi = checkCofib(forall.body());
-        if (i instanceof Term.Ref ref && ref.var() instanceof LocalVar loc)
-          yield phi.forall(loc);
-        else throw new SPE(forall.pos(), Doc.english("Expected a local variable, got"), i);
+        yield phi.forall(forall.i());
       }
       default -> throw new SPE(expr.pos(), Doc.english("Expected a cofibration, got"), expr);
     };

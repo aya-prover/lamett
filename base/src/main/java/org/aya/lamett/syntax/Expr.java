@@ -35,7 +35,7 @@ public sealed interface Expr extends Docile {
   record Sigma(@Override @NotNull SourcePos pos, Param<Expr> param, Expr cod) implements DT {}
 
   sealed interface Cofib extends Expr {}
-  record CofibForall(@Override @NotNull SourcePos pos, Expr i, Expr body) implements Cofib {}
+  record CofibForall(@Override @NotNull SourcePos pos, LocalVar i, Expr body) implements Cofib {}
   record CofibConj(@Override @NotNull SourcePos pos, Expr lhs, Expr rhs) implements Cofib {}
   record CofibDisj(@Override @NotNull SourcePos pos, Expr lhs, Expr rhs) implements Cofib {}
   record CofibEq(@Override @NotNull SourcePos pos, Expr lhs, Expr rhs) implements Cofib {}
