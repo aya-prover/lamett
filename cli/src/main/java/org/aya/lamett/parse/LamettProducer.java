@@ -57,19 +57,6 @@ public record LamettProducer(
   }
 
   public @NotNull Expr expr(@NotNull GenericNode<?> node) {
-    // expr ::= newExpr
-    //   | piExpr
-    //   | forallExpr
-    //   | sigmaExpr
-    //   | lambdaExpr
-    //   | selfExpr
-    //   | pathExpr
-    //   | atomExpr
-    //   | arrowExpr
-    //   | appExpr
-    //   | projExpr
-    // literal ::= refExpr | holeExpr | univExpr
-
     var pos = sourcePosOf(node);
     if (node.is(NEW_EXPR)) return todo();
     if (node.is(PI_EXPR)) {
@@ -88,7 +75,6 @@ public record LamettProducer(
 
     if (node.is(FORALL_EXPR)) {
       // forallExpr ::= KW_FORALL lambdaTele+ TO expr
-
       var tele = lambdaTelescopeOf(node);
       var expr = expr(node.child(EXPR));
       return tele.scope().foldRight(expr, (l, r) -> new Expr.Lam(pos, l.x(), r));
@@ -135,15 +121,12 @@ public record LamettProducer(
       // appExpr ::= expr argument+
       var of = expr(node.child(EXPR));
       var arg = node.childrenOfType(ARGUMENT).map(this::argument);
-
       return arg.foldLeft(of, (l, r) -> new Expr.App(pos, l, r));
     }
 
     if (node.is(PROJ_EXPR)) {
       // projExpr ::= expr projFix
-      var expr = node.child(EXPR);
-      var proj = node.child(PROJ_FIX);
-      return projFix(expr(expr), pos, proj);
+      return projFix(expr(node.child(EXPR)), pos, node.child(PROJ_FIX));
     }
 
     if (node.is(REF_EXPR)) {
@@ -158,13 +141,16 @@ public record LamettProducer(
     if (node.is(CONST_EXPR)) {
       // constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL
       if (node.peekChild(KW_TYPE) != null) return new Expr.Kw(pos, Keyword.U);
-      if (node.peekChild(KW_ISET) != null) return todo();
+      if (node.peekChild(KW_ISET) != null) return new Expr.Kw(pos, Keyword.ISet);
+      if (node.peekChild(KW_SET) != null) return new Expr.Kw(pos, Keyword.Set);
+      if (node.peekChild(KW_INTERVAL) != null) return new Expr.Kw(pos, Keyword.I);
+      // TODO: interval literals
+      if (node.peekChild(NUMBER) != null) return todo();
 
       return unreachable(node);
     }
 
     /// region atomExpr
-
     if (node.is(TUPLE_ATOM)) {
       // tupleAtom ::= LPAREN exprList RPAREN
       var exprs = exprListOf(node);
@@ -177,8 +163,34 @@ public record LamettProducer(
     if (node.is(PARTIAL_ATOM)) {
       return todo();
     }
-
     /// endregion atomExpr
+
+    /// region cubical cofibration
+    if (node.is(IFORALL_EXPR)) {
+      var ids = node.childrenOfType(WEAK_ID).map(i -> new LocalVar(i.tokenText().toString()));
+      var expr = expr(node.child(EXPR));
+      return ids.foldRight(expr, (l, r) -> new Expr.CofibForall(pos, l, r));
+    }
+
+    if (node.is(IEQ_EXPR)) {
+      var exprs = node.childrenOfType(EXPR).map(this::expr);
+      assert exprs.sizeEquals(2);
+      return new Expr.CofibEq(pos, exprs.get(0), exprs.get(1));
+    }
+
+    if (node.is(DISJ_EXPR)) {
+      var exprs = node.childrenOfType(EXPR).map(this::expr);
+      assert exprs.sizeEquals(2);
+      return new Expr.CofibDisj(pos, exprs.get(0), exprs.get(1));
+    }
+
+    if (node.is(CONJ_EXPR)) {
+      var exprs = node.childrenOfType(EXPR).map(this::expr);
+      assert exprs.sizeEquals(2);
+      return new Expr.CofibConj(pos, exprs.get(0), exprs.get(1));
+    }
+    /// endregion cubical cofibration
+
     return unreachable(node);
   }
 
@@ -246,7 +258,8 @@ public record LamettProducer(
     return new Decl.Fn(new DefVar<>(id.data()), tele, type, fnBody);
   }
 
-  public @Nullable Either<Expr, Either<Pat.ClauseSet<Expr>, ImmutableSeq<Pat.UnresolvedClause>>> fnBody(@NotNull GenericNode<?> node) {
+  public @Nullable Either<Expr, Either<Pat.ClauseSet<Expr>, ImmutableSeq<Pat.UnresolvedClause>>>
+  fnBody(@NotNull GenericNode<?> node) {
     var expr = node.peekChild(EXPR);
     var implies = node.peekChild(IMPLIES);
     if (expr == null && implies != null) return error(implies, "Expect function body");

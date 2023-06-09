@@ -212,7 +212,7 @@ calmFaceExpr ::= CALM_FACE
 
 goalExpr ::= LGOAL expr? RGOAL
 refExpr ::= weakId
-constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL
+constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER
 
 // tele is always typed
 tele ::= literal | <<paren teleBinder>>

@@ -94,6 +94,8 @@ public record Elaborator(
       case Expr.Kw(var $, var kw) when
         kw == Keyword.F ||
           kw == Keyword.U ||
+          kw == Keyword.ISet ||
+          kw == Keyword.Set ||
           kw == Keyword.I -> new Synth(new Term.Lit(kw), Term.U);
       case Expr.Kw(var $, var kw) when
         kw == Keyword.Zero ||
