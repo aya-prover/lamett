@@ -160,11 +160,6 @@ public record Elaborator(
         var t = inherit(neg.body(), Term.I);
         yield new Synth(new Term.INeg(t), Term.I);
       }
-      case Expr.CofibEq eq -> {
-        var lhs = inherit(eq.lhs(), Term.I);
-        var rhs = inherit(eq.lhs(), Term.I);
-        yield new Synth(Term.Cofib.eq(lhs, rhs), Term.F);
-      }
       case Expr.Cofib cofib -> new Synth(checkCofib(cofib), Term.F);
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };
