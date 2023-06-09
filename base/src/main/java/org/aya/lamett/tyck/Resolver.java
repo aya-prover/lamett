@@ -104,7 +104,7 @@ public record Resolver(@NotNull MutableMap<String, AnyVar> env) {
       case Expr.CofibEq eq -> new Expr.CofibEq(eq.pos(), expr(eq.lhs()), expr(eq.rhs()));
       case Expr.CofibConj eq -> new Expr.CofibConj(eq.pos(), expr(eq.lhs()), expr(eq.rhs()));
       case Expr.CofibDisj eq -> new Expr.CofibDisj(eq.pos(), expr(eq.lhs()), expr(eq.rhs()));
-      case Expr.CofibForall eq -> new Expr.CofibForall(eq.pos(), eq.i(), expr(eq.body()));
+      case Expr.CofibForall eq -> new Expr.CofibForall(eq.pos(), eq.i(), bodied(eq.i(), eq.body()));
     };
   }
 

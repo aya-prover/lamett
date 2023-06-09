@@ -125,7 +125,7 @@ public record Elaborator(
         }
         case LocalVar loc -> new Synth(new Term.Ref(loc), gamma.get(loc));
       };
-      case Expr.Proj (var pos, var t, var isOne) -> {
+      case Expr.Proj(var pos, var t, var isOne) -> {
         var t_ = synth(t);
         if (!(t_.type instanceof Term.Sigma dt))
           throw new SPE(pos, Doc.english("Expects a left adjoint, got"), t_.type);
@@ -190,7 +190,7 @@ public record Elaborator(
         yield lhs.disj(rhs);
       }
       case Expr.CofibForall forall -> {
-        var phi = checkCofib(forall.body());
+        var phi = hof(forall.i(), Term.I, () -> checkCofib(forall.body()));
         yield phi.forall(forall.i());
       }
       default -> throw new SPE(expr.pos(), Doc.english("Expected a cofibration, got"), expr);
