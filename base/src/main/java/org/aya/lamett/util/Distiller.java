@@ -28,8 +28,8 @@ public interface Distiller {
         var inner = Doc.sep(expr(two.f(), AppHead), expr(two.a(), AppSpine));
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(inner) : inner;
       }
-      case Expr.Tuple two -> Doc.wrap("<<", ">>",
-        Doc.commaList(Seq.of(expr(two.f(), Free), expr(two.a(), Free))));
+      case Expr.Pair two -> Doc.wrap("<<", ">>",
+        Doc.commaList(Seq.of(expr(two.a(), Free), expr(two.b(), Free))));
       case Expr.Lam lam -> {
         var doc = Doc.sep(
           Doc.plain("fn"),

@@ -35,11 +35,11 @@ public record Elaborator(
         else throw new SPE(lam.pos(),
           Doc.english("Expects a right adjoint for"), expr, Doc.plain("got"), type);
       }
-      case Expr.Tuple two -> {
+      case Expr.Pair two -> {
         if (!(normalize(type) instanceof Term.Sigma dt)) throw new SPE(two.pos(),
           Doc.english("Expects a left adjoint for"), expr, Doc.plain("got"), type);
-        var lhs = inherit(two.f(), dt.param().type());
-        yield new Term.Tuple(lhs, inherit(two.a(), dt.codomain(lhs)));
+        var lhs = inherit(two.a(), dt.param().type());
+        yield new Term.Tuple(lhs, inherit(two.b(), dt.codomain(lhs)));
       }
       case Expr.Hole hole -> {
         var docs = MutableList.<Doc>create();
@@ -90,8 +90,7 @@ public record Elaborator(
 
   public Synth synth(Expr expr) {
     var synth = switch (expr) {
-      case Expr.Unresolved unresolved ->
-        throw new InternalError("Unresolved expr: " + unresolved);
+      case Expr.Unresolved unresolved -> throw new InternalError("Unresolved expr: " + unresolved);
       case Expr.Kw(var $, var kw) when
         kw == Keyword.F ||
           kw == Keyword.U ||
@@ -124,26 +123,26 @@ public record Elaborator(
         }
         case LocalVar loc -> new Synth(new Term.Ref(loc), gamma.get(loc));
       };
-      case Expr.Proj proj -> {
-        var t = synth(proj.t());
-        if (!(t.type instanceof Term.Sigma dt))
-          throw new SPE(proj.pos(), Doc.english("Expects a left adjoint, got"), t.type);
-        var fst = t.wellTyped.proj(true);
-        if (proj.isOne()) yield new Synth(fst, dt.param().type());
-        yield new Synth(t.wellTyped.proj(false), dt.codomain(fst));
+      case Expr.Proj (var pos, var t, var isOne) -> {
+        var t_ = synth(t);
+        if (!(t_.type instanceof Term.Sigma dt))
+          throw new SPE(pos, Doc.english("Expects a left adjoint, got"), t_.type);
+        var fst = t_.wellTyped.proj(true);
+        if (isOne) yield new Synth(fst, dt.param().type());
+        yield new Synth(t_.wellTyped.proj(false), dt.codomain(fst));
       }
-      case Expr.Two two -> {
+      case Expr.App two -> {
         var f = synth(two.f());
-        if (two instanceof Expr.App) {
-          if (!(f.type instanceof Term.Pi dt))
-            throw new SPE(two.pos(), Doc.english("Expects pi, got"), f.type, Doc.plain("when checking"), two);
-          var a = hof(dt.param().x(), dt.param().type(), () -> inherit(two.a(), dt.param().type()));
-          yield new Synth(f.wellTyped.app(a), dt.codomain(a));
-        } else {
-          var a = synth(two.a());
-          yield new Synth(new Term.Tuple(f.wellTyped, a.wellTyped),
-            new Term.Sigma(new Param<>(new LocalVar("_"), f.type), a.type));
-        }
+        if (!(f.type instanceof Term.Pi dt))
+          throw new SPE(two.pos(), Doc.english("Expects pi, got"), f.type, Doc.plain("when checking"), two);
+        var a = hof(dt.param().x(), dt.param().type(), () -> inherit(two.a(), dt.param().type()));
+        yield new Synth(f.wellTyped.app(a), dt.codomain(a));
+      }
+      case Expr.Pair two -> {
+        var a = synth(two.a());
+        var b = synth(two.b());
+        yield new Synth(new Term.Tuple(b.wellTyped, a.wellTyped),
+          new Term.Sigma(new Param<>(new LocalVar("_"), b.type), a.type));
       }
       case Expr.DT dt -> {
         var param = synth(dt.param().type());

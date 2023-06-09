@@ -171,7 +171,7 @@ public record LamettProducer(
       // No unary tuples
       if (exprs.sizeEquals(1)) return exprs.first();
       // Now it is correct
-      return exprs.reduceRight((l, r) -> new Expr.Tuple(l.pos().union(r.pos()), l, r));
+      return exprs.reduceRight((l, r) -> new Expr.Pair(l.pos().union(r.pos()), l, r));
     }
 
     if (node.is(PARTIAL_ATOM)) {
