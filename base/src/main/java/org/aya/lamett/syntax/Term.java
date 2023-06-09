@@ -80,5 +80,59 @@ public sealed interface Term extends Docile {
   }
   @NotNull Term U = new Lit(Keyword.U);
   @NotNull Term I = new Lit(Keyword.I);
-  record Lit(@NotNull Keyword keyword) implements Term {}
+  @NotNull Term F = new Lit(Keyword.F);
+  @NotNull Term One = new Lit(Keyword.One);
+  @NotNull Term Zero = new Lit(Keyword.Zero);
+  record Lit(@NotNull Keyword keyword) implements Term  {
+    @NotNull public Term neg() {
+      return switch (keyword) {
+        case One -> Zero;
+        case Zero -> One;
+        default -> throw new InternalError(keyword.name() + " can't be negated");
+      };
+    }
+  }
+
+  record Cofib(@NotNull ImmutableSeq<LocalVar> params, @NotNull ImmutableSeq<Conj> conjs) implements Term {
+    public @NotNull Cofib forall(@NotNull LocalVar i) {
+      return new Cofib(params.appended(i), conjs);
+    }
+    public @NotNull Cofib disj(@NotNull Cofib cofib) {
+      return new Cofib(params.appendedAll(cofib.params), conjs.appendedAll(cofib.conjs));
+    }
+    public @NotNull Cofib conj(@NotNull Cofib cofib) {
+      return new Cofib(params.appendedAll(cofib.params),
+        conjs.flatMap(conj -> cofib.conjs.map(conj2 -> new Conj(conj.eqs.appendedAll(conj2.eqs)))));
+    }
+    static public @NotNull Cofib eq(@NotNull Term lhs, @NotNull Term rhs) {
+      return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.of(new Eq(lhs, rhs)))));
+    }
+    public boolean isTrue() {
+      return !isFalse() && conjs.allMatch(conj -> conj.eqs.isEmpty());
+    }
+    public boolean isFalse() {
+      return conjs.isEmpty();
+    }
+    public record Conj(@NotNull ImmutableSeq<Eq> eqs) {
+      public MutableMap<LocalVar, Term> whnfToSubst() {
+        var map = MutableMap.<LocalVar, Term>create();
+        for (var eq : eqs) {
+          if (eq.lhs instanceof Ref ref) map.put(ref.var, eq.rhs);
+          else throw new InternalError("`whnfToSubst` only takes a conjunction in whnf");
+        }
+        return map;
+      }
+    }
+    public record Eq(@NotNull Term lhs, @NotNull Term rhs) {}
+  }
+
+  record INeg(@NotNull Term body) implements Term {
+    @NotNull public Term neg() {
+      return body;
+    }
+  }
+
+  @NotNull default Term neg() {
+    return new INeg(this);
+  }
 }

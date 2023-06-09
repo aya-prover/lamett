@@ -53,8 +53,50 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.ConCall conCall -> new Term.ConCall(conCall.fn(),
         conCall.args().map(this::term), conCall.dataArgs().map(this::term));
       case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
+      case Term.INeg t -> switch (t.body()) {
+        case Term.INeg t2 -> term(t2.body());
+        case Term.Lit lit -> lit.neg();
+        default -> t;
+      };
+      case Term.Cofib cofib -> term(cofib);
       case Term.Error error -> error;
     };
+  }
+
+  public Term.Cofib term(Term.Cofib cofib) {
+    var unifier = new Unifier();
+    return new Term.Cofib(cofib.params(), cofib.conjs().mapNotNull(
+      conj -> {
+        // empty is true, null is false
+        var eqs = conj.eqs().foldLeft(ImmutableSeq.<Term.Cofib.Eq>empty(),
+          (acc, eq) -> {
+            if (acc == null) {
+              return null;
+            } else {
+              var lhs = term(eq.lhs());
+              var rhs = term(eq.rhs());
+              if (lhs instanceof Term.INeg && rhs instanceof Term.INeg) {
+                lhs = lhs.neg();
+                rhs = rhs.neg();
+              } else if (lhs instanceof Term.Lit && !(rhs instanceof Term.Lit)) {
+                var tmp = lhs;
+                lhs = rhs;
+                rhs = tmp;
+                if (lhs instanceof Term.INeg) {
+                  lhs = lhs.neg();
+                  rhs = rhs.neg();
+                }
+              }
+              // now lhs is `i` or both is lit
+              if (unifier.untyped(lhs, rhs)) return acc;
+              if (unifier.untyped(lhs, rhs.neg())) return null;
+              return acc.appended(new Term.Cofib.Eq(lhs, rhs));
+            }
+          }
+        );
+        return eqs == null ? null : new Term.Cofib.Conj(eqs);
+      }
+    ));
   }
 
   public @NotNull Normalizer derive() {
@@ -81,6 +123,15 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         case Term.ConCall conCall ->
           new Term.ConCall(conCall.fn(), conCall.args().map(this::term), conCall.dataArgs().map(this::term));
         case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
+        case Term.Cofib cofib -> {
+          var params = cofib.params().map(this::param);
+          yield new Term.Cofib(params, cofib.conjs().map(
+            conj -> new Term.Cofib.Conj(conj.eqs().map(
+              eq -> new Term.Cofib.Eq(term(eq.lhs()), term(eq.rhs()))
+            ))
+          ));
+        }
+        case Term.INeg t -> new Term.INeg(term(t));
         case Term.Error error -> error;
       };
     }

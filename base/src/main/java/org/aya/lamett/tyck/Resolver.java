@@ -98,6 +98,11 @@ public record Resolver(@NotNull MutableMap<String, AnyVar> env) {
         .getOrThrow(() -> new SPE(unresolved.pos(), Doc.english("Unresolved: " + unresolved.name())));
       case Expr.Resolved resolved -> resolved;
       case Expr.Proj proj -> new Expr.Proj(proj.pos(), expr(proj.t()), proj.isOne());
+      case Expr.INeg neg -> new Expr.INeg(neg.pos(), expr(neg.body()));
+      case Expr.CofibEq eq -> new Expr.CofibEq(eq.pos(), expr(eq.lhs()), expr(eq.rhs()));
+      case Expr.CofibConj eq -> new Expr.CofibConj(eq.pos(), expr(eq.lhs()), expr(eq.rhs()));
+      case Expr.CofibDisj eq -> new Expr.CofibDisj(eq.pos(), expr(eq.lhs()), expr(eq.rhs()));
+      case Expr.CofibForall eq -> new Expr.CofibForall(eq.pos(), expr(eq.i()), expr(eq.body()));
     };
   }
 

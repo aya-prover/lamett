@@ -31,11 +31,17 @@ public class Unifier {
       // We probably won't need to compare dataArgs cus the two sides of conversion should be of the same type
       case Term.ConCall lcall when r instanceof Term.ConCall rcall -> lcall.fn() == rcall.fn()
         && unifySeq(lcall.args(), rcall.args());
+      case Term.INeg lineg when r instanceof Term.INeg rineg -> lineg.body() == rineg.body();
+      case Term.Cofib lphi when r instanceof Term.Cofib rphi -> cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
       default -> false;
     };
     if (!happy && data == null)
       data = new FailureData(l, r);
     return happy;
+  }
+
+  boolean cofibImply(@NotNull Term.Cofib p, @NotNull Term.Cofib q) {
+    return p.conjs().allMatch(conj -> new Normalizer(conj.whnfToSubst()).term(q).isTrue());
   }
 
   private boolean unifySeq(@NotNull ImmutableSeq<Term> l, @NotNull ImmutableSeq<Term> r) {

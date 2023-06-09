@@ -155,10 +155,48 @@ public record Elaborator(
             : new Term.Sigma(new Param<>(x, param.wellTyped), cod.wellTyped),
           cod.type);
       }
+      case Expr.INeg neg -> {
+        var t = inherit(neg.body(), Term.I);
+        yield new Synth(new Term.INeg(t), Term.I);
+      }
+      case Expr.CofibEq eq -> {
+        var lhs = inherit(eq.lhs(), Term.I);
+        var rhs = inherit(eq.lhs(), Term.I);
+        yield new Synth(Term.Cofib.eq(lhs, rhs), Term.F);
+      }
+      case Expr.Cofib cofib -> new Synth(checkCofib(cofib), Term.F);
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };
     var type = normalize(synth.type);
     return new Synth(synth.wellTyped, type);
+  }
+
+  public Term.Cofib checkCofib(Expr expr) {
+    return switch (expr) {
+      case Expr.CofibEq eq -> {
+        var lhs = inherit(eq.lhs(), Term.I);
+        var rhs = inherit(eq.lhs(), Term.I);
+        yield Term.Cofib.eq(lhs, rhs);
+      }
+      case Expr.CofibConj conj -> {
+        var lhs = checkCofib(conj.lhs());
+        var rhs = checkCofib(conj.lhs());
+        yield lhs.conj(rhs);
+      }
+      case Expr.CofibDisj disj -> {
+        var lhs = checkCofib(disj.lhs());
+        var rhs = checkCofib(disj.lhs());
+        yield lhs.disj(rhs);
+      }
+      case Expr.CofibForall forall -> {
+        var i = inherit(forall.i(), Term.I);
+        var phi = checkCofib(forall.body());
+        if (i instanceof Term.Ref ref && ref.var() instanceof LocalVar loc)
+          yield phi.forall(loc);
+        else throw new SPE(forall.pos(), Doc.english("Expected a local variable, got"), i);
+      }
+      default -> throw new SPE(expr.pos(), Doc.english("Expected a cofibration, got"), expr);
+    };
   }
 
   @SuppressWarnings("unchecked") private static Term mkCall(DefVar<?> defv, Def.Signature sig) {

@@ -19,7 +19,7 @@ public interface Distiller {
   @FunctionalInterface
   interface PP<E> extends BiFunction<E, Prec, Doc> {}
   enum Prec {
-    Free, Cod, AppHead, AppSpine, ProjHead
+    Free, Cod, BinOp, UOp, AppHead, AppSpine, UOpSpine, ProjHead
   }
   static @NotNull Doc expr(@NotNull Expr expr, Prec envPrec) {
     return switch (expr) {
@@ -45,6 +45,26 @@ public interface Distiller {
       case Expr.DT dt -> {
         var doc = dependentType(dt instanceof Expr.Pi, dt.param(), expr(dt.cod(), Cod));
         yield envPrec.ordinal() > Cod.ordinal() ? Doc.parened(doc) : doc;
+      }
+      case Expr.INeg neg -> {
+        var doc = Doc.sep(Doc.symbol("¬"), expr(neg.body(), UOpSpine));
+        yield envPrec.ordinal() > UOp.ordinal() ? Doc.parened(doc) : doc;
+      }
+      case Expr.CofibConj conj -> {
+        var doc = Doc.sep(expr(conj.lhs(), BinOp), Doc.plain("∧"), expr(conj.rhs(), BinOp));
+        yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
+      }
+      case Expr.CofibDisj disj -> {
+        var doc = Doc.sep(expr(disj.lhs(), BinOp), Doc.plain("∨"), expr(disj.rhs(), BinOp));
+        yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
+      }
+      case Expr.CofibEq eq -> {
+        var doc = Doc.sep(expr(eq.lhs(), BinOp), Doc.plain("="), expr(eq.rhs(), BinOp));
+        yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
+      }
+      case Expr.CofibForall forall -> {
+        var doc = Doc.sep(Doc.plain("∀"), Doc.cat(expr(forall.i(), Free), Doc.plain(".")), expr(forall.body(), Cod));
+        yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.Hole ignored -> Doc.symbol("_");
     };
@@ -81,6 +101,23 @@ public interface Distiller {
       case Term.FnCall fnCall -> call(envPrec, fnCall.args().view(), fnCall.fn());
       case Term.ConCall conCall -> call(envPrec, conCall.args().view(), conCall.fn());
       case Term.DataCall dataCall -> call(envPrec, dataCall.args().view(), dataCall.fn());
+      case Term.INeg neg -> Doc.sep(Doc.symbol("¬"), term(neg.body(), UOpSpine));
+      case Term.Cofib cofib -> {
+        var fst = cofib.params().isNotEmpty()
+          ? Doc.sep(
+              Doc.plain("∀"),
+              Doc.cat(cofib.params().map(var -> Doc.plain(var.name())).fold(Doc.empty(), Doc::sep), Doc.plain(".")))
+          : Doc.empty();
+        var inner = cofib.conjs().map(
+          conj -> conj.eqs()
+            .map(eq -> Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp)))
+            .fold(Doc.empty(), (doc1, doc2) -> Doc.sep(doc1, Doc.plain("∧"), doc2))
+        ).fold(Doc.empty(), (doc1, doc2) -> Doc.sep(Doc.parened(doc1), Doc.plain("∨"), Doc.parened(doc2)));
+        var snd = cofib.isFalse() ? Doc.plain("⊥") :
+          cofib.isTrue() ? Doc.plain("⊤") :
+            fst.isNotEmpty() ? Doc.parened(inner) : inner;
+        yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(Doc.sep(fst, snd)) : Doc.sep(fst, snd);
+      }
       case Term.Error(var msg) -> Doc.plain(msg);
     };
   }
