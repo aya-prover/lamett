@@ -31,6 +31,7 @@ KW_FORALL=forall|\u2200
 KW_IFORALL=iforall|i\u2200
 KW_IEQ=ieq|i=|\u2261
 KW_LAMBDA=fn|\u03bb
+KW_INEG=ineg|¬
 KW_DISJ="\\/"|\u2228
 KW_CONJ="/\\"|\u2227
 ID=[a-zA-Z_][a-zA-Z0-9_'-]*
@@ -89,6 +90,7 @@ NUMBER=[0-9]+
   {KW_IEQ}            { return KW_IEQ; }
   {KW_DISJ}           { return KW_DISJ; }
   {KW_CONJ}           { return KW_CONJ; }
+  {KW_INEG}           { return KW_INEG; }
   {ID}                { return ID; }
   {NUMBER}            { return NUMBER; }
 }

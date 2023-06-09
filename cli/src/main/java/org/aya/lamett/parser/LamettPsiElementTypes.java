@@ -33,6 +33,7 @@ public interface LamettPsiElementTypes {
   IElementType HOLE_EXPR = new LamettPsiElementType("HOLE_EXPR");
   IElementType IEQ_EXPR = new LamettPsiElementType("IEQ_EXPR");
   IElementType IFORALL_EXPR = new LamettPsiElementType("IFORALL_EXPR");
+  IElementType INEG_EXPR = new LamettPsiElementType("INEG_EXPR");
   IElementType LAMBDA_EXPR = new LamettPsiElementType("LAMBDA_EXPR");
   IElementType LAMBDA_TELE = new LamettPsiElementType("LAMBDA_TELE");
   IElementType LAMBDA_TELE_BINDER = new LamettPsiElementType("LAMBDA_TELE_BINDER");
@@ -86,6 +87,7 @@ public interface LamettPsiElementTypes {
   IElementType KW_FORALL = new LamettPsiTokenType("KW_FORALL");
   IElementType KW_IEQ = new LamettPsiTokenType("KW_IEQ");
   IElementType KW_IFORALL = new LamettPsiTokenType("KW_IFORALL");
+  IElementType KW_INEG = new LamettPsiTokenType("KW_INEG");
   IElementType KW_INTERVAL = new LamettPsiTokenType("KW_INTERVAL");
   IElementType KW_ISET = new LamettPsiTokenType("ISet");
   IElementType KW_LAMBDA = new LamettPsiTokenType("fn");

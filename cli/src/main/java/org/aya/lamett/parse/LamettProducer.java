@@ -189,6 +189,8 @@ public record LamettProducer(
       assert exprs.sizeEquals(2);
       return new Expr.CofibConj(pos, exprs.get(0), exprs.get(1));
     }
+
+    if (node.is(INEG_EXPR)) return new Expr.INeg(pos, expr(node.child(EXPR)));
     /// endregion cubical cofibration
 
     return unreachable(node);

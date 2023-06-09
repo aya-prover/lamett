@@ -41,9 +41,10 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     create_token_set_(APP_EXPR, ARROW_EXPR, ATOM_EXPR, CALM_FACE_EXPR,
       CONJ_EXPR, CONST_EXPR, DISJ_EXPR, EXPR,
       FORALL_EXPR, GOAL_EXPR, HOLE_EXPR, IEQ_EXPR,
-      IFORALL_EXPR, LAMBDA_EXPR, LITERAL, NEW_EXPR,
-      PARTIAL_ATOM, PATH_EXPR, PI_EXPR, PROJ_EXPR,
-      REF_EXPR, SELF_EXPR, SIGMA_EXPR, TUPLE_ATOM),
+      IFORALL_EXPR, INEG_EXPR, LAMBDA_EXPR, LITERAL,
+      NEW_EXPR, PARTIAL_ATOM, PATH_EXPR, PI_EXPR,
+      PROJ_EXPR, REF_EXPR, SELF_EXPR, SIGMA_EXPR,
+      TUPLE_ATOM),
   };
 
   /* ********************************************************** */
@@ -1029,15 +1030,16 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   // 3: PREFIX(sigmaExpr)
   // 4: ATOM(lambdaExpr)
   // 5: PREFIX(iforallExpr)
-  // 6: ATOM(selfExpr)
-  // 7: PREFIX(pathExpr)
-  // 8: ATOM(atomExpr)
-  // 9: BINARY(arrowExpr)
-  // 10: POSTFIX(appExpr)
-  // 11: POSTFIX(projExpr)
-  // 12: BINARY(ieqExpr)
-  // 13: BINARY(conjExpr)
-  // 14: BINARY(disjExpr)
+  // 6: PREFIX(inegExpr)
+  // 7: ATOM(selfExpr)
+  // 8: PREFIX(pathExpr)
+  // 9: ATOM(atomExpr)
+  // 10: BINARY(arrowExpr)
+  // 11: POSTFIX(appExpr)
+  // 12: POSTFIX(projExpr)
+  // 13: BINARY(ieqExpr)
+  // 14: BINARY(conjExpr)
+  // 15: BINARY(disjExpr)
   public static boolean expr(PsiBuilder b, int l, int g) {
     if (!recursion_guard_(b, l, "expr")) return false;
     addVariant(b, "<expr>");
@@ -1049,6 +1051,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     if (!r) r = sigmaExpr(b, l + 1);
     if (!r) r = lambdaExpr(b, l + 1);
     if (!r) r = iforallExpr(b, l + 1);
+    if (!r) r = inegExpr(b, l + 1);
     if (!r) r = selfExpr(b, l + 1);
     if (!r) r = pathExpr(b, l + 1);
     if (!r) r = atomExpr(b, l + 1);
@@ -1063,28 +1066,28 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     boolean r = true;
     while (true) {
       Marker m = enter_section_(b, l, _LEFT_, null);
-      if (g < 9 && consumeTokenSmart(b, TO)) {
-        r = expr(b, l, 8);
+      if (g < 10 && consumeTokenSmart(b, TO)) {
+        r = expr(b, l, 9);
         exit_section_(b, l, m, ARROW_EXPR, r, true, null);
       }
-      else if (g < 10 && appExpr_0(b, l + 1)) {
+      else if (g < 11 && appExpr_0(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, APP_EXPR, r, true, null);
       }
-      else if (g < 11 && projFix(b, l + 1)) {
+      else if (g < 12 && projFix(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, PROJ_EXPR, r, true, null);
       }
-      else if (g < 12 && consumeTokenSmart(b, KW_IEQ)) {
-        r = expr(b, l, 12);
+      else if (g < 13 && consumeTokenSmart(b, KW_IEQ)) {
+        r = expr(b, l, 13);
         exit_section_(b, l, m, IEQ_EXPR, r, true, null);
       }
-      else if (g < 13 && consumeTokenSmart(b, KW_CONJ)) {
-        r = expr(b, l, 13);
+      else if (g < 14 && consumeTokenSmart(b, KW_CONJ)) {
+        r = expr(b, l, 14);
         exit_section_(b, l, m, CONJ_EXPR, r, true, null);
       }
-      else if (g < 14 && consumeTokenSmart(b, KW_DISJ)) {
-        r = expr(b, l, 14);
+      else if (g < 15 && consumeTokenSmart(b, KW_DISJ)) {
+        r = expr(b, l, 15);
         exit_section_(b, l, m, DISJ_EXPR, r, true, null);
       }
       else {
@@ -1302,6 +1305,18 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     return r;
   }
 
+  public static boolean inegExpr(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "inegExpr")) return false;
+    if (!nextTokenIsSmart(b, KW_INEG)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, null);
+    r = consumeTokenSmart(b, KW_INEG);
+    p = r;
+    r = p && expr(b, l, 6);
+    exit_section_(b, l, m, INEG_EXPR, r, p, null);
+    return r || p;
+  }
+
   // KW_SELF (AT weakId)?
   public static boolean selfExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "selfExpr")) return false;
@@ -1339,7 +1354,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b, l, _NONE_, null);
     r = pathExpr_0(b, l + 1);
     p = r;
-    r = p && expr(b, l, 7);
+    r = p && expr(b, l, 8);
     r = p && report_error_(b, pathExpr_1(b, l + 1)) && r;
     exit_section_(b, l, m, PATH_EXPR, r, p, null);
     return r || p;

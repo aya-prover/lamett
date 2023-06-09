@@ -148,6 +148,7 @@ expr ::= newExpr
        | sigmaExpr
        | lambdaExpr
        | iforallExpr
+       | inegExpr
        | selfExpr
        | pathExpr
        | atomExpr
@@ -176,6 +177,7 @@ pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
 // Interval algebra
 ieqExpr ::= expr KW_IEQ expr
 iforallExpr ::= KW_IFORALL weakId+ IMPLIES expr
+inegExpr ::= KW_INEG expr
 conjExpr ::= expr KW_CONJ expr
 disjExpr ::= expr KW_DISJ expr
 
