@@ -46,8 +46,8 @@
 
     // interval algebra
 
-    KW_IFORALL='regexp:iforall|i\u2200'
-    KW_IEQ='regexp:ieq|i=|\u2261'
+    KW_FORALL='regexp:forall|\u2200'
+    KW_EQ='regexp:eq|='
 
     KW_INEG='regexp:ineg|¬'
     KW_DISJ='regexp:\\/|\u2228'
@@ -162,6 +162,7 @@ expr ::= newExpr
        | arrowExpr
        | appExpr
        | projExpr
+       // interval
        | disjExpr
        | conjExpr
        | iforallExpr
