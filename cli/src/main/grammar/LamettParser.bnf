@@ -44,6 +44,15 @@
     KW_FORALL = 'regexp:forall|\u2200'
     // KW_FORALL = 'forall'
 
+    // interval algebra
+
+    KW_IFORALL='regexp:iforall|i\u2200'
+    KW_IEQ='regexp:ieq|i=|\u2261'
+
+    KW_INEG='regexp:ineg|¬'
+    KW_DISJ='regexp:\\/|\u2228'
+    KW_CONJ='regexp:/\\|\u2227'
+
     // ---- AyaLexer end: Keywords
 
     // TO = 'regexp:->|\u2192'
@@ -147,18 +156,17 @@ expr ::= newExpr
        | forallExpr
        | sigmaExpr
        | lambdaExpr
-       | iforallExpr
-       | inegExpr
        | selfExpr
        | pathExpr
        | atomExpr
-       // put rules that do not start with `expr` above this line
        | arrowExpr
        | appExpr
        | projExpr
-       | ieqExpr
-       | conjExpr
        | disjExpr
+       | conjExpr
+       | iforallExpr
+       | ieqExpr
+       | inegExpr
 
 atomExpr ::= tupleAtom | partialAtom | literal
 tupleAtom ::= LPAREN exprList RPAREN

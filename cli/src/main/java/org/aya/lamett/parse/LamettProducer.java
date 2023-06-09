@@ -139,7 +139,7 @@ public record LamettProducer(
     }
 
     if (node.is(CONST_EXPR)) {
-      // constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL
+      // constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F
       if (node.peekChild(KW_TYPE) != null) return new Expr.Kw(pos, Keyword.U);
       if (node.peekChild(KW_ISET) != null) return new Expr.Kw(pos, Keyword.ISet);
       if (node.peekChild(KW_SET) != null) return new Expr.Kw(pos, Keyword.Set);
