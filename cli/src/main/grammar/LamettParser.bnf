@@ -88,10 +88,11 @@
   ]
 
   // IMPORTANT: when editing extends(..), please also modify `AyaGKProducer` accordingly!
-  extends("newExpr|piExpr|forallExpr|sigmaExpr|lambdaExpr|atomExpr|appExpr|arrowExpr|projExpr|selfExpr|partialExpr|pathExpr") = expr
   extends("literal") = expr
   extends("refExpr|holeExpr|constExpr") = literal
   extends("goalExpr|calmFaceExpr") = holeExpr
+  // Catch-all! Wow!
+  extends(".*Expr") = expr
 
   extends(".+Atom") = atomExpr
   extends(".*Decl") = decl
@@ -146,6 +147,7 @@ expr ::= newExpr
        | forallExpr
        | sigmaExpr
        | lambdaExpr
+       | iforallExpr
        | selfExpr
        | pathExpr
        | atomExpr
@@ -153,6 +155,9 @@ expr ::= newExpr
        | arrowExpr
        | appExpr
        | projExpr
+       | ieqExpr
+       | conjExpr
+       | disjExpr
 
 atomExpr ::= tupleAtom | partialAtom | literal
 tupleAtom ::= LPAREN exprList RPAREN
@@ -167,6 +172,12 @@ sigmaExpr ::= KW_SIGMA tele SUCHTHAT expr
 lambdaExpr ::= KW_LAMBDA lambdaTele+ (IMPLIES expr)?
 selfExpr ::= KW_SELF (AT weakId)?
 pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
+
+// Interval algebra
+ieqExpr ::= expr KW_IEQ expr
+iforallExpr ::= KW_IFORALL weakId+ IMPLIES expr
+conjExpr ::= expr KW_CONJ expr
+disjExpr ::= expr KW_DISJ expr
 
 partialAtom ::= LPARTIAL partialInner? RPARTIAL
 private partialInner ::= bareSubSystem? barredSubSystem*

@@ -28,7 +28,11 @@ WHITE_SPACE=\s+
 KW_ULIFT=ulift|\u2191
 KW_SIGMA=Sig|\u03a3
 KW_FORALL=forall|\u2200
+KW_IFORALL=iforall|i\u2200
+KW_IEQ=ieq|i=|\u2261
 KW_LAMBDA=fn|\u03bb
+KW_DISJ="\\/"|\u2228
+KW_CONJ="/\\"|\u2227
 ID=[a-zA-Z_][a-zA-Z0-9_'-]*
 NUMBER=[0-9]+
 
@@ -81,9 +85,12 @@ NUMBER=[0-9]+
   {KW_LAMBDA}         { return KW_LAMBDA; }
   {KW_SIGMA}          { return KW_SIGMA; }
   {KW_FORALL}         { return KW_FORALL; }
+  {KW_IFORALL}        { return KW_IFORALL; }
+  {KW_IEQ}            { return KW_IEQ; }
+  {KW_DISJ}           { return KW_DISJ; }
+  {KW_CONJ}           { return KW_CONJ; }
   {ID}                { return ID; }
   {NUMBER}            { return NUMBER; }
-
 }
 
 [^] { return BAD_CHARACTER; }

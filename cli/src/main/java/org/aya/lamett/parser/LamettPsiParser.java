@@ -39,8 +39,9 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     create_token_set_(CLASS_DECL, DATA_DECL, DECL, FN_DECL,
       PRINT_DECL),
     create_token_set_(APP_EXPR, ARROW_EXPR, ATOM_EXPR, CALM_FACE_EXPR,
-      CONST_EXPR, EXPR, FORALL_EXPR, GOAL_EXPR,
-      HOLE_EXPR, LAMBDA_EXPR, LITERAL, NEW_EXPR,
+      CONJ_EXPR, CONST_EXPR, DISJ_EXPR, EXPR,
+      FORALL_EXPR, GOAL_EXPR, HOLE_EXPR, IEQ_EXPR,
+      IFORALL_EXPR, LAMBDA_EXPR, LITERAL, NEW_EXPR,
       PARTIAL_ATOM, PATH_EXPR, PI_EXPR, PROJ_EXPR,
       REF_EXPR, SELF_EXPR, SIGMA_EXPR, TUPLE_ATOM),
   };
@@ -1026,12 +1027,16 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   // 2: PREFIX(forallExpr)
   // 3: PREFIX(sigmaExpr)
   // 4: ATOM(lambdaExpr)
-  // 5: ATOM(selfExpr)
-  // 6: PREFIX(pathExpr)
-  // 7: ATOM(atomExpr)
-  // 8: BINARY(arrowExpr)
-  // 9: POSTFIX(appExpr)
-  // 10: POSTFIX(projExpr)
+  // 5: PREFIX(iforallExpr)
+  // 6: ATOM(selfExpr)
+  // 7: PREFIX(pathExpr)
+  // 8: ATOM(atomExpr)
+  // 9: BINARY(arrowExpr)
+  // 10: POSTFIX(appExpr)
+  // 11: POSTFIX(projExpr)
+  // 12: BINARY(ieqExpr)
+  // 13: BINARY(conjExpr)
+  // 14: BINARY(disjExpr)
   public static boolean expr(PsiBuilder b, int l, int g) {
     if (!recursion_guard_(b, l, "expr")) return false;
     addVariant(b, "<expr>");
@@ -1042,6 +1047,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     if (!r) r = forallExpr(b, l + 1);
     if (!r) r = sigmaExpr(b, l + 1);
     if (!r) r = lambdaExpr(b, l + 1);
+    if (!r) r = iforallExpr(b, l + 1);
     if (!r) r = selfExpr(b, l + 1);
     if (!r) r = pathExpr(b, l + 1);
     if (!r) r = atomExpr(b, l + 1);
@@ -1056,17 +1062,29 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     boolean r = true;
     while (true) {
       Marker m = enter_section_(b, l, _LEFT_, null);
-      if (g < 8 && consumeTokenSmart(b, TO)) {
-        r = expr(b, l, 7);
+      if (g < 9 && consumeTokenSmart(b, TO)) {
+        r = expr(b, l, 8);
         exit_section_(b, l, m, ARROW_EXPR, r, true, null);
       }
-      else if (g < 9 && appExpr_0(b, l + 1)) {
+      else if (g < 10 && appExpr_0(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, APP_EXPR, r, true, null);
       }
-      else if (g < 10 && projFix(b, l + 1)) {
+      else if (g < 11 && projFix(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, PROJ_EXPR, r, true, null);
+      }
+      else if (g < 12 && consumeTokenSmart(b, KW_IEQ)) {
+        r = expr(b, l, 12);
+        exit_section_(b, l, m, IEQ_EXPR, r, true, null);
+      }
+      else if (g < 13 && consumeTokenSmart(b, KW_CONJ)) {
+        r = expr(b, l, 13);
+        exit_section_(b, l, m, CONJ_EXPR, r, true, null);
+      }
+      else if (g < 14 && consumeTokenSmart(b, KW_DISJ)) {
+        r = expr(b, l, 14);
+        exit_section_(b, l, m, DISJ_EXPR, r, true, null);
       }
       else {
         exit_section_(b, l, m, null, false, false, null);
@@ -1244,6 +1262,45 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     return r;
   }
 
+  public static boolean iforallExpr(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "iforallExpr")) return false;
+    if (!nextTokenIsSmart(b, KW_IFORALL)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, null);
+    r = iforallExpr_0(b, l + 1);
+    p = r;
+    r = p && expr(b, l, 5);
+    exit_section_(b, l, m, IFORALL_EXPR, r, p, null);
+    return r || p;
+  }
+
+  // KW_IFORALL weakId+ IMPLIES
+  private static boolean iforallExpr_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "iforallExpr_0")) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = consumeTokenSmart(b, KW_IFORALL);
+    r = r && iforallExpr_0_1(b, l + 1);
+    r = r && consumeToken(b, IMPLIES);
+    exit_section_(b, m, null, r);
+    return r;
+  }
+
+  // weakId+
+  private static boolean iforallExpr_0_1(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "iforallExpr_0_1")) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = weakId(b, l + 1);
+    while (r) {
+      int c = current_position_(b);
+      if (!weakId(b, l + 1)) break;
+      if (!empty_element_parsed_guard_(b, "iforallExpr_0_1", c)) break;
+    }
+    exit_section_(b, m, null, r);
+    return r;
+  }
+
   // KW_SELF (AT weakId)?
   public static boolean selfExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "selfExpr")) return false;
@@ -1281,7 +1338,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b, l, _NONE_, null);
     r = pathExpr_0(b, l + 1);
     p = r;
-    r = p && expr(b, l, 6);
+    r = p && expr(b, l, 7);
     r = p && report_error_(b, pathExpr_1(b, l + 1)) && r;
     exit_section_(b, l, m, PATH_EXPR, r, p, null);
     return r || p;
