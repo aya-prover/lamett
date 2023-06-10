@@ -74,7 +74,11 @@ public class Unifier {
       // We probably won't need to compare dataArgs cus the two sides of conversion should be of the same type
       case Term.ConCall lcall when r instanceof Term.ConCall rcall -> lcall.fn() == rcall.fn()
         && unifySeq(lcall.args(), rcall.args());
-      case Term.Cofib lphi when r instanceof Term.Cofib rphi -> cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
+      case Term.Cofib lphi when r instanceof Term.Cofib rphi -> {
+        if (lphi.isTrue()) yield cofibIsTrue(rphi);
+        if (rphi.isTrue()) yield cofibIsTrue(lphi);
+        yield cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
+      }
       // `Ref`s, and `INeg`s
       case Term.Ref lref when r instanceof Term.Ref rref -> unification.unify(
         Unification.LocalVarWithNeg.from(lref.var()), Unification.LocalVarWithNeg.from(rref.var()));
@@ -90,13 +94,22 @@ public class Unifier {
     return happy;
   }
 
+  public boolean untypedUnderCofib(Term.Cofib cofib, @NotNull Term l, @NotNull Term r) {
+    // TODO: do we need to normalize `cofib`?
+    cofib = new Normalizer(unification.toSubst()).term(cofib);
+    var oldConj = conjunction;
+    var res = cofib.conjs().allMatch(conj -> !loadWhnfConj(conj.conj(oldConj)) || untyped(l, r));
+    loadWhnfConj(oldConj);
+    return res;
+  }
+
   boolean cofibIsTrue(@NotNull Term.Cofib p) {
     return p.conjs().anyMatch(conj -> conj.eqs().allMatch(eq -> untyped(eq.lhs(), eq.rhs())));
   }
 
   boolean cofibImply(@NotNull Term.Cofib p, @NotNull Term.Cofib q) {
     var oldConj = conjunction;
-    var res = p.conjs().allMatch(conj -> loadWhnfConj(conj.conj(oldConj)) && cofibIsTrue(q));
+    var res = p.conjs().allMatch(conj -> !loadWhnfConj(conj.conj(oldConj)) || cofibIsTrue(q));
     loadWhnfConj(oldConj);
     return res;
   }
@@ -243,7 +256,7 @@ public class Unifier {
         if (node != null) {
           var term = node.root().parentOrTerm.getRightValue();
           if (term != null) {
-            map.put(var.var, Term.Lit.fromBool(var.sign ^ term));
+            map.put(var.var, Term.Lit.fromBool(!var.sign ^ term));
           }
         }
       }
