@@ -24,3 +24,6 @@ imgui.ini
 /diagram.uml
 
 test.aya
+
+idea-flex.skeleton
+jflex-*.jar

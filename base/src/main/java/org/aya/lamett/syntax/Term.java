@@ -78,18 +78,21 @@ public sealed interface Term extends Docile {
   static @NotNull Term mkPi(@NotNull Term dom, @NotNull Term cod) {
     return new Pi(new Param<>(new LocalVar("_"), dom), cod);
   }
-  @NotNull Term U = new Lit(Keyword.U);
-  @NotNull Term I = new Lit(Keyword.I);
-  @NotNull Term F = new Lit(Keyword.F);
-  @NotNull Term One = new Lit(Keyword.One);
-  @NotNull Term Zero = new Lit(Keyword.Zero);
-  record Lit(@NotNull Keyword keyword) implements Term  {
+  @NotNull Lit U = new Lit(Keyword.U);
+  @NotNull Lit I = new Lit(Keyword.I);
+  @NotNull Lit F = new Lit(Keyword.F);
+  @NotNull Lit One = new Lit(Keyword.One);
+  @NotNull Lit Zero = new Lit(Keyword.Zero);
+  record Lit(@NotNull Keyword keyword) implements Term {
     @NotNull public Term neg() {
       return switch (keyword) {
         case One -> Zero;
         case Zero -> One;
         default -> throw new InternalError(keyword.name() + " can't be negated");
       };
+    }
+    @NotNull static public Lit fromBool(boolean b) {
+      return b ? One : Zero;
     }
   }
 
@@ -101,8 +104,7 @@ public sealed interface Term extends Docile {
       return new Cofib(params.appendedAll(cofib.params), conjs.appendedAll(cofib.conjs));
     }
     public @NotNull Cofib conj(@NotNull Cofib cofib) {
-      return new Cofib(params.appendedAll(cofib.params),
-        conjs.flatMap(conj -> cofib.conjs.map(conj2 -> new Conj(conj.eqs.appendedAll(conj2.eqs)))));
+      return new Cofib(params.appendedAll(cofib.params), conjs.flatMap(conj -> cofib.conjs.map(conj::conj)));
     }
     static public @NotNull Cofib eq(@NotNull Term lhs, @NotNull Term rhs) {
       return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.of(new Eq(lhs, rhs)))));
@@ -114,13 +116,8 @@ public sealed interface Term extends Docile {
       return conjs.isEmpty();
     }
     public record Conj(@NotNull ImmutableSeq<Eq> eqs) {
-      public MutableMap<LocalVar, Term> whnfToSubst() {
-        var map = MutableMap.<LocalVar, Term>create();
-        for (var eq : eqs) {
-          if (eq.lhs instanceof Ref ref) map.put(ref.var, eq.rhs);
-          else throw new InternalError("`whnfToSubst` only takes a conjunction in whnf");
-        }
-        return map;
+      public @NotNull Conj conj(@NotNull Conj conj2) {
+        return new Conj(eqs.appendedAll(conj2.eqs));
       }
     }
     public record Eq(@NotNull Term lhs, @NotNull Term rhs) {}

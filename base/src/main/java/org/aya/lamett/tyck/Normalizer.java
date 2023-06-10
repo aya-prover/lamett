@@ -63,22 +63,25 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
     };
   }
 
-  public Term.Cofib term(Term.Cofib cofib) {
-    var unifier = new Unifier();
+  public Term.@NotNull Cofib term(Term.Cofib cofib) {
+    // We don't really need to normalize the cofib,
+    // just have to normalize those containing `Lit`s and bounded `Ref`s
     return new Term.Cofib(ImmutableSeq.empty(), cofib.conjs().mapNotNull(
       conj -> {
         // empty is true, null is false
         var eqs = conj.eqs().foldLeft(ImmutableSeq.<Term.Cofib.Eq>empty(),
           (acc, eq) -> {
-            if (acc == null) {
-              return null;
-            } else {
-              var lhs = term(eq.lhs());
-              var rhs = term(eq.rhs());
-              if (lhs instanceof Term.INeg && rhs instanceof Term.INeg) {
-                lhs = lhs.neg();
-                rhs = rhs.neg();
-              } else if (lhs instanceof Term.Lit && !(rhs instanceof Term.Lit)) {
+            if (acc == null) return null;
+            var lhs = term(eq.lhs());
+            var rhs = term(eq.rhs());
+
+            if (lhs instanceof Term.INeg && rhs instanceof Term.INeg) {
+              lhs = lhs.neg();
+              rhs = rhs.neg();
+            } else if (lhs instanceof Term.Lit li) {
+              if (rhs instanceof Term.Lit ri) {
+                return li.keyword() == ri.keyword() ? acc : null;
+              } else {
                 var tmp = lhs;
                 lhs = rhs;
                 rhs = tmp;
@@ -87,13 +90,22 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
                   rhs = rhs.neg();
                 }
               }
-              // now lhs is `i` or both is lit
-              if (unifier.untyped(lhs, rhs)) return acc;
-              if (unifier.untyped(lhs, rhs.neg())) return null;
-              // now lhs must be `i`
-              if (cofib.params().contains(((Term.Ref) lhs).var())) return null;
-              return acc.appended(new Term.Cofib.Eq(lhs, rhs));
             }
+            assert lhs instanceof Term.Ref;
+            LocalVar var = ((Term.Ref) lhs).var();
+            if (cofib.params().contains(var)) return null;
+            switch(rhs) {
+              case Term.Ref ref -> {
+                if (var == ref.var()) return acc;
+                if (cofib.params().contains(ref.var())) return null;
+              }
+              case Term.INeg neg when neg.body() instanceof Term.Ref ref -> {
+                if (var == ref.var()) return acc;
+                if (cofib.params().contains(ref.var())) return null;
+              }
+              default -> {}
+            }
+            return acc.appended(new Term.Cofib.Eq(lhs, rhs));
           }
         );
         return eqs == null ? null : new Term.Cofib.Conj(eqs);
