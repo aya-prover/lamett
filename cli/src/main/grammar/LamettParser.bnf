@@ -94,6 +94,9 @@
     // used for bootstrapping lexer
     ID = 'regexp:[a-zA-Z_][a-zA-Z0-9_]*'
     NUMBER = 'regexp:[0-9]+'
+
+    EOL='regexp:\R'
+    WHITE_SPACE='regexp:\s+'
   ]
 
   // IMPORTANT: when editing extends(..), please also modify `AyaGKProducer` accordingly!
