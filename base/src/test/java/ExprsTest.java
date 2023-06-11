@@ -62,6 +62,10 @@ public class ExprsTest {
     assertNotNull(artifact);
   }
 
+  @Test public void cof() {
+    assertEquals("(i = Zero ∧ ¬ j = One) ∨ k = ¬ k", distill("i = Zero ∧ ¬ j = One ∨ k = ¬ k"));
+  }
+
   private static @NotNull Term tyck(@Language("TEXT") String term, @Language("TEXT") String type) {
     var akJr = CliMain.andrasKovacs();
     var Id = akJr.synth(resolve(type));

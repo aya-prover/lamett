@@ -24,6 +24,7 @@
     KW_TYPE = 'Type'
     KW_ISET = 'ISet'
 
+    KW_PRINT = 'print'
     KW_DEF = 'def'
     KW_CLASS = 'class'
     KW_CLASSIFIYING = 'classifying'
@@ -161,18 +162,17 @@ expr ::= newExpr
        | lambdaExpr
        | selfExpr
        | pathExpr
-       | atomExpr
        | arrowExpr
        | appExpr
        | projExpr
        // interval
        | disjExpr
        | conjExpr
-       | iforallExpr
        | ieqExpr
-       | inegExpr
+       | iforallExpr
+       | atomExpr
 
-atomExpr ::= tupleAtom | partialAtom | literal
+atomExpr ::= tupleAtom | partialAtom | inegExpr | literal
 tupleAtom ::= LPAREN exprList RPAREN
 
 newExpr ::= KW_NEW expr newBody?
@@ -189,7 +189,7 @@ pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
 // Interval algebra
 ieqExpr ::= expr KW_EQ expr
 iforallExpr ::= KW_FORALL weakId+ IMPLIES expr
-inegExpr ::= KW_INEG expr
+inegExpr ::= KW_INEG atomExpr
 conjExpr ::= expr KW_CONJ expr
 disjExpr ::= expr KW_DISJ expr
 

@@ -94,7 +94,7 @@ public interface LamettPsiElementTypes {
   IElementType KW_NEW = new LamettPsiTokenType("new");
   IElementType KW_OVERRIDE = new LamettPsiTokenType("override");
   IElementType KW_PI = new LamettPsiTokenType("Fn");
-  IElementType KW_PRINT = new LamettPsiTokenType("KW_PRINT");
+  IElementType KW_PRINT = new LamettPsiTokenType("print");
   IElementType KW_SELF = new LamettPsiTokenType("self");
   IElementType KW_SET = new LamettPsiTokenType("KW_SET");
   IElementType KW_SIGMA = new LamettPsiTokenType("KW_SIGMA");
