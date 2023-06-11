@@ -168,8 +168,9 @@ expr ::= newExpr
        // interval
        | disjExpr
        | conjExpr
-       | ieqExpr
        | iforallExpr
+       | ieqExpr
+       // atomExpr
        | atomExpr
 
 atomExpr ::= tupleAtom | partialAtom | inegExpr | literal
