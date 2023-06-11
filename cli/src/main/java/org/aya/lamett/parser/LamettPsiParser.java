@@ -1048,9 +1048,9 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   // 7: BINARY(arrowExpr)
   // 8: POSTFIX(appExpr)
   // 9: POSTFIX(projExpr)
-  // 10: BINARY(disjExpr)
-  // 11: BINARY(conjExpr)
-  // 12: PREFIX(iforallExpr)
+  // 10: PREFIX(iforallExpr)
+  // 11: BINARY(disjExpr)
+  // 12: BINARY(conjExpr)
   // 13: BINARY(ieqExpr)
   // 14: ATOM(atomExpr)
   public static boolean expr(PsiBuilder b, int l, int g) {
@@ -1087,11 +1087,11 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
       } else if (g < 9 && projFix(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, PROJ_EXPR, r, true, null);
-      } else if (g < 10 && consumeTokenSmart(b, KW_DISJ)) {
-        r = expr(b, l, 10);
-        exit_section_(b, l, m, DISJ_EXPR, r, true, null);
-      } else if (g < 11 && consumeTokenSmart(b, KW_CONJ)) {
+      } else if (g < 11 && consumeTokenSmart(b, KW_DISJ)) {
         r = expr(b, l, 11);
+        exit_section_(b, l, m, DISJ_EXPR, r, true, null);
+      } else if (g < 12 && consumeTokenSmart(b, KW_CONJ)) {
+        r = expr(b, l, 12);
         exit_section_(b, l, m, CONJ_EXPR, r, true, null);
       } else if (g < 13 && consumeTokenSmart(b, KW_EQ)) {
         r = expr(b, l, 13);
@@ -1371,7 +1371,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b, l, _NONE_, null);
     r = iforallExpr_0(b, l + 1);
     p = r;
-    r = p && expr(b, l, 12);
+    r = p && expr(b, l, 10);
     exit_section_(b, l, m, IFORALL_EXPR, r, p, null);
     return r || p;
   }

@@ -166,9 +166,9 @@ expr ::= newExpr
        | appExpr
        | projExpr
        // interval
+       | iforallExpr
        | disjExpr
        | conjExpr
-       | iforallExpr
        | ieqExpr
        // atomExpr
        | atomExpr

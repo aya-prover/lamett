@@ -60,6 +60,9 @@ public class ExprsTest {
   @Test public void cubicalCof() {
     var artifact = tyck("∀ i => i = ¬ i", "F");
     assertNotNull(artifact);
+
+    assertEquals("∀ i => i = ¬ i ∧ i = j", distill("∀ i => i = ¬ i ∧ i = j"));
+    assertEquals("(∀ i => i = ¬ i) ∧ i = j", distill("(∀ i => i = ¬ i) ∧ i = j"));
   }
 
   @Test public void cof() {
