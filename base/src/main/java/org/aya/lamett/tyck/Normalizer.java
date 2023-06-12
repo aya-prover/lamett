@@ -24,20 +24,16 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.Lit u -> u;
       case Term.Lam(var x, var body) -> new Term.Lam(x, term(body));
       case Term.DT dt -> dt.make(param(dt.param()), term(dt.cod()));
-      case Term.Two two -> {
-        var f = term(two.f());
-        var a = term(two.a());
-        // Either a tuple or a stuck term is preserved
-        if (two instanceof Term.Tuple || !(f instanceof Term.Lam lam)) yield two.make(f, a);
-        rho.put(lam.x(), a);
-        var body = term(lam.body());
-        rho.remove(lam.x());
-        yield body;
+      case Term.App app -> {
+        var f = term(app.f());
+        var a = term(app.a());
+        if (!(f instanceof Term.Lam lam)) yield new Term.App(f, a);
+        yield lam.apply(a);
       }
+      case Term.Tuple(var a, var b) -> new Term.Tuple(term(a), term(b));
       case Term.Proj proj -> {
         var t = term(proj.t());
-        if (!(t instanceof Term.Two tup)) yield new Term.Proj(t, proj.isOne());
-        assert tup instanceof Term.Tuple;
+        if (!(t instanceof Term.Tuple tup)) yield new Term.Proj(t, proj.isOne());
         yield proj.isOne() ? tup.f() : tup.a();
       }
       case Term.FnCall call -> {
@@ -131,7 +127,8 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
           var param = param(dt.param());
           yield dt.make(param, term(dt.cod()));
         }
-        case Term.Two two -> two.make(term(two.f()), term(two.a()));
+        case Term.App(var f, var a) -> new Term.App(term(f), term(a));
+        case Term.Tuple(var a, var b) -> new Term.Tuple(term(a), term(b));
         case Term.Proj proj -> new Term.Proj(term(proj.t()), proj.isOne());
         case Term.FnCall fnCall -> new Term.FnCall(fnCall.fn(), fnCall.args().map(this::term));
         case Term.ConCall conCall ->

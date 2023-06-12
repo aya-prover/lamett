@@ -59,8 +59,9 @@ public class Unifier {
       case Term.Lam lam when r instanceof Term.Lam ram -> untyped(lam.body(), rhs(ram.body(), ram.x(), lam.x()));
       case Term.Lam lam -> eta(r, lam);
       case Term ll when r instanceof Term.Lam ram -> eta(ll, ram);
-      case Term.Two lapp when r instanceof Term.Two rapp ->
-        lapp.getClass().equals(rapp.getClass()) && untyped(lapp.f(), rapp.f()) && untyped(lapp.a(), rapp.a());
+      case Term.App(var lf, var la) when r instanceof Term.App(var rf, var ra) -> untyped(lf, rf) && untyped(la, ra);
+      case Term.Tuple(var la, var lb) when r instanceof Term.Tuple(var ra, var rb) ->
+        untyped(la, ra) && untyped(lb, rb);
       case Term.DT ldt when r instanceof Term.DT rdt -> ldt.getClass().equals(rdt.getClass())
         && untyped(ldt.param().type(), rdt.param().type())
         && untyped(ldt.cod(), rhs(rdt.cod(), rdt.param().x(), ldt.param().x()));

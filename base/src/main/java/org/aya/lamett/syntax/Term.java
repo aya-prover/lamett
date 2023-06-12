@@ -28,22 +28,16 @@ public sealed interface Term extends Docile {
   record DataCall(@NotNull DefVar<Def.Data> fn, @NotNull ImmutableSeq<Term> args) implements Term {}
   record ConCall(@NotNull DefVar<Def.Cons> fn, @NotNull ImmutableSeq<Term> args,
                  @NotNull ImmutableSeq<Term> dataArgs) implements Term {}
-  sealed interface Two extends Term {
-    @NotNull Term f();
-    @NotNull Term a();
-    @NotNull default Two make(@NotNull Term f, @NotNull Term a) {
-      return switch (this) {
-        case Tuple $ -> new Tuple(f, a);
-        case App $ -> new App(f, a);
-      };
-    }
-  }
-  record Tuple(@NotNull Term f, @NotNull Term a) implements Two {
+  record Tuple(@NotNull Term f, @NotNull Term a) implements Term {
     @Override @NotNull public Term proj(boolean isOne) {return isOne ? f() : a();}
   }
-  record App(@NotNull Term f, @NotNull Term a) implements Two {}
+  record App(@NotNull Term f, @NotNull Term a) implements Term {}
   record Proj(@NotNull Term t, boolean isOne) implements Term {}
-  record Lam(@NotNull LocalVar x, @NotNull Term body) implements Term {}
+  record Lam(@NotNull LocalVar x, @NotNull Term body) implements Term {
+    public @NotNull Term apply(@NotNull Term arg) {
+      return body.subst(x, arg);
+    }
+  }
 
   static @NotNull Term mkLam(@NotNull SeqView<LocalVar> telescope, @NotNull Term body) {
     return telescope.foldRight(body, Lam::new);
