@@ -24,7 +24,8 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.Ref ref -> rho.getOption(ref.var()).map(Normalizer::rename).map(this::term).getOrDefault(ref);
       case Term.Lit u -> u;
       case Term.Lam(var x, var body) -> new Term.Lam(x, term(body));
-      case Term.DT dt -> dt.make(param(dt.param()), term(dt.cod()));
+      case Term.Pi dt -> new Term.Pi(param(dt.param()), term(dt.cod()));
+      case Term.Sigma dt -> new Term.Sigma(param(dt.param()), term(dt.cod()));
       case Term.App app -> {
         var f = term(app.f());
         var a = term(app.a());
@@ -128,10 +129,8 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         }
         case Term.Lit u -> u;
         case Term.Ref ref -> new Term.Ref(vv(ref.var()));
-        case Term.DT dt -> {
-          var param = param(dt.param());
-          yield dt.make(param, term(dt.cod()));
-        }
+        case Term.Pi dt -> new Term.Pi(param(dt.param()), term(dt.cod()));
+        case Term.Sigma dt -> new Term.Sigma(param(dt.param()), term(dt.cod()));
         case Term.App(var f, var a) -> new Term.App(term(f), term(a));
         case Term.Tuple(var a, var b) -> new Term.Tuple(term(a), term(b));
         case Term.Proj proj -> new Term.Proj(term(proj.t()), proj.isOne());

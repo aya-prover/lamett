@@ -56,12 +56,6 @@ public sealed interface Term extends Docile {
     @NotNull default Term codomain(@NotNull Term term) {
       return cod().subst(param().x(), term);
     }
-    @NotNull default DT make(@NotNull Param<Term> param, @NotNull Term cod) {
-      return switch (this) {
-        case Pi $ -> new Pi(param, cod);
-        case Sigma $ -> new Sigma(param, cod);
-      };
-    }
   }
 
   record Pi(@NotNull Param<Term> param, @NotNull Term cod) implements DT {}
@@ -86,6 +80,7 @@ public sealed interface Term extends Docile {
         default -> throw new InternalError(keyword.name() + " can't be negated");
       };
     }
+
     @NotNull static public Lit fromBool(boolean b) {
       return b ? One : Zero;
     }
@@ -95,21 +90,27 @@ public sealed interface Term extends Docile {
     public @NotNull Cofib forall(@NotNull LocalVar i) {
       return new Cofib(params.appended(i), conjs);
     }
+
     public @NotNull Cofib disj(@NotNull Cofib cofib) {
       return new Cofib(params.appendedAll(cofib.params), conjs.appendedAll(cofib.conjs));
     }
+
     public @NotNull Cofib conj(@NotNull Cofib cofib) {
       return new Cofib(params.appendedAll(cofib.params), conjs.flatMap(conj -> cofib.conjs.map(conj::conj)));
     }
+
     static public @NotNull Cofib eq(@NotNull Term lhs, @NotNull Term rhs) {
       return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.of(new Eq(lhs, rhs)))));
     }
+
     public boolean isTrue() {
       return !isFalse() && conjs.allMatch(conj -> conj.eqs.isEmpty());
     }
+
     public boolean isFalse() {
       return conjs.isEmpty();
     }
+
     public record Conj(@NotNull ImmutableSeq<Eq> eqs) {
       public @NotNull Conj conj(@NotNull Conj conj2) {
         return new Conj(eqs.appendedAll(conj2.eqs));
