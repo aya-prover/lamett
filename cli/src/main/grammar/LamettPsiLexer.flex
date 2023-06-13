@@ -55,6 +55,7 @@ NUMBER=[0-9]+
   "self"              { return KW_SELF; }
   "override"          { return KW_OVERRIDE; }
   "codata"            { return KW_CODATA; }
+  "Partial"           { return KW_PARTIAL; }
   "fn"                { return KW_LAMBDA; }
   "Fn"                { return KW_PI; }
   "->"                { return TO; }

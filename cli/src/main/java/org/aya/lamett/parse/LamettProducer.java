@@ -126,6 +126,12 @@ public record LamettProducer(
       return arg.foldLeft(of, (l, r) -> new Expr.App(pos, l, r));
     }
 
+    if (node.is(PARTIAL_EXPR)) {
+      var exprs = node.childrenOfType(EXPR).map(this::expr).toImmutableSeq();
+      assert exprs.sizeEquals(2);
+      return new Expr.Partial(pos, exprs.get(0), exprs.get(1));
+    }
+
     if (node.is(PROJ_EXPR)) {
       // projExpr ::= expr projFix
       return projFix(expr(node.child(EXPR)), pos, node.child(PROJ_FIX));
@@ -166,32 +172,30 @@ public record LamettProducer(
       return exprs.reduceRight((l, r) -> new Expr.Pair(l.pos().union(r.pos()), l, r));
     }
 
-    if (node.is(PARTIAL_ATOM)) {
-      return partial(node, pos);
-    }
+    if (node.is(PARTIAL_ATOM)) return partial(node, pos);
     /// endregion atomExpr
 
     /// region cubical cofibration
     if (node.is(IFORALL_EXPR)) {
-      var ids = node.childrenOfType(WEAK_ID).map(i -> new LocalVar(i.tokenText().toString()));
+      var ids = node.childrenOfType(WEAK_ID).map(i -> new LocalVar(i.tokenText().toString())).toImmutableSeq();
       var expr = expr(node.child(EXPR));
       return ids.foldRight(expr, (l, r) -> new Expr.CofibForall(pos, l, r));
     }
 
     if (node.is(IEQ_EXPR)) {
-      var exprs = node.childrenOfType(EXPR).map(this::expr);
+      var exprs = node.childrenOfType(EXPR).map(this::expr).toImmutableSeq();
       assert exprs.sizeEquals(2);
       return new Expr.CofibEq(pos, exprs.get(0), exprs.get(1));
     }
 
     if (node.is(DISJ_EXPR)) {
-      var exprs = node.childrenOfType(EXPR).map(this::expr);
+      var exprs = node.childrenOfType(EXPR).map(this::expr).toImmutableSeq();
       assert exprs.sizeEquals(2);
       return new Expr.CofibDisj(pos, exprs.get(0), exprs.get(1));
     }
 
     if (node.is(CONJ_EXPR)) {
-      var exprs = node.childrenOfType(EXPR).map(this::expr);
+      var exprs = node.childrenOfType(EXPR).map(this::expr).toImmutableSeq();
       assert exprs.sizeEquals(2);
       return new Expr.CofibConj(pos, exprs.get(0), exprs.get(1));
     }

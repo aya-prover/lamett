@@ -159,6 +159,7 @@ expr ::= newExpr
        | piExpr
        | forallExpr
        | sigmaExpr
+       | partialExpr
        | lambdaExpr
        | selfExpr
        | pathExpr
@@ -183,6 +184,7 @@ projExpr ::= expr projFix
 piExpr ::= KW_PI tele+ TO expr
 forallExpr ::= KW_FORALL lambdaTele+ TO expr
 sigmaExpr ::= KW_SIGMA tele SUCHTHAT expr
+partialExpr ::= KW_PARTIAL expr expr
 lambdaExpr ::= KW_LAMBDA lambdaTele+ (IMPLIES expr)?
 selfExpr ::= KW_SELF (AT weakId)?
 pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
