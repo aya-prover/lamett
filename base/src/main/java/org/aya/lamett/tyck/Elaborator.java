@@ -25,6 +25,7 @@ public record Elaborator(
   @NotNull public Term normalize(@NotNull Term term) {
     return term.subst(unifier.unification().toSubst());
   }
+
   @NotNull public Term.Cofib normalize(@NotNull Term.Cofib cofib) {
     return new Normalizer(unifier.unification().toSubst()).term(cofib);
   }

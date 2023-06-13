@@ -2,7 +2,7 @@ package org.aya.lamett.tyck;
 
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
-import kala.tuple.Tuple2;
+import kala.tuple.Tuple;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
@@ -51,10 +51,11 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.ConCall conCall -> new Term.ConCall(conCall.fn(),
         conCall.args().map(this::term), conCall.dataArgs().map(this::term));
       case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
-      case Term.INeg t -> term(t.body()).neg();
+      case Term.INeg(var t) -> term(t).neg();
       case Term.Cofib cofib -> term(cofib);
       case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
-      case Term.PartialElem elem -> new Term.PartialElem(elem.elems().map(tup -> new Tuple2<>(term(tup.component1()), term(tup.component2()))));
+      case Term.PartialElem elem ->
+        new Term.PartialElem(elem.elems().map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
       case Term.Error error -> error;
     };
   }
@@ -97,16 +98,17 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         assert lhs instanceof Term.Ref;
         LocalVar var = ((Term.Ref) lhs).var();
         if (params.contains(var)) return null;
-        switch(rhs) {
-          case Term.Ref ref -> {
+        switch (rhs) {
+          case Term.Ref(var ref) -> {
+            if (var == ref) return acc;
+            if (params.contains(ref)) return null;
+          }
+          case Term.INeg(var b) when b instanceof Term.Ref ref -> {
             if (var == ref.var()) return acc;
             if (params.contains(ref.var())) return null;
           }
-          case Term.INeg neg when neg.body() instanceof Term.Ref ref -> {
-            if (var == ref.var()) return acc;
-            if (params.contains(ref.var())) return null;
+          default -> {
           }
-          default -> {}
         }
         return acc.appended(new Term.Cofib.Eq(lhs, rhs));
       }
@@ -142,7 +144,8 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         case Term.Cofib cofib -> term(cofib);
         case Term.INeg t -> new Term.INeg(term(t));
         case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
-        case Term.PartialElem elem -> new Term.PartialElem(elem.elems().map(tup -> new Tuple2<>(term(tup.component1()), term(tup.component2()))));
+        case Term.PartialElem elem ->
+          new Term.PartialElem(elem.elems().map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
         case Term.Error error -> error;
       };
     }
