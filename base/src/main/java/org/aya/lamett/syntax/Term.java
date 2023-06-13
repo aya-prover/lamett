@@ -12,6 +12,8 @@ import org.aya.pretty.doc.Doc;
 import org.aya.pretty.doc.Docile;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.UnaryOperator;
+
 public sealed interface Term extends Docile {
   @Override default @NotNull Doc toDoc() {
     return Distiller.term(this, Distiller.Prec.Free);
@@ -116,7 +118,15 @@ public sealed interface Term extends Docile {
         return new Conj(eqs.appendedAll(conj2.eqs));
       }
     }
-    public record Eq(@NotNull Term lhs, @NotNull Term rhs) {}
+    public record Eq(@NotNull Term lhs, @NotNull Term rhs) {
+      public @NotNull Eq neg() {
+        return map(Term::neg);
+      }
+
+      public @NotNull Eq map(@NotNull UnaryOperator<Term> f) {
+        return new Eq(f.apply(lhs), f.apply(rhs));
+      }
+    }
   }
 
   record INeg(@NotNull Term body) implements Term {

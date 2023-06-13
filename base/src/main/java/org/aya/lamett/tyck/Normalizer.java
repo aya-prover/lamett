@@ -73,32 +73,25 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
     // just have to normalize those containing `Lit`s and bounded `Ref`s
     var eqs = MutableList.<Term.Cofib.Eq>create();
     for (var eq : conj.eqs()) {
-      var lhs = term(eq.lhs());
-      var rhs = term(eq.rhs());
+      eq = eq.map(this::term);
 
-      if (lhs instanceof Term.INeg) {
-        lhs = lhs.neg();
-        rhs = rhs.neg();
-      } else if (lhs instanceof Term.Lit li) {
-        if (rhs instanceof Term.Lit ri) {
+      if (eq.lhs() instanceof Term.INeg) {
+        eq = eq.neg();
+      } else if (eq.lhs() instanceof Term.Lit li) {
+        if (eq.rhs() instanceof Term.Lit ri) {
           if (li.keyword() == ri.keyword()) continue;
           else return null;
         } else {
-          var tmp = lhs;
-          lhs = rhs;
-          rhs = tmp;
-          if (lhs instanceof Term.INeg) {
-            lhs = lhs.neg();
-            rhs = rhs.neg();
-          }
+          eq = new Term.Cofib.Eq(eq.rhs(), eq.lhs());
+          if (eq.lhs() instanceof Term.INeg) eq = eq.neg();
         }
       }
 
-      assert lhs instanceof Term.Ref;
-      var var = ((Term.Ref) lhs).var();
+      assert eq.lhs() instanceof Term.Ref;
+      var var = ((Term.Ref) eq.lhs()).var();
       if (params.contains(var)) return null;
 
-      switch (rhs) {
+      switch (eq.rhs()) {
         case Term.Ref(var ref) -> {
           if (var == ref) continue;
           if (params.contains(ref)) return null;
@@ -110,7 +103,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         default -> {
         }
       }
-      eqs.append(new Term.Cofib.Eq(lhs, rhs));
+      eqs.append(eq);
     }
     return new Term.Cofib.Conj(eqs.toImmutableSeq());
   }
