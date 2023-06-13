@@ -1,6 +1,7 @@
 package org.aya.lamett.tyck;
 
 import kala.collection.immutable.ImmutableSeq;
+import kala.collection.mutable.MutableList;
 import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple;
 import org.aya.lamett.syntax.Term;
@@ -20,9 +21,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
 
   public Term term(Term term) {
     return switch (term) {
-      case Term.Ref ref -> rho.getOption(ref.var())
-        .map(Normalizer::rename)
-        .map(this::term).getOrDefault(ref);
+      case Term.Ref ref -> rho.getOption(ref.var()).map(Normalizer::rename).map(this::term).getOrDefault(ref);
       case Term.Lit u -> u;
       case Term.Lam(var x, var body) -> new Term.Lam(x, term(body));
       case Term.DT dt -> dt.make(param(dt.param()), term(dt.cod()));
@@ -43,13 +42,12 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         var args = call.args().map(this::term);
         if (fn == null) yield new Term.FnCall(call.fn(), args);
         fn.teleVars().zip(args).forEach(rho::put);
-        var bud = fn.body().fold(this::term, cls ->
-          Matchy.unfold(cls, args).map(this::term).getOrElse(() -> new Term.FnCall(call.fn(), args)));
+        var bud = fn.body().fold(this::term, cls -> Matchy.unfold(cls, args).map(this::term).getOrElse(() -> new Term.FnCall(call.fn(), args)));
         fn.teleVars().forEach(rho::remove);
         yield bud;
       }
-      case Term.ConCall conCall -> new Term.ConCall(conCall.fn(),
-        conCall.args().map(this::term), conCall.dataArgs().map(this::term));
+      case Term.ConCall conCall ->
+        new Term.ConCall(conCall.fn(), conCall.args().map(this::term), conCall.dataArgs().map(this::term));
       case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
       case Term.INeg(var t) -> term(t).neg();
       case Term.Cofib cofib -> term(cofib);
@@ -72,48 +70,48 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
   public @Nullable Term.Cofib.Conj term(ImmutableSeq<LocalVar> params, Term.Cofib.Conj conj) {
     // We don't really need to normalize the cofib,
     // just have to normalize those containing `Lit`s and bounded `Ref`s
-    var eqs = conj.eqs().foldLeft(ImmutableSeq.<Term.Cofib.Eq>empty(),
-      (acc, eq) -> {
-        if (acc == null) return null;
-        var lhs = term(eq.lhs());
-        var rhs = term(eq.rhs());
+    var eqs = MutableList.<Term.Cofib.Eq>create();
+    for (var eq : conj.eqs()) {
+      var lhs = term(eq.lhs());
+      var rhs = term(eq.rhs());
 
-        if (lhs instanceof Term.INeg) {
-          lhs = lhs.neg();
-          rhs = rhs.neg();
-        } else if (lhs instanceof Term.Lit li) {
-          if (rhs instanceof Term.Lit ri) {
-            return li.keyword() == ri.keyword() ? acc : null;
-          } else {
-            var tmp = lhs;
-            lhs = rhs;
-            rhs = tmp;
-            if (lhs instanceof Term.INeg) {
-              lhs = lhs.neg();
-              rhs = rhs.neg();
-            }
+      if (lhs instanceof Term.INeg) {
+        lhs = lhs.neg();
+        rhs = rhs.neg();
+      } else if (lhs instanceof Term.Lit li) {
+        if (rhs instanceof Term.Lit ri) {
+          if (li.keyword() == ri.keyword()) continue;
+          else return null;
+        } else {
+          var tmp = lhs;
+          lhs = rhs;
+          rhs = tmp;
+          if (lhs instanceof Term.INeg) {
+            lhs = lhs.neg();
+            rhs = rhs.neg();
           }
         }
-
-        assert lhs instanceof Term.Ref;
-        LocalVar var = ((Term.Ref) lhs).var();
-        if (params.contains(var)) return null;
-        switch (rhs) {
-          case Term.Ref(var ref) -> {
-            if (var == ref) return acc;
-            if (params.contains(ref)) return null;
-          }
-          case Term.INeg(var b) when b instanceof Term.Ref ref -> {
-            if (var == ref.var()) return acc;
-            if (params.contains(ref.var())) return null;
-          }
-          default -> {
-          }
-        }
-        return acc.appended(new Term.Cofib.Eq(lhs, rhs));
       }
-    );
-    return eqs == null ? null : new Term.Cofib.Conj(eqs);
+
+      assert lhs instanceof Term.Ref;
+      var var = ((Term.Ref) lhs).var();
+      if (params.contains(var)) return null;
+
+      switch (rhs) {
+        case Term.Ref(var ref) -> {
+          if (var == ref) continue;
+          if (params.contains(ref)) return null;
+        }
+        case Term.INeg(var b) when b instanceof Term.Ref ref -> {
+          if (var == ref.var()) continue;
+          if (params.contains(ref.var())) return null;
+        }
+        default -> {
+        }
+      }
+      eqs.append(new Term.Cofib.Eq(lhs, rhs));
+    }
+    return new Term.Cofib.Conj(eqs.toImmutableSeq());
   }
 
   public @NotNull Normalizer derive() {
@@ -156,9 +154,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
     }
 
     public @NotNull Term.Cofib.Conj term(Term.Cofib.Conj conj) {
-      return new Term.Cofib.Conj(conj.eqs().map(
-        eq -> new Term.Cofib.Eq(term(eq.lhs()), term(eq.rhs()))
-      ));
+      return new Term.Cofib.Conj(conj.eqs().map(eq -> new Term.Cofib.Eq(term(eq.lhs()), term(eq.rhs()))));
     }
 
     private @NotNull LocalVar vv(@NotNull LocalVar var) {
