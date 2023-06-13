@@ -47,7 +47,7 @@ public record Elaborator(
         var lhs = inherit(two.a(), dt.param().type());
         yield new Term.Tuple(lhs, inherit(two.b(), dt.codomain(lhs)));
       }
-      case Expr.PartialElem elem -> {
+      case Expr.PartEl elem -> {
         if (!(normalize(type) instanceof Term.Partial partial)) throw new SPE(elem.pos(),
           Doc.english("Expects a partial type for"), expr, Doc.plain("got"), type);
         var elems = elem.elems().flatMap(tup -> {
@@ -69,7 +69,7 @@ public record Elaborator(
           }
         }
         unify(new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1)), Term.F, partial.cofib(), elem.pos());
-        yield new Term.PartialElem(elems);
+        yield new Term.PartEl(elems);
       }
       case Expr.Hole hole -> {
         var docs = MutableList.<Doc>create();

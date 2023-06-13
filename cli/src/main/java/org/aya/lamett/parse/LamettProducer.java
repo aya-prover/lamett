@@ -9,6 +9,8 @@ import com.intellij.psi.tree.TokenSet;
 import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.control.Either;
+import kala.tuple.Tuple;
+import kala.tuple.Tuple2;
 import org.aya.intellij.GenericNode;
 import org.aya.lamett.parser.LamettPsiParser;
 import org.aya.lamett.parser.LamettPsiTokenType;
@@ -165,7 +167,7 @@ public record LamettProducer(
     }
 
     if (node.is(PARTIAL_ATOM)) {
-      return todo();
+      return partial(node, pos);
     }
     /// endregion atomExpr
 
@@ -213,6 +215,24 @@ public record LamettProducer(
       var isOne = node.child(NUMBER).tokenText().contentEqualsIgnoreCase("1");
       return new Expr.Proj(pos, on, isOne);
     } else return todo(); // TODO: projFixId
+  }
+
+  public @NotNull Expr.PartEl partial(@Nullable GenericNode<?> partial, @NotNull SourcePos fallbackPos) {
+    if (partial == null) return new Expr.PartEl(fallbackPos, ImmutableSeq.empty());
+    var sub = partial.childrenView()
+      .filter(c -> c.elementType() == BARE_SUB_SYSTEM || c.elementType() == BARRED_SUB_SYSTEM)
+      .map(this::bareOrBarredSubSystem)
+      .toImmutableSeq();
+    return new Expr.PartEl(sourcePosOf(partial), sub);
+  }
+
+  public @NotNull Tuple2<Expr, Expr> bareOrBarredSubSystem(@NotNull GenericNode<?> node) {
+    return subSystem(node.child(SUB_SYSTEM));
+  }
+
+  public @NotNull Tuple2<Expr, Expr> subSystem(@NotNull GenericNode<?> node) {
+    var exprs = node.childrenOfType(EXPR).map(this::expr);
+    return Tuple.of(exprs.get(0), exprs.get(1));
   }
 
   public @NotNull Decl.Data dataDecl(@NotNull GenericNode<?> node) {

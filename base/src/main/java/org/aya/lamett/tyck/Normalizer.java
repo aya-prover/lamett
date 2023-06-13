@@ -53,8 +53,8 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.INeg(var t) -> term(t).neg();
       case Term.Cofib cofib -> term(cofib);
       case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
-      case Term.PartialElem elem ->
-        new Term.PartialElem(elem.elems().map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
+      case Term.PartEl elem ->
+        new Term.PartEl(elem.elems().map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
       case Term.Error error -> error;
     };
   }
@@ -134,8 +134,8 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         case Term.Cofib cofib -> term(cofib);
         case Term.INeg t -> new Term.INeg(term(t));
         case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
-        case Term.PartialElem elem ->
-          new Term.PartialElem(elem.elems().map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
+        case Term.PartEl elem ->
+          new Term.PartEl(elem.elems().map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
         case Term.Error error -> error;
       };
     }

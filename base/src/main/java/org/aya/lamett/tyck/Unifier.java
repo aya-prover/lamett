@@ -114,7 +114,7 @@ public class Unifier {
       case Term.Cofib lphi when r instanceof Term.Cofib rphi -> cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
       case Term.Partial lp when r instanceof Term.Partial rp -> untypedInner(lp.cofib(), rp.cofib())
         && untypedInner(lp.type(), rp.type());
-      case Term.PartialElem le when r instanceof Term.PartialElem re -> le.elems().allMatch(ltup ->
+      case Term.PartEl le when r instanceof Term.PartEl re -> le.elems().allMatch(ltup ->
         re.elems().allMatch(rtup -> withCofibConj(
           ltup.component1().conj(rtup.component1()), () -> untyped(ltup.component2(), rtup.component2()), true)));
       // `Ref`s, and `INeg`s

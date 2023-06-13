@@ -42,5 +42,5 @@ public sealed interface Expr extends Docile {
   record CofibEq(@Override @NotNull SourcePos pos, Expr lhs, Expr rhs) implements Cofib {}
   record INeg(@Override @NotNull SourcePos pos, Expr body) implements Expr {}
   record Partial(@Override @NotNull SourcePos pos, @NotNull Expr cofib, @NotNull Expr type) implements Expr {}
-  record PartialElem(@Override @NotNull SourcePos pos, @NotNull ImmutableSeq<Tuple2<Expr, Expr>> elems) implements Expr {}
+  record PartEl(@Override @NotNull SourcePos pos, @NotNull ImmutableSeq<Tuple2<Expr, Expr>> elems) implements Expr {}
 }

@@ -64,9 +64,6 @@ public class ExprsTest {
 
     assertEquals("∀ i => i = ¬ i ∧ i = j", distill("∀ i => i = ¬ i ∧ i = j"));
     assertEquals("(∀ i => i = ¬ i) ∧ i = j", distill("(∀ i => i = ¬ i) ∧ i = j"));
-  }
-
-  @Test public void cof() {
     assertEquals("(i = Zero ∧ ¬ j = One) ∨ k = ¬ k", distill("i = Zero ∧ ¬ j = One ∨ k = ¬ k"));
   }
 

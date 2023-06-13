@@ -33,7 +33,7 @@ KW_LAMBDA=fn|\u03bb
 KW_INEG=ineg|¬
 KW_DISJ="\\/"|\u2228
 KW_CONJ="/\\"|\u2227
-ID=[a-zA-Z_][a-zA-Z0-9_'-]*
+ID=[α-ωa-zA-Z_][α-ωa-zA-Z0-9_'-]*
 NUMBER=[0-9]+
 
 %%

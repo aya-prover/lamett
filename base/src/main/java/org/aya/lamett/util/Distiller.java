@@ -70,7 +70,7 @@ public interface Distiller {
         var doc = Doc.sep(Doc.plain("Partial"), expr(partial.cofib(), AppSpine), expr(partial.type(), AppSpine));
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
       }
-      case Expr.PartialElem elem -> {
+      case Expr.PartEl elem -> {
         var clauses = elem.elems().map(tup -> Doc.sep(expr(tup.component1(), Free), Doc.plain("↦"), expr(tup.component2(), Free)));
         var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain(",")), d2));
         var doc = Doc.sep(Doc.plain("{|"), center, Doc.plain("|}"));
@@ -134,7 +134,7 @@ public interface Distiller {
         var doc = Doc.sep(Doc.plain("Partial"), term(partial.cofib(), AppSpine), term(partial.type(), AppSpine));
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
       }
-      case Term.PartialElem elem -> {
+      case Term.PartEl elem -> {
         var clauses = elem.elems().map(tup ->
           Doc.sep(term(new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.of(tup.component1())), Free), Doc.plain("↦"), term(tup.component2(), Free)));
         var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain(",")), d2));
