@@ -3,6 +3,7 @@ package org.aya.lamett.syntax;
 import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
+import kala.tuple.Tuple2;
 import org.aya.lamett.tyck.Normalizer;
 import org.aya.lamett.util.Distiller;
 import org.aya.lamett.util.LocalVar;
@@ -126,4 +127,7 @@ public sealed interface Term extends Docile {
   @NotNull default Term neg() {
     return new INeg(this);
   }
+
+  record Partial(@NotNull Cofib cofib, @NotNull Term type) implements Term {}
+  record PartialElem(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) implements Term {}
 }

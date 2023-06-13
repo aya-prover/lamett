@@ -1,6 +1,7 @@
 package org.aya.lamett.syntax;
 
 import kala.collection.immutable.ImmutableSeq;
+import kala.tuple.Tuple2;
 import org.aya.lamett.util.AnyVar;
 import org.aya.lamett.util.Distiller;
 import org.aya.lamett.util.LocalVar;
@@ -40,4 +41,6 @@ public sealed interface Expr extends Docile {
   record CofibDisj(@Override @NotNull SourcePos pos, Expr lhs, Expr rhs) implements Cofib {}
   record CofibEq(@Override @NotNull SourcePos pos, Expr lhs, Expr rhs) implements Cofib {}
   record INeg(@Override @NotNull SourcePos pos, Expr body) implements Expr {}
+  record Partial(@Override @NotNull SourcePos pos, @NotNull Expr cofib, @NotNull Expr type) implements Expr {}
+  record PartialElem(@Override @NotNull SourcePos pos, @NotNull ImmutableSeq<Tuple2<Expr, Expr>> elems) implements Expr {}
 }

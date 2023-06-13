@@ -8,6 +8,7 @@ import org.aya.lamett.syntax.Decl;
 import org.aya.lamett.syntax.Def;
 import org.aya.lamett.tyck.Elaborator;
 import org.aya.lamett.tyck.Resolver;
+import org.aya.lamett.tyck.Unifier;
 import org.aya.util.error.SourceFile;
 import org.aya.util.reporter.Reporter;
 import org.aya.util.reporter.ThrowingReporter;
@@ -55,7 +56,7 @@ public class CliMain implements Callable<Integer> {
   }
 
   public static @NotNull Elaborator andrasKovacs() {
-    return new Elaborator(MutableMap.create(), MutableMap.create());
+    return new Elaborator(MutableMap.create(), MutableMap.create(), new Unifier());
   }
 
   public static @NotNull ImmutableSeq<Decl> def(String s, @NotNull Reporter reporter) {

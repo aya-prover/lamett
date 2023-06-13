@@ -42,6 +42,7 @@ public class ExprsTest {
     assertEquals("Fn (_ : a b) -> Fn (_ : c d) -> e f", distill("a b -> c d -> e f"));
     assertEquals("Fn (_ : a b) -> Fn (_ : c d) -> e f", distill("a b -> (c d -> e f)"));
     assertEquals("Fn (_ : Fn (_ : a b) -> c d) -> e f", distill("(a b -> c d) -> e f"));
+    assertEquals("(i = Zero ∧ ¬ j = One) ∨ k = ¬ k", distill("i = 0 ∧ ¬ j = 1 ∨ k = ¬ k"));
   }
 
   @Test public void parseFail() {

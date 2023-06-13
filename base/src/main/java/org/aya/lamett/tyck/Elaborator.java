@@ -4,6 +4,7 @@ import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableArrayList;
 import kala.collection.mutable.MutableList;
 import kala.collection.mutable.MutableMap;
+import kala.tuple.Tuple2;
 import org.aya.lamett.syntax.*;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
@@ -18,10 +19,14 @@ import java.util.function.Supplier;
 
 public record Elaborator(
   @NotNull MutableMap<DefVar<?>, Def> sigma,
-  @NotNull MutableMap<LocalVar, Term> gamma
+  @NotNull MutableMap<LocalVar, Term> gamma,
+  @NotNull Unifier unifier
 ) {
   @NotNull public Term normalize(@NotNull Term term) {
-    return term.subst(MutableMap.create());
+    return term.subst(unifier.unification().toSubst());
+  }
+  @NotNull public Term.Cofib normalize(@NotNull Term.Cofib cofib) {
+    return new Normalizer(unifier.unification().toSubst()).term(cofib);
   }
 
   public record Synth(@NotNull Term wellTyped, @NotNull Term type) {}
@@ -40,6 +45,30 @@ public record Elaborator(
           Doc.english("Expects a left adjoint for"), expr, Doc.plain("got"), type);
         var lhs = inherit(two.a(), dt.param().type());
         yield new Term.Tuple(lhs, inherit(two.b(), dt.codomain(lhs)));
+      }
+      case Expr.PartialElem elem -> {
+        if (!(normalize(type) instanceof Term.Partial partial)) throw new SPE(elem.pos(),
+          Doc.english("Expects a partial type for"), expr, Doc.plain("got"), type);
+        var elems = elem.elems().flatMap(tup -> {
+          var cofib = checkCofib(tup.component1());
+          cofib = normalize(cofib);
+          assert cofib.params().isEmpty();
+          return cofib.conjs().mapNotNull(conj -> unifier.withCofibConj(
+            conj, () -> new Tuple2<>(conj, inherit(tup.component2(), partial.type())), null));
+        });
+        for (var i = 0; i < elems.size(); i++) {
+          for (var j = i + 1; j < elems.size(); j++) {
+            var conj = elems.get(i).component1().conj(elems.get(j).component1());
+            var term1 = elems.get(i).component2();
+            var term2 = elems.get(j).component2();
+            unifier.withCofibConj(conj, () -> {
+              unify(normalize(term1), normalize(partial.type()), normalize(term2), elem.pos());
+              return null;
+            }, null);
+          }
+        }
+        unify(new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1)), Term.F, partial.cofib(), elem.pos());
+        yield new Term.PartialElem(elems);
       }
       case Expr.Hole hole -> {
         var docs = MutableList.<Doc>create();
@@ -71,8 +100,7 @@ public record Elaborator(
     unify(ty, actual, pos, u -> unifyDoc(ty, on, actual, u));
   }
 
-  private static void unify(Term ty, Term actual, SourcePos pos, Function<Unifier, Doc> message) {
-    var unifier = new Unifier();
+  private void unify(Term ty, Term actual, SourcePos pos, Function<Unifier, Doc> message) {
     if (!unifier.untyped(actual, ty))
       throw new SPE(pos, message.apply(unifier));
   }
@@ -161,6 +189,11 @@ public record Elaborator(
         yield new Synth(new Term.INeg(t), Term.I);
       }
       case Expr.Cofib cofib -> new Synth(checkCofib(cofib), Term.F);
+      case Expr.Partial partial -> {
+        var cofib = checkCofib(partial.cofib());
+        var type = inherit(partial.type(), Term.U);
+        yield new Synth(new Term.Partial(cofib, type), Term.U);
+      }
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };
     var type = normalize(synth.type);

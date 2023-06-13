@@ -11,17 +11,14 @@ import org.aya.util.error.InternalException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Supplier;
+
 public class Unifier {
   public record FailureData(@NotNull Term l, @NotNull Term r) {}
   public FailureData data;
 
-  public Term.Cofib.Conj getConjunction() {
-    return conjunction;
-  }
-
   /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
-  public boolean loadWhnfConj(Term.Cofib.Conj conj) {
-    var unification = new Unification();
+  public boolean addWhnfConj(Term.Cofib.Conj conj) {
     for (var eq : conj.eqs()) {
       assert eq.lhs() instanceof Term.Ref;
       var lvar = Unification.LocalVarWithNeg.from(eq.lhs());
@@ -41,32 +38,71 @@ public class Unifier {
         default -> throw new InternalException("not a whnf conj: found " + eq.rhs());
       }
     }
-    this.conjunction = conj;
-    this.unification = unification;
+    conjunction = conjunction.conj(conj);
     return true;
   }
 
+  /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
+  public boolean loadWhnfConj(Term.Cofib.Conj conj) {
+    unification = new Unification();
+    var res = addWhnfConj(conj);
+    if (res) conjunction = conj;
+    return res;
+  }
+
   private Term.Cofib.Conj conjunction = new Term.Cofib.Conj(ImmutableSeq.empty());
+  public Term.Cofib.Conj conjunction() {
+    return conjunction;
+  }
   // This is but a cache of the conjunction
   private Unification unification = new Unification();
+  public Unification unification() {
+    return unification;
+  }
+
+  public <U> U withCofibConj(Term.Cofib.Conj conj, Supplier<U> f, U succeed) {
+    var oldConj = conjunction;
+    if (addWhnfConj(conj)) {
+      var res = f.get();
+      loadWhnfConj(oldConj);
+      return res;
+    } else {
+      return succeed;
+    }
+  }
+
+  public boolean withCofib(@NotNull Term.Cofib cofib, Supplier<Boolean> f, boolean succeed) {
+    return cofib.conjs().allMatch(conj -> withCofibConj(conj, f, succeed));
+  }
+
+  public @NotNull Unifier derive() {
+    var unifier = new Unifier();
+    unifier.loadWhnfConj(conjunction);
+    return unifier;
+  }
 
   public boolean untyped(@NotNull Term oldL, @NotNull Term oldR) {
     if (oldL == oldR) return true;
     var normalizer = new Normalizer(unification.toSubst());
     final var l = normalizer.term(oldL);
     final var r = normalizer.term(oldR);
+    return untypedInner(l, r);
+  }
+
+  public boolean untypedInner(@NotNull Term l, @NotNull Term r) {
+    if (l == r) return true;
     var happy = switch (l) {
-      case Term.Lam lam when r instanceof Term.Lam ram -> untyped(lam.body(), rhs(ram.body(), ram.x(), lam.x()));
+      case Term.Lam lam when r instanceof Term.Lam ram -> untypedInner(lam.body(), rhs(ram.body(), ram.x(), lam.x()));
       case Term.Lam lam -> eta(r, lam);
       case Term ll when r instanceof Term.Lam ram -> eta(ll, ram);
-      case Term.App(var lf, var la) when r instanceof Term.App(var rf, var ra) -> untyped(lf, rf) && untyped(la, ra);
+      case Term.App(var lf, var la) when r instanceof Term.App(var rf, var ra) -> untypedInner(lf, rf) && untypedInner(la, ra);
       case Term.Tuple(var la, var lb) when r instanceof Term.Tuple(var ra, var rb) ->
-        untyped(la, ra) && untyped(lb, rb);
+        untypedInner(la, ra) && untypedInner(lb, rb);
       case Term.DT ldt when r instanceof Term.DT rdt -> ldt.getClass().equals(rdt.getClass())
-        && untyped(ldt.param().type(), rdt.param().type())
-        && untyped(ldt.cod(), rhs(rdt.cod(), rdt.param().x(), ldt.param().x()));
+        && untypedInner(ldt.param().type(), rdt.param().type())
+        && untypedInner(ldt.cod(), rhs(rdt.cod(), rdt.param().x(), ldt.param().x()));
       case Term.Proj lproj when r instanceof Term.Proj rproj ->
-        lproj.isOne() == rproj.isOne() && untyped(lproj.t(), rproj.t());
+        lproj.isOne() == rproj.isOne() && untypedInner(lproj.t(), rproj.t());
       case Term.Lit lu when r instanceof Term.Lit ru -> lu.keyword() == ru.keyword();
       case Term.FnCall lcall when r instanceof Term.FnCall rcall -> lcall.fn() == rcall.fn()
         && unifySeq(lcall.args(), rcall.args());
@@ -75,11 +111,12 @@ public class Unifier {
       // We probably won't need to compare dataArgs cus the two sides of conversion should be of the same type
       case Term.ConCall lcall when r instanceof Term.ConCall rcall -> lcall.fn() == rcall.fn()
         && unifySeq(lcall.args(), rcall.args());
-      case Term.Cofib lphi when r instanceof Term.Cofib rphi -> {
-        if (lphi.isTrue()) yield cofibIsTrue(rphi);
-        if (rphi.isTrue()) yield cofibIsTrue(lphi);
-        yield cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
-      }
+      case Term.Cofib lphi when r instanceof Term.Cofib rphi -> cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
+      case Term.Partial lp when r instanceof Term.Partial rp -> untypedInner(lp.cofib(), rp.cofib())
+        && untypedInner(lp.type(), rp.type());
+      case Term.PartialElem le when r instanceof Term.PartialElem re -> le.elems().allMatch(ltup ->
+        re.elems().allMatch(rtup -> withCofibConj(
+          ltup.component1().conj(rtup.component1()), () -> untyped(ltup.component2(), rtup.component2()), true)));
       // `Ref`s, and `INeg`s
       case Term.Ref lref when r instanceof Term.Ref rref -> unification.unify(
         Unification.LocalVarWithNeg.from(lref.var()), Unification.LocalVarWithNeg.from(rref.var()));
@@ -90,18 +127,13 @@ public class Unifier {
       case Term.INeg lineg when r instanceof Term.INeg rineg -> lineg.body() == rineg.body();
       default -> false;
     };
-    if (!happy && data == null)
-      data = new FailureData(l, r);
+    if (!happy && data == null) data = new FailureData(l, r);
+    if (happy) data = null;
     return happy;
   }
 
   public boolean untypedUnderCofib(Term.Cofib cofib, @NotNull Term l, @NotNull Term r) {
-    // TODO: do we need to normalize `cofib`?
-    cofib = new Normalizer(unification.toSubst()).term(cofib);
-    var oldConj = conjunction;
-    var res = cofib.conjs().allMatch(conj -> !loadWhnfConj(conj.conj(oldConj)) || untyped(l, r));
-    loadWhnfConj(oldConj);
-    return res;
+    return withCofib(cofib, () -> untyped(l, r), true);
   }
 
   boolean cofibIsTrue(@NotNull Term.Cofib p) {
@@ -109,18 +141,15 @@ public class Unifier {
   }
 
   boolean cofibImply(@NotNull Term.Cofib p, @NotNull Term.Cofib q) {
-    var oldConj = conjunction;
-    var res = p.conjs().allMatch(conj -> !loadWhnfConj(conj.conj(oldConj)) || cofibIsTrue(q));
-    loadWhnfConj(oldConj);
-    return res;
+    return withCofib(p, () -> cofibIsTrue(q), true);
   }
 
   private boolean unifySeq(@NotNull ImmutableSeq<Term> l, @NotNull ImmutableSeq<Term> r) {
-    return l.allMatchWith(r, this::untyped);
+    return l.allMatchWith(r, this::untypedInner);
   }
 
   private boolean eta(@NotNull Term r, Term.Lam lam) {
-    return untyped(lam.body(), r.app(new Term.Ref(lam.x())));
+    return untypedInner(lam.body(), r.app(new Term.Ref(lam.x())));
   }
 
   private static @NotNull Term rhs(Term rhs, LocalVar rb, LocalVar lb) {
