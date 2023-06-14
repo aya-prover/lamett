@@ -1234,7 +1234,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     return r;
   }
 
-  // KW_PARTIAL expr expr
+  // KW_PARTIAL expr COMMA expr
   public static boolean partialExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "partialExpr")) return false;
     if (!nextTokenIsSmart(b, KW_PARTIAL)) return false;
@@ -1242,6 +1242,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b);
     r = consumeTokenSmart(b, KW_PARTIAL);
     r = r && expr(b, l + 1, -1);
+    r = r && consumeToken(b, COMMA);
     r = r && expr(b, l + 1, -1);
     exit_section_(b, m, PARTIAL_EXPR, r);
     return r;
