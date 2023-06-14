@@ -222,7 +222,7 @@ public record Elaborator(
         var phi = hof(forall.i(), Term.I, () -> checkCofib(forall.body()));
         yield phi.forall(forall.i());
       }
-      default -> throw new SPE(expr.pos(), Doc.english("Expected a cofibration, got"), expr);
+      default -> Term.Cofib.atom(inherit(expr, Term.F));
     };
   }
 

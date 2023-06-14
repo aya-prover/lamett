@@ -119,8 +119,8 @@ public interface Distiller {
               Doc.cat(cofib.params().map(var -> Doc.plain(var.name())).fold(Doc.empty(), Doc::sep), Doc.plain(".")))
           : Doc.empty();
         var conjs = cofib.conjs().mapNotNull(
-          conj -> conj.eqs().isEmpty() ? null : conj.eqs()
-            .map(eq -> Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp)))
+          conj -> conj.atoms().isEmpty() ? null : conj.atoms()
+            .map(atom -> term(atom, BinOpSpine))
             .reduce((doc1, doc2) -> Doc.sep(doc1, Doc.plain("∧"), doc2))
         );
         var inner = conjs.isEmpty() ? Doc.empty() :
@@ -129,6 +129,11 @@ public interface Distiller {
           cofib.isTrue() ? Doc.plain("⊤") :
             fst.isNotEmpty() ? Doc.parened(inner) : inner;
         yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(Doc.sep(fst, snd)) : Doc.sep(fst, snd);
+      }
+      case Term.Cofib.Known (var isTrue) -> Doc.plain(isTrue ? "⊤" : "⊥");
+      case Term.Cofib.Eq eq -> {
+        var doc = Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp));
+        yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
       }
       case Term.Partial partial -> {
         var doc = Doc.sep(Doc.plain("Partial"), term(partial.cofib(), AppSpine), term(partial.type(), AppSpine));

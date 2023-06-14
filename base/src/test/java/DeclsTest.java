@@ -69,6 +69,12 @@ public class DeclsTest {
       """);
   }
 
+  @Test public void cofibTest() {
+    tyck("""
+      def f (i j : I) (φ : F) : F => (i = 0) ∧ (j = 1) ∨ φ
+    """);
+  }
+
   @Test public void coverageNat() {
     assertThrowsExactly(RuntimeException.class, () -> tyck("""
       data Nat

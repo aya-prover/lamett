@@ -105,26 +105,49 @@ public sealed interface Term extends Docile {
       return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.of(new Eq(lhs, rhs)))));
     }
 
+    static public @NotNull Cofib atom(@NotNull Term atom) {
+      return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.of(atom))));
+    }
+
     public boolean isTrue() {
-      return !isFalse() && conjs.allMatch(conj -> conj.eqs.isEmpty());
+      return !isFalse() && conjs.allMatch(conj -> conj.atoms.isEmpty());
     }
 
     public boolean isFalse() {
       return conjs.isEmpty();
     }
 
-    public record Conj(@NotNull ImmutableSeq<Eq> eqs) {
+    public record Conj(@NotNull ImmutableSeq<Term> atoms) {
       public @NotNull Conj conj(@NotNull Conj conj2) {
-        return new Conj(eqs.appendedAll(conj2.eqs));
+        return new Conj(atoms.appendedAll(conj2.atoms));
       }
     }
-    public record Eq(@NotNull Term lhs, @NotNull Term rhs) {
+    public record Eq(@NotNull Term lhs, @NotNull Term rhs) implements Term {
       public @NotNull Eq neg() {
         return map(Term::neg);
       }
 
       public @NotNull Eq map(@NotNull UnaryOperator<Term> f) {
         return new Eq(f.apply(lhs), f.apply(rhs));
+      }
+
+      public @NotNull ImmutableSeq<LocalVar> freeVars() {
+        if (lhs instanceof Ref (var lvar)) {
+          return switch (rhs) {
+            case Ref (var rvar) -> ImmutableSeq.of(lvar, rvar);
+            case INeg (var body) when body instanceof Ref (var rvar) -> ImmutableSeq.of(lvar, rvar);
+            default -> ImmutableSeq.of(lvar);
+          };
+        } else {
+          return ImmutableSeq.empty();
+        }
+      }
+    }
+
+    // Used in immediate state of `Normalizer`. Try to eliminate this.
+    public record Known(boolean isTrue) implements Term {
+      public @NotNull Known neg() {
+        return new Known(!isTrue);
       }
     }
   }

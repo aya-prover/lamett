@@ -2,6 +2,7 @@ package org.aya.lamett.tyck;
 
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
+import kala.collection.mutable.MutableSet;
 import kala.control.Either;
 import kala.tuple.Tuple2;
 import org.aya.lamett.syntax.Keyword;
@@ -19,23 +20,29 @@ public class Unifier {
 
   /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
   public boolean addNFConj(Term.Cofib.Conj conj) {
-    for (var eq : conj.eqs()) {
-      assert eq.lhs() instanceof Term.Ref;
-      var lvar = Unification.LocalVarWithNeg.from(eq.lhs());
-      switch (eq.rhs()) {
-        case Term.Ref(var var) -> {
-          if (!unification.setEquiv(lvar, Unification.LocalVarWithNeg.from(var))) return false;
+    for (var atom : conj.atoms()) {
+      switch (atom) {
+        case Term.Cofib.Eq eq -> {
+          assert eq.lhs() instanceof Term.Ref;
+          var lvar = Unification.LocalVarWithNeg.from(eq.lhs());
+          switch (eq.rhs()) {
+            case Term.Ref(var var) -> {
+              if (!unification.setEquiv(lvar, Unification.LocalVarWithNeg.from(var))) return false;
+            }
+            case Term.INeg(var body) when body instanceof Term.Ref -> {
+              if (!unification.setEquiv(lvar, Unification.LocalVarWithNeg.from(body))) return false;
+            }
+            case Term.Lit lit when lit.keyword() == Keyword.One -> {
+              if (!unification.setValue(lvar, true)) return false;
+            }
+            case Term.Lit lit when lit.keyword() == Keyword.Zero -> {
+              if (!unification.setValue(lvar, false)) return false;
+            }
+            default -> throw new InternalException("not a nf conj: found " + eq.rhs());
+          }
         }
-        case Term.INeg(var body) when body instanceof Term.Ref -> {
-          if (!unification.setEquiv(lvar, Unification.LocalVarWithNeg.from(body))) return false;
-        }
-        case Term.Lit lit when lit.keyword() == Keyword.One -> {
-          if (!unification.setValue(lvar, true)) return false;
-        }
-        case Term.Lit lit when lit.keyword() == Keyword.Zero -> {
-          if (!unification.setValue(lvar, false)) return false;
-        }
-        default -> throw new InternalException("not a whnf conj: found " + eq.rhs());
+        case Term.Ref (var ref) -> unification.cofibVars.add(ref);
+        default -> throw new InternalException("not a whnf conj: found " + atom);
       }
     }
     conjunction = conjunction.conj(conj);
@@ -137,7 +144,11 @@ public class Unifier {
   }
 
   boolean cofibIsTrue(@NotNull Term.Cofib p) {
-    return p.conjs().anyMatch(conj -> conj.eqs().allMatch(eq -> untyped(eq.lhs(), eq.rhs())));
+    return p.conjs().anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
+      case Term.Cofib.Eq eq -> untyped(eq.lhs(), eq.rhs());
+      case Term.Ref (var ref) -> unification.cofibVars.contains(ref);
+      default -> throw new InternalException("Unexpected cofib atom: " + atom);
+    }));
   }
 
   boolean cofibImply(@NotNull Term.Cofib p, @NotNull Term.Cofib q) {
@@ -232,7 +243,7 @@ public class Unifier {
       * and their value, if existed, must be each other's negation.
       */
     private final @NotNull MutableMap<@NotNull LocalVarWithNeg, @NotNull Node> vars = MutableMap.create();
-
+    final @NotNull MutableSet<@NotNull LocalVar> cofibVars = MutableSet.create();
     private Tuple2<Node, Node> findOrCreateNode(@NotNull LocalVarWithNeg var) {
       var node = vars.getOrNull(var);
       var nodeNeg = vars.getOrNull(var.negate());
