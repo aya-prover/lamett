@@ -75,6 +75,7 @@ public sealed interface Term extends Docile {
   @NotNull Lit One = new Lit(Keyword.One);
   @NotNull Lit Zero = new Lit(Keyword.Zero);
   record Lit(@NotNull Keyword keyword) implements Term {
+    @Override
     @NotNull public Term neg() {
       return switch (keyword) {
         case One -> Zero;
@@ -123,6 +124,7 @@ public sealed interface Term extends Docile {
       }
     }
     public record Eq(@NotNull Term lhs, @NotNull Term rhs) implements Term {
+      @Override
       public @NotNull Eq neg() {
         return map(Term::neg);
       }
@@ -146,6 +148,7 @@ public sealed interface Term extends Docile {
 
     // Used in immediate state of `Normalizer`. Try to eliminate this.
     public record Known(boolean isTrue) implements Term {
+      @Override
       public @NotNull Known neg() {
         return new Known(!isTrue);
       }
