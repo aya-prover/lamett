@@ -18,7 +18,7 @@ public class Unifier {
   public FailureData data;
 
   /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
-  public boolean addWhnfConj(Term.Cofib.Conj conj) {
+  public boolean addNFConj(Term.Cofib.Conj conj) {
     for (var eq : conj.eqs()) {
       assert eq.lhs() instanceof Term.Ref;
       var lvar = Unification.LocalVarWithNeg.from(eq.lhs());
@@ -43,9 +43,9 @@ public class Unifier {
   }
 
   /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
-  public boolean loadWhnfConj(Term.Cofib.Conj conj) {
+  public boolean loadNFConj(Term.Cofib.Conj conj) {
     unification = new Unification();
-    var res = addWhnfConj(conj);
+    var res = addNFConj(conj);
     if (res) conjunction = conj;
     return res;
   }
@@ -62,9 +62,9 @@ public class Unifier {
 
   public <U> U withCofibConj(Term.Cofib.Conj conj, Supplier<U> f, U succeed) {
     var oldConj = conjunction;
-    if (addWhnfConj(conj)) {
+    if (addNFConj(conj)) {
       var res = f.get();
-      loadWhnfConj(oldConj);
+      loadNFConj(oldConj);
       return res;
     } else {
       return succeed;
@@ -77,7 +77,7 @@ public class Unifier {
 
   public @NotNull Unifier derive() {
     var unifier = new Unifier();
-    unifier.loadWhnfConj(conjunction);
+    unifier.loadNFConj(conjunction);
     return unifier;
   }
 
@@ -161,7 +161,7 @@ public class Unifier {
     private class Node {
       int rank = 0;
       @NotNull Either<@NotNull Node, @Nullable Boolean> parentOrTerm;
-      Node( @Nullable Boolean term) {
+      Node(@Nullable Boolean term) {
         this.parentOrTerm = Either.right(term);
       }
       @NotNull Node root() {
@@ -178,7 +178,7 @@ public class Unifier {
         var lterm = lhs.parentOrTerm.getRightValue();
         var rterm = rhs.parentOrTerm.getRightValue();
         if (lterm != null) {
-          if (lterm.equals(rterm)) return false;
+          if (rterm != null && lterm != rterm) return false;
         } else {
           lterm = rterm;
         }
