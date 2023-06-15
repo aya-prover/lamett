@@ -50,7 +50,6 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
       case Term.INeg(var t) -> term(t).neg();
       case Term.Cofib cofib -> term(cofib);
-      case Term.Cofib.Known known -> known;
       case Term.Cofib.Eq eq -> {
         eq = eq.map(this::term);
 
@@ -58,7 +57,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
           eq = eq.neg();
         } else if (eq.lhs() instanceof Term.Lit li) {
           if (eq.rhs() instanceof Term.Lit ri) {
-            yield new Term.Cofib.Known(li.keyword() == ri.keyword());
+            yield Term.Cofib.known(li.keyword() == ri.keyword());
           } else {
             eq = new Term.Cofib.Eq(eq.rhs(), eq.lhs());
             if (eq.lhs() instanceof Term.INeg) eq = eq.neg();
@@ -68,7 +67,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         assert eq.lhs() instanceof Term.Ref;
         var var = ((Term.Ref) eq.lhs()).var();
 
-        if (eq.rhs() instanceof Term.Ref (var ref) && var == ref) yield new Term.Cofib.Known(true);
+        if (eq.rhs() instanceof Term.Ref (var ref) && var == ref) yield Term.Cofib.known(true);
         yield eq;
       }
       case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
@@ -79,23 +78,24 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
   }
 
   public @NotNull Term.Cofib term(Term.Cofib cofib) {
-    var res = new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.empty());
+    var res = Term.Cofib.known(false);
     for (var conj : cofib.conjs())
-      res.disj(term(cofib.params(), conj));
+      res = res.disj(term(cofib.params(), conj));
     return res;
   }
 
   public @NotNull Term.Cofib term(ImmutableSeq<LocalVar> params, Term.Cofib.Conj conj) {
-    var cofib = new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.empty());
+    var cofib = Term.Cofib.known(true);
     for (var atom : conj.atoms()) {
       atom = term(atom);
       switch (atom) {
         case Term.Cofib.Eq eq -> {
-          if (eq.freeVars().anyMatch(params::contains)) return new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.empty());
+          if (eq.freeVars().anyMatch(params::contains)) return Term.Cofib.known(false);
         }
-        case Term.Cofib.Known (var isTrue) -> {
-          if (isTrue) continue;
-          else return new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.empty());
+        case Term.Cofib cofib1 -> {
+          cofib = cofib.conj(cofib1);
+          if (cofib.isFalse()) break;
+          continue;
         }
         default -> {
         }
@@ -134,7 +134,6 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
           new Term.ConCall(conCall.fn(), conCall.args().map(this::term), conCall.dataArgs().map(this::term));
         case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
         case Term.Cofib cofib -> term(cofib);
-        case Term.Cofib.Known known -> known;
         case Term.Cofib.Eq eq -> new Term.Cofib.Eq(term(eq.lhs()), term(eq.rhs()));
         case Term.INeg t -> new Term.INeg(term(t));
         case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));

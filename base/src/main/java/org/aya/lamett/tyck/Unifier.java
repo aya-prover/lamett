@@ -301,6 +301,9 @@ public class Unifier {
           }
         }
       }
+      for(var cofibVar : cofibVars) {
+        map.put(cofibVar, Term.Cofib.known(true));
+      }
       return map;
     }
   }

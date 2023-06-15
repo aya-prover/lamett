@@ -110,6 +110,14 @@ public sealed interface Term extends Docile {
       return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.of(atom))));
     }
 
+    static public @NotNull Cofib known(boolean isTrue) {
+      if (isTrue) {
+        return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.empty())));
+      } else {
+        return new Cofib(ImmutableSeq.empty(), ImmutableSeq.empty());
+      }
+    }
+
     public boolean isTrue() {
       return !isFalse() && conjs.allMatch(conj -> conj.atoms.isEmpty());
     }
@@ -143,14 +151,6 @@ public sealed interface Term extends Docile {
         } else {
           return ImmutableSeq.empty();
         }
-      }
-    }
-
-    // Used in immediate state of `Normalizer`. Try to eliminate this.
-    public record Known(boolean isTrue) implements Term {
-      @Override
-      public @NotNull Known neg() {
-        return new Known(!isTrue);
       }
     }
   }

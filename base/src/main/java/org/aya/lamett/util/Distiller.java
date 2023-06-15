@@ -71,8 +71,8 @@ public interface Distiller {
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
       }
       case Expr.PartEl elem -> {
-        var clauses = elem.elems().map(tup -> Doc.sep(expr(tup.component1(), Free), Doc.plain("↦"), expr(tup.component2(), Free)));
-        var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain(",")), d2));
+        var clauses = elem.elems().map(tup -> Doc.sep(expr(tup.component1(), Free), Doc.plain(":="), expr(tup.component2(), Free)));
+        var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain("|")), d2));
         var doc = Doc.sep(Doc.plain("{|"), center, Doc.plain("|}"));
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
       }
@@ -116,7 +116,7 @@ public interface Distiller {
         var fst = cofib.params().isNotEmpty()
           ? Doc.sep(
               Doc.plain("∀"),
-              Doc.cat(cofib.params().map(var -> Doc.plain(var.name())).fold(Doc.empty(), Doc::sep), Doc.plain(".")))
+              Doc.cat(cofib.params().map(var -> Doc.plain(var.name())).fold(Doc.empty(), Doc::sep), Doc.plain("=>")))
           : Doc.empty();
         var conjs = cofib.conjs().mapNotNull(
           conj -> conj.atoms().isEmpty() ? null : conj.atoms()
@@ -126,14 +126,14 @@ public interface Distiller {
         var inner = conjs.isEmpty() ? Doc.empty() :
           conjs.reduce((doc1, doc2) -> Doc.sep(Doc.parened(doc1), Doc.plain("∨"), Doc.parened(doc2)));
         var snd = cofib.isFalse() ? Doc.plain("⊥") :
-          cofib.isTrue() ? Doc.plain("⊤") :
-            fst.isNotEmpty() ? Doc.parened(inner) : inner;
-        yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(Doc.sep(fst, snd)) : Doc.sep(fst, snd);
+          cofib.isTrue() ? Doc.plain("⊤") : inner;
+        var doc = fst.isNotEmpty() ? Doc.sep(fst, snd) : snd;
+        yield envPrec.ordinal() > Free.ordinal() && (fst.isNotEmpty() || !(cofib.isFalse() || cofib.isTrue()))
+          ? Doc.parened(doc) : Doc.sep(doc);
       }
-      case Term.Cofib.Known (var isTrue) -> Doc.plain(isTrue ? "⊤" : "⊥");
       case Term.Cofib.Eq eq -> {
         var doc = Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp));
-        yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
+        yield envPrec.ordinal() > BinOpSpine.ordinal() ? Doc.parened(doc) : doc;
       }
       case Term.Partial partial -> {
         var doc = Doc.sep(Doc.plain("Partial"), term(partial.cofib(), AppSpine), term(partial.type(), AppSpine));
@@ -141,8 +141,8 @@ public interface Distiller {
       }
       case Term.PartEl elem -> {
         var clauses = elem.elems().map(tup ->
-          Doc.sep(term(new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.of(tup.component1())), Free), Doc.plain("↦"), term(tup.component2(), Free)));
-        var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain(",")), d2));
+          Doc.sep(term(new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.of(tup.component1())), Free), Doc.plain(":="), term(tup.component2(), Free)));
+        var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain("|")), d2));
         var doc = Doc.sep(Doc.plain("{|"), center, Doc.plain("|}"));
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
       }

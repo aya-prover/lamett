@@ -75,6 +75,12 @@ public class DeclsTest {
     """);
   }
 
+  @Test public void partialTest() {
+    tyck("""
+      def t1 (i j : I) (φ : F) : Partial 1 = 1, F => {| φ := (forall j => j = 0) ∨ (¬ j = 0) | (i = 1) := φ ∧ (j = 1) |}
+    """);
+  }
+
   @Test public void coverageNat() {
     assertThrowsExactly(RuntimeException.class, () -> tyck("""
       data Nat
