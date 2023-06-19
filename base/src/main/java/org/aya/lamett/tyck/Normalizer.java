@@ -31,10 +31,10 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         if (!(f instanceof Term.Lam lam)) yield new Term.App(f, a);
         yield lam.apply(a);
       }
-      case Term.Tuple(var a, var b) -> new Term.Tuple(term(a), term(b));
+      case Term.Pair(var a, var b) -> new Term.Pair(term(a), term(b));
       case Term.Proj proj -> {
         var t = term(proj.t());
-        if (!(t instanceof Term.Tuple tup)) yield new Term.Proj(t, proj.isOne());
+        if (!(t instanceof Term.Pair tup)) yield new Term.Proj(t, proj.isOne());
         yield proj.isOne() ? tup.f() : tup.a();
       }
       case Term.FnCall call -> {
@@ -83,7 +83,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
 
         yield switch (codom) {
           // case Term.Pi pi -> pi.coe(r, s, varI);
-          // case Term.Sigma sigma -> sigma.coe(r, s, varI);
+          case Term.Sigma sigma -> KanPDF.coeSigma(sigma, varI, r, s);
           case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
           default -> term;
         };
@@ -146,7 +146,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         case Term.Pi dt -> new Term.Pi(param(dt.param()), term(dt.cod()));
         case Term.Sigma dt -> new Term.Sigma(param(dt.param()), term(dt.cod()));
         case Term.App(var f, var a) -> new Term.App(term(f), term(a));
-        case Term.Tuple(var a, var b) -> new Term.Tuple(term(a), term(b));
+        case Term.Pair(var a, var b) -> new Term.Pair(term(a), term(b));
         case Term.Proj proj -> new Term.Proj(term(proj.t()), proj.isOne());
         case Term.FnCall fnCall -> new Term.FnCall(fnCall.fn(), fnCall.args().map(this::term));
         case Term.ConCall conCall ->

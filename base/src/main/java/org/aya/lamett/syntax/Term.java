@@ -31,7 +31,7 @@ public sealed interface Term extends Docile {
   record DataCall(@NotNull DefVar<Def.Data> fn, @NotNull ImmutableSeq<Term> args) implements Term {}
   record ConCall(@NotNull DefVar<Def.Cons> fn, @NotNull ImmutableSeq<Term> args,
                  @NotNull ImmutableSeq<Term> dataArgs) implements Term {}
-  record Tuple(@NotNull Term f, @NotNull Term a) implements Term {
+  record Pair(@NotNull Term f, @NotNull Term a) implements Term {
     @Override @NotNull public Term proj(boolean isOne) {return isOne ? f() : a();}
   }
   record App(@NotNull Term f, @NotNull Term a) implements Term {}

@@ -47,7 +47,7 @@ public record Elaborator(
         if (!(normalize(type) instanceof Term.Sigma dt)) throw new SPE(two.pos(),
           Doc.english("Expects a left adjoint for"), expr, Doc.plain("got"), type);
         var lhs = inherit(two.a(), dt.param().type());
-        yield new Term.Tuple(lhs, inherit(two.b(), dt.codomain(lhs)));
+        yield new Term.Pair(lhs, inherit(two.b(), dt.codomain(lhs)));
       }
       case Expr.PartEl elem -> {
         if (!(normalize(type) instanceof Term.Partial partial)) throw new SPE(elem.pos(),
@@ -176,7 +176,7 @@ public record Elaborator(
       case Expr.Pair two -> {
         var a = synth(two.a());
         var b = synth(two.b());
-        yield new Synth(new Term.Tuple(b.wellTyped, a.wellTyped),
+        yield new Synth(new Term.Pair(b.wellTyped, a.wellTyped),
           new Term.Sigma(new Param<>(new LocalVar("_"), b.type), a.type));
       }
       case Expr.DT dt -> {

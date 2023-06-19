@@ -107,7 +107,7 @@ public class Unifier {
       case Term ll when r instanceof Term.Lam ram -> eta(ll, ram);
       case Term.App(var lf, var la) when r instanceof Term.App(var rf, var ra) ->
         untypedInner(lf, rf) && untypedInner(la, ra);
-      case Term.Tuple(var la, var lb) when r instanceof Term.Tuple(var ra, var rb) ->
+      case Term.Pair(var la, var lb) when r instanceof Term.Pair(var ra, var rb) ->
         untypedInner(la, ra) && untypedInner(lb, rb);
       case Term.DT ldt when r instanceof Term.DT rdt -> ldt.getClass().equals(rdt.getClass())
         && untypedInner(ldt.param().type(), rdt.param().type())

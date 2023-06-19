@@ -104,7 +104,7 @@ public interface Distiller {
         var inner = Doc.sep(term(two.f(), AppHead), term(two.a(), AppSpine));
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(inner) : inner;
       }
-      case Term.Tuple two -> Doc.wrap("<<", ">>",
+      case Term.Pair two -> Doc.wrap("<<", ">>",
         Doc.commaList(Seq.of(term(two.f(), Free), term(two.a(), Free))));
       case Term.FnCall fnCall -> call(envPrec, fnCall.args().view(), fnCall.fn());
       case Term.ConCall conCall -> call(envPrec, conCall.args().view(), conCall.fn());
