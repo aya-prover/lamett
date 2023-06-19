@@ -89,6 +89,10 @@ public class DeclsTest {
       
       def partial (i j : I) (φ : F) : Partial (φ ∨ i = 1), Nat => {| φ := plus one one | (i = 1) := two |}
     """);
+    tyck("""
+      def test (i j : I) (f : F) : F => (i = 0) ∧ (j = 1) ∨ f
+      def test2 (i j : I) : U => Partial (test i j (i = 0)) U
+      """);
   }
 
   @Test public void coverageNat() {
