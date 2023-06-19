@@ -41,7 +41,7 @@ public class Unifier {
             default -> throw new InternalException("not a nf conj: found " + eq.rhs());
           }
         }
-        case Term.Ref (var ref) -> unification.cofibVars.add(ref);
+        case Term.Ref(var ref) -> unification.cofibVars.add(ref);
         default -> throw new InternalException("not a whnf conj: found " + atom);
       }
     }
@@ -58,11 +58,14 @@ public class Unifier {
   }
 
   private Term.Cofib.Conj conjunction = new Term.Cofib.Conj(ImmutableSeq.empty());
+
   public Term.Cofib.Conj conjunction() {
     return conjunction;
   }
+
   // This is but a cache of the conjunction
   private Unification unification = new Unification();
+
   public Unification unification() {
     return unification;
   }
@@ -102,7 +105,8 @@ public class Unifier {
       case Term.Lam lam when r instanceof Term.Lam ram -> untypedInner(lam.body(), rhs(ram.body(), ram.x(), lam.x()));
       case Term.Lam lam -> eta(r, lam);
       case Term ll when r instanceof Term.Lam ram -> eta(ll, ram);
-      case Term.App(var lf, var la) when r instanceof Term.App(var rf, var ra) -> untypedInner(lf, rf) && untypedInner(la, ra);
+      case Term.App(var lf, var la) when r instanceof Term.App(var rf, var ra) ->
+        untypedInner(lf, rf) && untypedInner(la, ra);
       case Term.Tuple(var la, var lb) when r instanceof Term.Tuple(var ra, var rb) ->
         untypedInner(la, ra) && untypedInner(lb, rb);
       case Term.DT ldt when r instanceof Term.DT rdt -> ldt.getClass().equals(rdt.getClass())
@@ -131,7 +135,9 @@ public class Unifier {
         Unification.LocalVarWithNeg.from(lref.var()), Unification.LocalVarWithNeg.from(rneg));
       case Term.INeg lneg when r instanceof Term.Ref rref && lneg.body() instanceof Term.Ref -> unification.unify(
         Unification.LocalVarWithNeg.from(lneg), Unification.LocalVarWithNeg.from(rref.var()));
-      case Term.INeg lineg when r instanceof Term.INeg rineg -> lineg.body() == rineg.body();
+      case Term.INeg(var ll) when r instanceof Term.INeg(var rr) -> untypedInner(ll, rr);
+      case Term.Coe(var r1, var s1, var A1) when r instanceof Term.Coe(var r2, var s2, var A2) ->
+        untypedInner(r1, r2) && untypedInner(s1, s2) && untypedInner(A1, A2);
       default -> false;
     };
     if (!happy && data == null) data = new FailureData(l, r);
@@ -146,7 +152,7 @@ public class Unifier {
   boolean cofibIsTrue(@NotNull Term.Cofib p) {
     return p.conjs().anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
       case Term.Cofib.Eq eq -> untyped(eq.lhs(), eq.rhs());
-      case Term.Ref (var ref) -> unification.cofibVars.contains(ref);
+      case Term.Ref(var ref) -> unification.cofibVars.contains(ref);
       default -> throw new InternalException("Unexpected cofib atom: " + atom);
     }));
   }
@@ -169,18 +175,22 @@ public class Unifier {
 
   public class Unification {
     public Unification() {}
+
     private class Node {
       int rank = 0;
       @NotNull Either<@NotNull Node, @Nullable Boolean> parentOrTerm;
+
       Node(@Nullable Boolean term) {
         this.parentOrTerm = Either.right(term);
       }
+
       @NotNull Node root() {
         var node = this;
         while (node.parentOrTerm.isLeft())
           node = node.parentOrTerm.getLeftValue();
         return node;
       }
+
       boolean union(@NotNull Node rhs) {
         var lhs = this.root();
         rhs = rhs.root();
@@ -207,10 +217,12 @@ public class Unifier {
         }
         return true;
       }
+
       @Nullable Boolean get() {
         var node = this.root();
         return node.parentOrTerm.getRightValue();
       }
+
       boolean set(@NotNull Boolean term) {
         var node = this.root();
         var oldTerm = node.parentOrTerm.getRightValue();
@@ -226,6 +238,7 @@ public class Unifier {
       public LocalVarWithNeg negate() {
         return new LocalVarWithNeg(var, !sign);
       }
+
       /** @param term is whnf */
       static @NotNull LocalVarWithNeg from(Term term) {
         return switch (term) {
@@ -234,16 +247,19 @@ public class Unifier {
           default -> throw new InternalException("not a local var");
         };
       }
+
       static @NotNull LocalVarWithNeg from(LocalVar var) {
         return new LocalVarWithNeg(var, true);
       }
     }
 
-    /** @implNote Invariance: `i` and `¬ i` must both exist or not exist in the map,
-      * and their value, if existed, must be each other's negation.
-      */
+    /**
+     * @implNote Invariance: `i` and `¬ i` must both exist or not exist in the map,
+     * and their value, if existed, must be each other's negation.
+     */
     private final @NotNull MutableMap<@NotNull LocalVarWithNeg, @NotNull Node> vars = MutableMap.create();
     final @NotNull MutableSet<@NotNull LocalVar> cofibVars = MutableSet.create();
+
     private Tuple2<Node, Node> findOrCreateNode(@NotNull LocalVarWithNeg var) {
       var node = vars.getOrNull(var);
       var nodeNeg = vars.getOrNull(var.negate());
@@ -256,16 +272,19 @@ public class Unifier {
       assert nodeNeg != null;
       return new Tuple2<>(node, nodeNeg);
     }
+
     public boolean setEquiv(@NotNull LocalVarWithNeg lhs, @NotNull LocalVarWithNeg rhs) {
       if (lhs.var == rhs.var && lhs.sign == rhs.sign) return true;
       var l = findOrCreateNode(lhs);
       var r = findOrCreateNode(rhs);
       return l.component1().union(r.component1()) && l.component2().union(r.component2());
     }
+
     public boolean setValue(LocalVarWithNeg var, Boolean term) {
       var n = findOrCreateNode(var);
       return n.component1().set(term) && n.component2().set(!term);
     }
+
     public boolean unify(LocalVarWithNeg lhs, LocalVarWithNeg rhs) {
       if (lhs.var == rhs.var) return lhs.sign == rhs.sign;
       var lnode = vars.getOrNull(lhs);
@@ -282,6 +301,7 @@ public class Unifier {
       }
       return false;
     }
+
     public @Nullable Boolean getValue(LocalVarWithNeg var) {
       var node = vars.getOrNull(var);
       if (node != null) {
@@ -290,9 +310,10 @@ public class Unifier {
         return null;
       }
     }
+
     public @NotNull MutableMap<LocalVar, Term> toSubst() {
       var map = MutableMap.<LocalVar, Term>create();
-      for(var var : vars.keysView()) {
+      for (var var : vars.keysView()) {
         var node = vars.getOrNull(var);
         if (node != null) {
           var term = node.root().parentOrTerm.getRightValue();
@@ -301,7 +322,7 @@ public class Unifier {
           }
         }
       }
-      for(var cofibVar : cofibVars) {
+      for (var cofibVar : cofibVars) {
         map.put(cofibVar, Term.Cofib.known(true));
       }
       return map;

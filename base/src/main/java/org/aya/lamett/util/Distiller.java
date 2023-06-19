@@ -3,6 +3,7 @@ package org.aya.lamett.util;
 import kala.collection.Seq;
 import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
+import kala.collection.mutable.MutableList;
 import org.aya.lamett.syntax.DefVar;
 import org.aya.lamett.syntax.Expr;
 import org.aya.lamett.syntax.Term;
@@ -132,10 +133,7 @@ public interface Distiller {
         var doc = Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp));
         yield envPrec.ordinal() > BinOpSpine.ordinal() ? Doc.parened(doc) : doc;
       }
-      case Term.Partial partial -> {
-        var doc = Doc.sep(Doc.plain("Partial"), term(partial.cofib(), AppSpine), term(partial.type(), AppSpine));
-        yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
-      }
+      case Term.Partial(var cof, var ty) -> call(envPrec, "Partial", cof, ty);
       case Term.PartEl elem -> {
         var clauses = elem.elems().map(tup ->
           Doc.sep(term(new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.of(tup.component1())), Free), Doc.plain(":="), term(tup.component2(), Free)));
@@ -144,7 +142,14 @@ public interface Distiller {
         yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
       }
       case Term.Error(var msg) -> Doc.plain(msg);
+      case Term.Coe(var r, var s, var A) -> call(envPrec, "coe", r, s, A);
     };
+  }
+  private static @NotNull Doc call(Prec envPrec, String kw, Term... args) {
+    var docs = MutableList.of(Doc.plain(kw));
+    for (var arg : args) docs.append(term(arg, AppSpine));
+    var doc = Doc.sep(docs);
+    return envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
   }
   private static @NotNull Doc call(Prec envPrec, SeqView<Term> args, DefVar<?> name) {
     var doc = Doc.sep(args

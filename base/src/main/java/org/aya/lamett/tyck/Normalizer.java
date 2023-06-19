@@ -3,6 +3,7 @@ package org.aya.lamett.tyck;
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple;
+import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
@@ -67,14 +68,32 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         assert eq.lhs() instanceof Term.Ref;
         var var = ((Term.Ref) eq.lhs()).var();
 
-        if (eq.rhs() instanceof Term.Ref (var ref) && var == ref) yield Term.Cofib.known(true);
+        if (eq.rhs() instanceof Term.Ref(var ref) && var == ref) yield Term.Cofib.known(true);
         yield eq;
       }
       case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
       case Term.PartEl elem -> new Term.PartEl(elem.elems().flatMap(tup ->
         term(tup.component1()).conjs().map(conj -> Tuple.of(conj, term(tup.component2())))));
       case Term.Error error -> error;
+      // TODO[ice]: temporary hack, replace with cofibration check
+      case Term.Coe(var r, var s, var A) when r.equals(s) -> identity("c");
+      case Term.Coe(var r, var s, var A) -> {
+        var varI = new LocalVar("i");
+        var codom = term(A.app(new Term.Ref(varI)));
+
+        yield switch (codom) {
+          // case Term.Pi pi -> pi.coe(r, s, varI);
+          // case Term.Sigma sigma -> sigma.coe(r, s, varI);
+          case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
+          default -> term;
+        };
+      }
     };
+  }
+
+  private @NotNull Term identity(String u) {
+    var x = new LocalVar(u);
+    return Term.mkLam(ImmutableSeq.of(x).view(), new Term.Ref(x));
   }
 
   public @NotNull Term.Cofib term(Term.Cofib cofib) {
@@ -136,10 +155,11 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         case Term.Cofib cofib -> term(cofib);
         case Term.Cofib.Eq eq -> new Term.Cofib.Eq(term(eq.lhs()), term(eq.rhs()));
         case Term.INeg t -> new Term.INeg(term(t));
-        case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
-        case Term.PartEl elem ->
-          new Term.PartEl(elem.elems().map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
+        case Term.Partial(var cof, var ty) -> new Term.Partial(term(cof), term(ty));
+        case Term.PartEl(var elems) ->
+          new Term.PartEl(elems.map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
         case Term.Error error -> error;
+        case Term.Coe(var r, var s, var A) -> new Term.Coe(term(r), term(s), term(A));
       };
     }
 

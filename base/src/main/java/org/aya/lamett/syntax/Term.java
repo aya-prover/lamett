@@ -148,10 +148,10 @@ public sealed interface Term extends Docile {
       }
 
       public @NotNull ImmutableSeq<LocalVar> freeVars() {
-        if (lhs instanceof Ref (var lvar)) {
+        if (lhs instanceof Ref(var lvar)) {
           return switch (rhs) {
-            case Ref (var rvar) -> ImmutableSeq.of(lvar, rvar);
-            case INeg (var body) when body instanceof Ref (var rvar) -> ImmutableSeq.of(lvar, rvar);
+            case Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
+            case INeg(var body) when body instanceof Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
             default -> ImmutableSeq.of(lvar);
           };
         } else {
@@ -173,4 +173,5 @@ public sealed interface Term extends Docile {
 
   record Partial(@NotNull Term cofib, @NotNull Term type) implements Term {}
   record PartEl(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) implements Term {}
+  record Coe(@NotNull Term r, @NotNull Term s, @NotNull Term A) implements Term {}
 }
