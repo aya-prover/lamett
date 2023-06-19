@@ -45,7 +45,6 @@ public interface LamettPsiElementTypes {
   IElementType PAREN = new LamettPsiElementType("PAREN");
   IElementType PARTIAL_ATOM = new LamettPsiElementType("PARTIAL_ATOM");
   IElementType PARTIAL_BLOCK = new LamettPsiElementType("PARTIAL_BLOCK");
-  IElementType PARTIAL_EXPR = new LamettPsiElementType("PARTIAL_EXPR");
   IElementType PATH_EXPR = new LamettPsiElementType("PATH_EXPR");
   IElementType PATTERN = new LamettPsiElementType("PATTERN");
   IElementType PATTERNS = new LamettPsiElementType("PATTERNS");
@@ -80,6 +79,7 @@ public interface LamettPsiElementTypes {
   IElementType KW_CLASS = new LamettPsiTokenType("class");
   IElementType KW_CLASSIFIYING = new LamettPsiTokenType("classifying");
   IElementType KW_CODATA = new LamettPsiTokenType("codata");
+  IElementType KW_COE = new LamettPsiTokenType("KW_COE");
   IElementType KW_CONJ = new LamettPsiTokenType("KW_CONJ");
   IElementType KW_DATA = new LamettPsiTokenType("data");
   IElementType KW_DEF = new LamettPsiTokenType("def");

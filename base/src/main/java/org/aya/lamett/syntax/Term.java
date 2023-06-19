@@ -171,6 +171,6 @@ public sealed interface Term extends Docile {
     return new INeg(this);
   }
 
-  record Partial(@NotNull Cofib cofib, @NotNull Term type) implements Term {}
+  record Partial(@NotNull Term cofib, @NotNull Term type) implements Term {}
   record PartEl(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) implements Term {}
 }

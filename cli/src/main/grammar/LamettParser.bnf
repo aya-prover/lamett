@@ -159,7 +159,6 @@ expr ::= newExpr
        | piExpr
        | forallExpr
        | sigmaExpr
-       | partialExpr
        | lambdaExpr
        | selfExpr
        | pathExpr
@@ -184,7 +183,6 @@ projExpr ::= expr projFix
 piExpr ::= KW_PI tele+ TO expr
 forallExpr ::= KW_FORALL lambdaTele+ TO expr
 sigmaExpr ::= KW_SIGMA tele SUCHTHAT expr
-partialExpr ::= KW_PARTIAL expr COMMA expr
 lambdaExpr ::= KW_LAMBDA lambdaTele+ (IMPLIES expr)?
 selfExpr ::= KW_SELF (AT weakId)?
 pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
@@ -229,7 +227,7 @@ calmFaceExpr ::= CALM_FACE
 
 goalExpr ::= LGOAL expr? RGOAL
 refExpr ::= weakId
-constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F
+constExpr ::= KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F | KW_PARTIAL | KW_COE
 
 // tele is always typed
 tele ::= literal | <<paren teleBinder>>

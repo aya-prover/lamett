@@ -66,10 +66,7 @@ public interface Distiller {
         var doc = Doc.sep(Doc.plain("∀"), Doc.sep(Doc.plain(forall.i().name()), Doc.plain("=>")), expr(forall.body(), Cod));
         yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
       }
-      case Expr.Partial partial -> {
-        var doc = Doc.sep(Doc.plain("Partial"), expr(partial.cofib(), AppSpine), expr(partial.type(), AppSpine));
-        yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
-      }
+      case Expr.PrimCall partial -> Doc.plain(partial.type().prettyName);
       case Expr.PartEl elem -> {
         var clauses = elem.elems().map(tup -> Doc.sep(expr(tup.component1(), Free), Doc.plain(":="), expr(tup.component2(), Free)));
         var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain("|")), d2));
@@ -115,8 +112,8 @@ public interface Distiller {
       case Term.Cofib cofib -> {
         var fst = cofib.params().isNotEmpty()
           ? Doc.sep(
-              Doc.plain("∀"),
-              Doc.cat(cofib.params().map(var -> Doc.plain(var.name())).fold(Doc.empty(), Doc::sep), Doc.plain("=>")))
+          Doc.plain("∀"),
+          Doc.cat(cofib.params().map(var -> Doc.plain(var.name())).fold(Doc.empty(), Doc::sep), Doc.plain("=>")))
           : Doc.empty();
         var conjs = cofib.conjs().mapNotNull(
           conj -> conj.atoms().isEmpty() ? null : conj.atoms()

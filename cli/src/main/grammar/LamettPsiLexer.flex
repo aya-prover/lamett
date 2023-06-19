@@ -50,6 +50,7 @@ NUMBER=[0-9]+
   "class"             { return KW_CLASS; }
   "print"             { return KW_PRINT; }
   "data"              { return KW_DATA; }
+  "coe"               { return KW_COE; }
   "extends"           { return KW_EXTENDS; }
   "new"               { return KW_NEW; }
   "self"              { return KW_SELF; }

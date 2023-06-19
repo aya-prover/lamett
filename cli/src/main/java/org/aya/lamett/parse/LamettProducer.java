@@ -126,12 +126,6 @@ public record LamettProducer(
       return arg.foldLeft(of, (l, r) -> new Expr.App(pos, l, r));
     }
 
-    if (node.is(PARTIAL_EXPR)) {
-      var exprs = node.childrenOfType(EXPR).map(this::expr).toImmutableSeq();
-      assert exprs.sizeEquals(2);
-      return new Expr.Partial(pos, exprs.get(0), exprs.get(1));
-    }
-
     if (node.is(PROJ_EXPR)) {
       // projExpr ::= expr projFix
       return projFix(expr(node.child(EXPR)), pos, node.child(PROJ_FIX));
@@ -158,6 +152,8 @@ public record LamettProducer(
         if (text.contentEqualsIgnoreCase("1")) return new Expr.Kw(pos, Keyword.One);
         if (text.contentEqualsIgnoreCase("0")) return new Expr.Kw(pos, Keyword.Zero);
       }
+      if (node.peekChild(KW_PARTIAL) != null) return new Expr.PrimCall(pos, Expr.PrimType.Partial);
+      if (node.peekChild(KW_COE) != null) return new Expr.PrimCall(pos, Expr.PrimType.Coe);
 
       return unreachable(node);
     }

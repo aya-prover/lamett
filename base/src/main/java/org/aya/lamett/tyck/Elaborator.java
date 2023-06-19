@@ -17,6 +17,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.aya.lamett.tyck.Normalizer.rename;
+
 public record Elaborator(
   @NotNull MutableMap<DefVar<?>, Def> sigma,
   @NotNull MutableMap<LocalVar, Term> gamma,
@@ -138,19 +140,19 @@ public record Elaborator(
             var sig = defv.signature;
             var pi = Term.mkPi(sig.telescope(), sig.result());
             var call = mkCall(defv, sig);
-            yield new Synth(Normalizer.rename(Term.mkLam(
+            yield new Synth(rename(Term.mkLam(
               sig.teleVars(), call)), pi);
           }
           var pi = Term.mkPi(def.telescope(), def.result());
           yield switch (def) {
-            case Def.Fn fn -> new Synth(Normalizer.rename(Term.mkLam(
+            case Def.Fn fn -> new Synth(rename(Term.mkLam(
               fn.teleVars(), new Term.FnCall(fn.name(), fn.teleRefs().toImmutableSeq()))), pi);
             case Def.Print print -> throw new AssertionError("unreachable: " + print);
-            case Def.Cons cons -> new Synth(Normalizer.rename(Term.mkLam(
+            case Def.Cons cons -> new Synth(rename(Term.mkLam(
               cons.teleVars(), new Term.ConCall(cons.name(),
                 cons.tele().map(x -> new Term.Ref(x.x())),
                 cons.owner().core.teleRefs().toImmutableSeq()))), pi);
-            case Def.Data data -> new Synth(Normalizer.rename(Term.mkLam(
+            case Def.Data data -> new Synth(rename(Term.mkLam(
               data.teleVars(), new Term.DataCall(data.name(), data.teleRefs().toImmutableSeq()))), pi);
           };
         }
@@ -211,11 +213,19 @@ public record Elaborator(
         yield new Synth(new Term.INeg(t), Term.I);
       }
       case Expr.Cofib cofib -> new Synth(checkCofib(cofib), Term.F);
-      case Expr.Partial partial -> {
-        var cofib = checkCofib(partial.cofib());
-        var type = inherit(partial.type(), Term.U);
-        yield new Synth(new Term.Partial(cofib, type), Term.Set);
-      }
+      case Expr.PrimCall prim -> switch (prim.type()) {
+        case Partial -> {
+          var phi = new LocalVar("φ");
+          var A = new LocalVar("A");
+          var term = Term.mkLam(
+            ImmutableSeq.of(phi, A).view(),
+            new Term.Partial(new Term.Ref(phi), new Term.Ref(A)));
+          var type = Term.mkPi(Term.F, Term.mkPi(Term.U, Term.U));
+          yield new Synth(term, type);
+        }
+        case Coe -> throw new UnsupportedOperationException("TODO");
+        case Hcom -> throw new UnsupportedOperationException("TODO");
+      };
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };
     var type = normalize(synth.type);

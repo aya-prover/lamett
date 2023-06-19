@@ -42,9 +42,9 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
       CONJ_EXPR, CONST_EXPR, DISJ_EXPR, EXPR,
       FORALL_EXPR, GOAL_EXPR, HOLE_EXPR, IEQ_EXPR,
       IFORALL_EXPR, INEG_EXPR, LAMBDA_EXPR, LITERAL,
-      NEW_EXPR, PARTIAL_ATOM, PARTIAL_EXPR, PATH_EXPR,
-      PI_EXPR, PROJ_EXPR, REF_EXPR, SELF_EXPR,
-      SIGMA_EXPR, TUPLE_ATOM),
+      NEW_EXPR, PARTIAL_ATOM, PATH_EXPR, PI_EXPR,
+      PROJ_EXPR, REF_EXPR, SELF_EXPR, SIGMA_EXPR,
+      TUPLE_ATOM),
   };
 
   /* ********************************************************** */
@@ -290,7 +290,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F
+  // KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F | KW_PARTIAL | KW_COE
   public static boolean constExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "constExpr")) return false;
     boolean r;
@@ -301,6 +301,8 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     if (!r) r = consumeToken(b, KW_INTERVAL);
     if (!r) r = consumeToken(b, NUMBER);
     if (!r) r = consumeToken(b, KW_F);
+    if (!r) r = consumeToken(b, KW_PARTIAL);
+    if (!r) r = consumeToken(b, KW_COE);
     exit_section_(b, l, m, r, false, null);
     return r;
   }
@@ -1042,18 +1044,17 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   // 1: PREFIX(piExpr)
   // 2: PREFIX(forallExpr)
   // 3: PREFIX(sigmaExpr)
-  // 4: ATOM(partialExpr)
-  // 5: ATOM(lambdaExpr)
-  // 6: ATOM(selfExpr)
-  // 7: PREFIX(pathExpr)
-  // 8: BINARY(arrowExpr)
-  // 9: POSTFIX(appExpr)
-  // 10: POSTFIX(projExpr)
-  // 11: PREFIX(iforallExpr)
-  // 12: BINARY(disjExpr)
-  // 13: BINARY(conjExpr)
-  // 14: BINARY(ieqExpr)
-  // 15: ATOM(atomExpr)
+  // 4: ATOM(lambdaExpr)
+  // 5: ATOM(selfExpr)
+  // 6: PREFIX(pathExpr)
+  // 7: BINARY(arrowExpr)
+  // 8: POSTFIX(appExpr)
+  // 9: POSTFIX(projExpr)
+  // 10: PREFIX(iforallExpr)
+  // 11: BINARY(disjExpr)
+  // 12: BINARY(conjExpr)
+  // 13: BINARY(ieqExpr)
+  // 14: ATOM(atomExpr)
   public static boolean expr(PsiBuilder b, int l, int g) {
     if (!recursion_guard_(b, l, "expr")) return false;
     addVariant(b, "<expr>");
@@ -1063,7 +1064,6 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     if (!r) r = piExpr(b, l + 1);
     if (!r) r = forallExpr(b, l + 1);
     if (!r) r = sigmaExpr(b, l + 1);
-    if (!r) r = partialExpr(b, l + 1);
     if (!r) r = lambdaExpr(b, l + 1);
     if (!r) r = selfExpr(b, l + 1);
     if (!r) r = pathExpr(b, l + 1);
@@ -1080,28 +1080,28 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     boolean r = true;
     while (true) {
       Marker m = enter_section_(b, l, _LEFT_, null);
-      if (g < 8 && consumeTokenSmart(b, TO)) {
-        r = expr(b, l, 7);
+      if (g < 7 && consumeTokenSmart(b, TO)) {
+        r = expr(b, l, 6);
         exit_section_(b, l, m, ARROW_EXPR, r, true, null);
       }
-      else if (g < 9 && appExpr_0(b, l + 1)) {
+      else if (g < 8 && appExpr_0(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, APP_EXPR, r, true, null);
       }
-      else if (g < 10 && projFix(b, l + 1)) {
+      else if (g < 9 && projFix(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, PROJ_EXPR, r, true, null);
       }
-      else if (g < 12 && consumeTokenSmart(b, KW_DISJ)) {
-        r = expr(b, l, 12);
+      else if (g < 11 && consumeTokenSmart(b, KW_DISJ)) {
+        r = expr(b, l, 11);
         exit_section_(b, l, m, DISJ_EXPR, r, true, null);
       }
-      else if (g < 13 && consumeTokenSmart(b, KW_CONJ)) {
-        r = expr(b, l, 13);
+      else if (g < 12 && consumeTokenSmart(b, KW_CONJ)) {
+        r = expr(b, l, 12);
         exit_section_(b, l, m, CONJ_EXPR, r, true, null);
       }
-      else if (g < 14 && consumeTokenSmart(b, KW_EQ)) {
-        r = expr(b, l, 14);
+      else if (g < 13 && consumeTokenSmart(b, KW_EQ)) {
+        r = expr(b, l, 13);
         exit_section_(b, l, m, IEQ_EXPR, r, true, null);
       }
       else {
@@ -1234,20 +1234,6 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     return r;
   }
 
-  // KW_PARTIAL expr COMMA expr
-  public static boolean partialExpr(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "partialExpr")) return false;
-    if (!nextTokenIsSmart(b, KW_PARTIAL)) return false;
-    boolean r;
-    Marker m = enter_section_(b);
-    r = consumeTokenSmart(b, KW_PARTIAL);
-    r = r && expr(b, l + 1, -1);
-    r = r && consumeToken(b, COMMA);
-    r = r && expr(b, l + 1, -1);
-    exit_section_(b, m, PARTIAL_EXPR, r);
-    return r;
-  }
-
   // KW_LAMBDA lambdaTele+ (IMPLIES expr)?
   public static boolean lambdaExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "lambdaExpr")) return false;
@@ -1331,7 +1317,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b, l, _NONE_, null);
     r = pathExpr_0(b, l + 1);
     p = r;
-    r = p && expr(b, l, 7);
+    r = p && expr(b, l, 6);
     r = p && report_error_(b, pathExpr_1(b, l + 1)) && r;
     exit_section_(b, l, m, PATH_EXPR, r, p, null);
     return r || p;
@@ -1393,7 +1379,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b, l, _NONE_, null);
     r = iforallExpr_0(b, l + 1);
     p = r;
-    r = p && expr(b, l, 11);
+    r = p && expr(b, l, 10);
     exit_section_(b, l, m, IFORALL_EXPR, r, p, null);
     return r || p;
   }
