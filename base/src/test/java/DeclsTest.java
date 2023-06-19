@@ -77,7 +77,17 @@ public class DeclsTest {
 
   @Test public void partialTest() {
     tyck("""
-      def partial (i j : I) (φ : F) : Partial (φ ∨ i = 1), F => {| φ := (forall j => j = 0) ∨ (¬ j = 0) | (i = 1) := φ ∧ (j = 1) |}
+      data Nat
+      | zero
+      | succ (n : Nat)
+
+      def plus (a : Nat) (b : Nat) : Nat
+      | zero, b => b
+      | succ a, b => succ (plus a b)
+      def one : Nat => succ zero
+      def two : Nat => succ (succ zero)
+      
+      def partial (i j : I) (φ : F) : Partial (φ ∨ i = 1), Nat => {| φ := plus one one | (i = 1) := two |}
     """);
   }
 

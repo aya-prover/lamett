@@ -121,11 +121,13 @@ public record Elaborator(
     var synth = switch (expr) {
       case Expr.Unresolved unresolved -> throw new InternalError("Unresolved expr: " + unresolved);
       case Expr.Kw(var $, var kw) when
+          kw == Keyword.I -> new Synth(new Term.Lit(kw), Term.ISet);
+      case Expr.Kw(var $, var kw) when
         kw == Keyword.F ||
-          kw == Keyword.U ||
           kw == Keyword.ISet ||
-          kw == Keyword.Set ||
-          kw == Keyword.I -> new Synth(new Term.Lit(kw), Term.U);
+          kw == Keyword.Set -> new Synth(new Term.Lit(kw), Term.Set);
+      case Expr.Kw(var $, var kw) when
+          kw == Keyword.U -> new Synth(new Term.Lit(kw), Term.U);
       case Expr.Kw(var $, var kw) when
         kw == Keyword.Zero ||
           kw == Keyword.One -> new Synth(new Term.Lit(kw), Term.I);
@@ -179,11 +181,30 @@ public record Elaborator(
         var param = synth(dt.param().type());
         var x = dt.param().x();
         var cod = hof(x, param.wellTyped, () -> synth(dt.cod()));
+        assert param.type() instanceof Term.Lit;
+        var domKw = ((Term.Lit) param.type()).keyword();
+        var codKw = ((Term.Lit) cod.type()).keyword();
+        Term.Lit resType;
+        if (domKw == Keyword.ISet) {
+          if (codKw == Keyword.U) {
+            resType = Term.U;
+          } else {
+            resType = Term.Set;
+          }
+        } else {
+          if (codKw == Keyword.ISet)
+            throw new SPE(dt.pos(), Doc.english("Expects a U or Set in codomain, got"), cod.type);
+          if (domKw == Keyword.U && codKw == Keyword.U) {
+            resType = Term.U;
+          } else {
+            resType = Term.Set;
+          }
+        }
         yield new Synth(
           dt instanceof Expr.Pi
             ? new Term.Pi(new Param<>(x, param.wellTyped), cod.wellTyped)
             : new Term.Sigma(new Param<>(x, param.wellTyped), cod.wellTyped),
-          cod.type);
+          resType);
       }
       case Expr.INeg neg -> {
         var t = inherit(neg.body(), Term.I);
@@ -193,7 +214,7 @@ public record Elaborator(
       case Expr.Partial partial -> {
         var cofib = checkCofib(partial.cofib());
         var type = inherit(partial.type(), Term.U);
-        yield new Synth(new Term.Partial(cofib, type), Term.U);
+        yield new Synth(new Term.Partial(cofib, type), Term.Set);
       }
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };
@@ -243,20 +264,24 @@ public record Elaborator(
     var telescope = telescope(def.tele());
     return switch (def) {
       case Decl.Fn fn -> {
-        var result = inherit(fn.result(), Term.U);
-        fn.name().signature = new Def.Signature(false, telescope, result);
+        var result = synth(fn.result());
+        if (!((Term.Lit) result.type()).isUniv())
+          throw new SPE(fn.result().pos(), Doc.english("Expects a type, got"), result.wellTyped());
+        fn.name().signature = new Def.Signature(false, telescope, result.wellTyped());
         var body = fn.body().map(
-          expr -> inherit(expr, result),
-          clauses -> tyckFunBody(telescope, result, clauses.getLeftValue())
+          expr -> inherit(expr, result.wellTyped()),
+          clauses -> tyckFunBody(telescope, result.wellTyped(), clauses.getLeftValue())
         );
         telescope.forEach(key -> gamma.remove(key.x()));
-        yield new Def.Fn(fn.name(), telescope, result, body);
+        yield new Def.Fn(fn.name(), telescope, result.wellTyped(), body);
       }
       case Decl.Print print -> {
-        var result = inherit(print.result(), Term.U);
-        var body = inherit(print.body(), result);
+        var result = synth(print.result());
+        if (!((Term.Lit) result.type()).isUniv())
+          throw new SPE(print.result().pos(), Doc.english("Expects a type, got"), result.wellTyped());
+        var body = inherit(print.body(), result.wellTyped());
         telescope.forEach(key -> gamma.remove(key.x()));
-        yield new Def.Print(telescope, result, body);
+        yield new Def.Print(telescope, result.wellTyped(), body);
       }
       case Decl.Cons ignored -> throw new IllegalArgumentException("unreachable");
       case Decl.Data data -> {
@@ -284,9 +309,11 @@ public record Elaborator(
   private @NotNull ImmutableSeq<Param<Term>> telescope(Decl.Tele tele) {
     var telescope = MutableArrayList.<Param<Term>>create(tele.scope().size());
     for (var param : tele.scope()) {
-      var ty = inherit(param.type(), Term.U);
-      telescope.append(new Param<>(param.x(), ty));
-      gamma.put(param.x(), ty);
+      var ty = synth(param.type());
+      if (!((Term.Lit) ty.type()).isUniv())
+        throw new SPE(param.type().pos(), Doc.english("Expects a type, got"), ty.wellTyped());
+      telescope.append(new Param<>(param.x(), ty.wellTyped()));
+      gamma.put(param.x(), ty.wellTyped());
     }
     return telescope.toImmutableArray();
   }

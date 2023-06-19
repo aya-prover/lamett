@@ -70,6 +70,8 @@ public sealed interface Term extends Docile {
     return new Pi(new Param<>(new LocalVar("_"), dom), cod);
   }
   @NotNull Lit U = new Lit(Keyword.U);
+  @NotNull Lit Set = new Lit(Keyword.Set);
+  @NotNull Lit ISet = new Lit(Keyword.ISet);
   @NotNull Lit I = new Lit(Keyword.I);
   @NotNull Lit F = new Lit(Keyword.F);
   @NotNull Lit One = new Lit(Keyword.One);
@@ -86,6 +88,10 @@ public sealed interface Term extends Docile {
 
     @NotNull static public Lit fromBool(boolean b) {
       return b ? One : Zero;
+    }
+
+    public boolean isUniv() {
+      return keyword == Keyword.U || keyword == Keyword.Set || keyword == Keyword.ISet;
     }
   }
 
