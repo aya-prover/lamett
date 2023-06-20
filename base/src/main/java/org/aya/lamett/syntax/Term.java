@@ -173,5 +173,46 @@ public sealed interface Term extends Docile {
 
   record Partial(@NotNull Term cofib, @NotNull Term type) implements Term {}
   record PartEl(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) implements Term {}
-  record Coe(@NotNull Term r, @NotNull Term s, @NotNull Term A) implements Term {}
+  record Coe(@NotNull Term r, @NotNull Term s, @NotNull Term A) implements Term {
+    public @NotNull Coe update(@NotNull Term type, @NotNull Term r, @NotNull Term s) {
+      return A == A() && r == r() && s == s() ? this : new Coe(type, r, s);
+    }
+
+    public @NotNull Coe descent(@NotNull UnaryOperator<Term> f, @NotNull UnaryOperator<Pat> g) {
+      return update(f.apply(this.A), f.apply(r), f.apply(s));
+    }
+
+    public @NotNull Coe inverse(Term newTy) {
+      return new Coe(newTy, s, r);
+    }
+
+    /**
+     * For parameter and variable names, see Carlo Angiuli's PhD thesis, page 160.
+     * <ul>
+     *   <li>x ∈ FV(A.type()), x ∈ FV(B)</li>
+     *   <li>A.ref() ∈ FV(B)</li>
+     * </ul>
+     * @return {@code \x : A.type() => B[coe(r, x, A, arg) / A.ref()]}
+     */
+    public static @NotNull Lam cover(LocalVar x, Param<Term> A, Term B, Term arg, Term r) {
+      var innerCover = Normalizer.rename(new Lam(x, A.type()));
+      var coeRX = new App(new Coe(innerCover, r, new Ref(x)), arg);
+      return new Lam(x, B.subst(A.x(), coeRX));
+    }
+
+    public @NotNull Coe recoe(Term cover) {
+      return new Coe(cover, r, s);
+    }
+
+    public @NotNull Term family() {
+      return familyI2J(A, r, s);
+    }
+  }
+
+  /** Let A be argument, then <code>A i -> A j</code> */
+  static @NotNull Pi familyI2J(Term term, Term i, Term j) {
+    return new Pi(
+      new Param<>(new LocalVar("_"), new App(term, i)),
+      new App(term, j));
+  }
 }

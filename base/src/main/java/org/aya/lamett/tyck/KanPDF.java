@@ -3,6 +3,7 @@ package org.aya.lamett.tyck;
 import kala.collection.mutable.MutableMap;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.util.LocalVar;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.UnaryOperator;
 
@@ -30,5 +31,15 @@ public interface KanPDF {
       fill1.apply(coeS),
       fill2.apply(coeS)
     ));
+  }
+
+  static @NotNull Term coePi(@NotNull Term.Pi pi, @NotNull Term.Coe coe, LocalVar i) {
+    var M = new LocalVar("f");
+    var a = new LocalVar("a");
+    var arg = new Term.App(coe.inverse(Normalizer.rename(new Term.Lam(i, pi.param().type()))), new Term.Ref(a));
+    var cover = Normalizer.rename(Term.Coe.cover(i, pi.param(), pi.cod(), new Term.Ref(a), coe.s()));
+    return new Term.Lam(M, new Term.Lam(a,
+      new Term.App(coe.recoe(cover),
+        new Term.App(new Term.Ref(M), arg))));
   }
 }

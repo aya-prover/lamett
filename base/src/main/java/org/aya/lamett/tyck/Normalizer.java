@@ -84,6 +84,7 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
         yield switch (codom) {
           // case Term.Pi pi -> pi.coe(r, s, varI);
           case Term.Sigma sigma -> KanPDF.coeSigma(sigma, varI, r, s);
+          case Term.Pi pi -> KanPDF.coePi(pi, new Term.Coe(r, s, A), varI);
           case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
           default -> term;
         };
