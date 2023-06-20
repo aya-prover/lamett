@@ -89,6 +89,13 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
           default -> term;
         };
       }
+      case Term.Hcom(var r, var s, var A, var i, var el) when r.equals(s) -> identity("h");
+      case Term.Hcom(var r, var s, var A, var i, var el) -> switch (term(A)) {
+        case Term.Sigma sigma -> KanPDF.hcomSigma(sigma, r, s, i, el);
+        case Term.Pi pi -> KanPDF.hcomPi(pi, r, s, i, el);
+        case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
+        default -> term;
+      };
     };
   }
 
@@ -161,6 +168,10 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
           new Term.PartEl(elems.map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
         case Term.Error error -> error;
         case Term.Coe(var r, var s, var A) -> new Term.Coe(term(r), term(s), term(A));
+        case Term.Hcom(var r, var s, var A, var i, var partial) -> {
+          var paramI = param(i);
+          yield new Term.Hcom(term(r), term(s), term(A), paramI, (Term.PartEl) term(partial));
+        }
       };
     }
 

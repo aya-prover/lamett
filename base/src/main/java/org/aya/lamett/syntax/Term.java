@@ -3,6 +3,7 @@ package org.aya.lamett.syntax;
 import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
+import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
 import org.aya.lamett.tyck.Normalizer;
 import org.aya.lamett.util.Distiller;
@@ -172,7 +173,17 @@ public sealed interface Term extends Docile {
   }
 
   record Partial(@NotNull Term cofib, @NotNull Term type) implements Term {}
-  record PartEl(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) implements Term {}
+  record PartEl(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) implements Term {
+    public @NotNull PartEl map(UnaryOperator<Tuple2<Cofib.Conj, Term>> f) {
+      return new PartEl(elems.map(f));
+    }
+    public @NotNull PartEl map1(UnaryOperator<Cofib.Conj> f) {
+      return new PartEl(elems.map(t -> Tuple.of(f.apply(t.component1()), t.component2())));
+    }
+    public @NotNull PartEl map2(UnaryOperator<Term> f) {
+      return new PartEl(elems.map(t -> Tuple.of(t.component1(), f.apply(t.component2()))));
+    }
+  }
   record Coe(@NotNull Term r, @NotNull Term s, @NotNull Term A) implements Term {
     public @NotNull Coe update(@NotNull Term r, @NotNull Term s, @NotNull Term A) {
       return A == A() && r == r() && s == s() ? this : new Coe(r, s, A);
@@ -207,6 +218,15 @@ public sealed interface Term extends Docile {
     public @NotNull Term family() {
       return familyI2J(A, r, s);
     }
+  }
+  record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i, @NotNull PartEl el) implements Term {}
+
+  static @NotNull Term com(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i, @NotNull PartEl el) {
+    var M = new LocalVar("f");
+    var coe = new Coe(new Ref(i), s, A);
+    var elems = el.elems().map(tup -> Tuple.of(tup.component1(), coe.app(tup.component2())));
+    return new Lam(M,
+      new App(new Hcom(r, s, A.app(s), i, new PartEl(elems)), new Coe(r, s, A)));
   }
 
   /** Let A be argument, then <code>A i -> A j</code> */
