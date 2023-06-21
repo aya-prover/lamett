@@ -49,12 +49,10 @@ public class Unifier {
     return true;
   }
 
-  /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
-  public boolean loadNFConj(Term.Cofib.Conj conj) {
+  public void loadNFConj(Term.Cofib.Conj conj) {
     unification = new Unification();
-    var res = addNFConj(conj);
-    if (res) conjunction = conj;
-    return res;
+    if (!addNFConj(conj)) throw new InternalException("loading a false conj: " + conj);
+    conjunction = conj;
   }
 
   private Term.Cofib.Conj conjunction = new Term.Cofib.Conj(ImmutableSeq.empty());
@@ -93,7 +91,7 @@ public class Unifier {
 
   public boolean untyped(@NotNull Term oldL, @NotNull Term oldR) {
     if (oldL == oldR) return true;
-    var normalizer = new Normalizer(unification.toSubst());
+    var normalizer = new Normalizer(this);
     final var l = normalizer.term(oldL);
     final var r = normalizer.term(oldR);
     return untypedInner(l, r);
@@ -173,10 +171,10 @@ public class Unifier {
     return rhs.subst(rb, new Term.Ref(lb));
   }
 
-  public class Unification {
+  public static class Unification {
     public Unification() {}
 
-    private class Node {
+    private static class Node {
       int rank = 0;
       @NotNull Either<@NotNull Node, @Nullable Boolean> parentOrTerm;
 

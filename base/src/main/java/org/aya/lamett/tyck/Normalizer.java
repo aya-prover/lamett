@@ -9,7 +9,23 @@ import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.jetbrains.annotations.NotNull;
 
-public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
+public class Normalizer {
+  private final @NotNull MutableMap<LocalVar, Term> rho;
+  public MutableMap<LocalVar, Term> rho() { return rho; }
+
+  private final @NotNull Unifier unifier;
+
+  /** @apiNote Arguments should agree */
+  public Normalizer(@NotNull Unifier unifier) {
+    this.unifier = unifier;
+    this.rho = unifier.unification().toSubst();
+  }
+
+  public Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
+    this.rho = rho;
+    this.unifier = new Unifier();
+  }
+
   public static @NotNull Term rename(@NotNull Term term) {
     return new Renamer(MutableMap.create()).term(term);
   }
@@ -75,27 +91,29 @@ public record Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
       case Term.PartEl elem -> new Term.PartEl(elem.elems().flatMap(tup ->
         term(tup.component1()).conjs().map(conj -> Tuple.of(conj, term(tup.component2())))));
       case Term.Error error -> error;
-      // TODO[ice]: temporary hack, replace with cofibration check
-      case Term.Coe(var r, var s, var A) when r.equals(s) -> identity("c");
       case Term.Coe(var r, var s, var A) -> {
+        if (unifier.untyped(r, s)) yield identity("c");
+
         var varI = new LocalVar("i");
         var codom = term(A.app(new Term.Ref(varI)));
 
         yield switch (codom) {
-          // case Term.Pi pi -> pi.coe(r, s, varI);
           case Term.Sigma sigma -> KanPDF.coeSigma(sigma, varI, r, s);
           case Term.Pi pi -> KanPDF.coePi(pi, new Term.Coe(r, s, A), varI);
           case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
           default -> term;
         };
       }
-      case Term.Hcom(var r, var s, var A, var i, var el) when r.equals(s) -> identity("h");
-      case Term.Hcom(var r, var s, var A, var i, var el) -> switch (term(A)) {
-        case Term.Sigma sigma -> KanPDF.hcomSigma(sigma, r, s, i, el);
-        case Term.Pi pi -> KanPDF.hcomPi(pi, r, s, i, el);
-        case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
-        default -> term;
-      };
+      case Term.Hcom(var r, var s, var A, var i, var el) -> {
+        if (unifier.untyped(r, s)) yield identity("u");
+
+        yield switch (term(A)) {
+          case Term.Sigma sigma -> KanPDF.hcomSigma(sigma, r, s, i, el);
+          case Term.Pi pi -> KanPDF.hcomPi(pi, r, s, i, el);
+          case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
+          default -> term;
+        };
+      }
     };
   }
 
