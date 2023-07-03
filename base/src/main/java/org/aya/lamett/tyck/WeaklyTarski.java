@@ -16,6 +16,10 @@ public record WeaklyTarski(@NotNull Normalizer n) {
       case Term.Lit(var lit) when lit == Keyword.I -> Type.Lit.I;
       case Term.Pi(var param, var cod) -> new Type.Pi(param(param), el(cod));
       case Term.Sigma(var param, var cod) -> new Type.Sigma(param(param), el(cod));
+      case Term.Path(var binders, var ext) -> {
+        var sub = new Type.Sub(el(ext.type()), ext.restr().boundaries());
+        yield Type.mkPi(binders.map(i -> new Param<>(i, Type.Lit.I)), sub);
+      }
       case Term misc -> new Type.El(misc);
     };
   }
