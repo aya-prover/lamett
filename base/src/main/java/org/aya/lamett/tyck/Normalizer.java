@@ -3,6 +3,7 @@ package org.aya.lamett.tyck;
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple;
+import kala.tuple.Tuple2;
 import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.util.LocalVar;
@@ -11,7 +12,8 @@ import org.jetbrains.annotations.NotNull;
 
 public class Normalizer {
   private final @NotNull MutableMap<LocalVar, Term> rho;
-  public MutableMap<LocalVar, Term> rho() { return rho; }
+
+  public MutableMap<LocalVar, Term> rho() {return rho;}
 
   private final @NotNull Unifier unifier;
 
@@ -88,8 +90,7 @@ public class Normalizer {
         yield eq;
       }
       case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
-      case Term.PartEl elem -> new Term.PartEl(elem.elems().flatMap(tup ->
-        term(tup.component1()).conjs().map(conj -> Tuple.of(conj, term(tup.component2())))));
+      case Term.PartEl elem -> new Term.PartEl(partEl(elem.elems()));
       case Term.Error error -> error;
       case Term.Coe(var r, var s, var A) -> {
         if (unifier.untyped(r, s)) yield identity("c");
@@ -100,7 +101,7 @@ public class Normalizer {
         yield switch (codom) {
           case Term.Sigma sigma -> KanPDF.coeSigma(sigma, varI, r, s);
           case Term.Pi pi -> KanPDF.coePi(pi, new Term.Coe(r, s, A), varI);
-          case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
+          case Term.Lit(var lit) when lit == Keyword.U -> identity("u");
           default -> term;
         };
       }
@@ -110,10 +111,12 @@ public class Normalizer {
         yield switch (term(A)) {
           case Term.Sigma sigma -> KanPDF.hcomSigma(sigma, r, s, i, el);
           case Term.Pi pi -> KanPDF.hcomPi(pi, r, s, i, el);
-          case Term.Lit (var lit) when lit == Keyword.U -> identity("u");
+          case Term.Lit(var lit) when lit == Keyword.U -> identity("u");
           default -> term;
         };
       }
+      case Term.Ext<?> e -> ext(e);
+      case Term.Path(var binders, var ext) -> new Term.Path(binders, ext(ext));
     };
   }
 
@@ -155,6 +158,25 @@ public class Normalizer {
     return term(ImmutableSeq.empty(), conj);
   }
 
+  public <F extends Term.FaceLattice> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
+    if (ext.faces().isEmpty()) return new Term.Ext<>(term(ext.type()), ImmutableSeq.empty());
+    if (ext.faces().first().component1() instanceof Term.FaceLattice.Cubical) {
+      var elems = ext.faces().map(face -> {
+        var restr = ((Term.FaceLattice.Cubical) face.component1()).restr();
+        return Tuple.of(restr, face.component2());
+      });
+      var x = partEl(elems);
+      return new Term.Ext<>(term(ext.type()), x.map(t ->
+        Tuple.of((F) new Term.FaceLattice.Cubical(t.component1()), t.component2())));
+    }
+    return new Term.Ext<>(term(ext.type()), ext.faces());
+  }
+
+  private @NotNull ImmutableSeq<Tuple2<Term.Cofib.Conj, Term>> partEl(@NotNull ImmutableSeq<Tuple2<Term.Cofib.Conj, Term>> elems) {
+    return elems.flatMap(tup ->
+      term(tup.component1()).conjs().map(conj -> Tuple.of(conj, term(tup.component2()))));
+  }
+
   public @NotNull Normalizer derive() {
     return new Normalizer(MutableMap.from(rho));
   }
@@ -190,15 +212,24 @@ public class Normalizer {
           var paramI = param(i);
           yield new Term.Hcom(term(r), term(s), term(A), paramI, (Term.PartEl) term(partial));
         }
+        case Term.Ext<?> e -> ext(e);
+        case Term.Path(var binders, var ext) -> new Term.Path(localVars(binders), ext(ext));
       };
     }
 
-    public @NotNull Term.Cofib term(Term.Cofib cofib) {
+    public <F extends Term.FaceLattice> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
+      return new Term.Ext<>(term(ext.type()), ext.faces().map(face -> switch (face.component1()) {
+        case Term.FaceLattice.Cubical c -> Tuple.of((F) c.map(this::term), face.component2());
+        case Term.FaceLattice misc -> face;
+      }));
+    }
+
+    public @NotNull Term.Cofib term(@NotNull Term.Cofib cofib) {
       var params = cofib.params().map(this::param);
       return new Term.Cofib(params, cofib.conjs().map(this::term));
     }
 
-    public @NotNull Term.Cofib.Conj term(Term.Cofib.Conj conj) {
+    public @NotNull Term.Cofib.Conj term(@NotNull Term.Cofib.Conj conj) {
       return new Term.Cofib.Conj(conj.atoms().map(this::term));
     }
 
@@ -206,18 +237,22 @@ public class Normalizer {
       return map.getOrDefault(var, var);
     }
 
-    private Param<Term> param(Param<Term> param) {
+    private Param<Term> param(@NotNull Param<Term> param) {
       return new Param<>(param(param.x()), term(param.type()));
     }
 
-    public ImmutableSeq<Param<Term>> params(ImmutableSeq<Param<Term>> params) {
+    public ImmutableSeq<Param<Term>> params(@NotNull ImmutableSeq<Param<Term>> params) {
       return params.map(this::param);
     }
 
-    private LocalVar param(LocalVar param) {
+    private @NotNull LocalVar param(@NotNull LocalVar param) {
       var var = new LocalVar(param.name());
       map.put(param, var);
       return var;
+    }
+
+    private @NotNull ImmutableSeq<LocalVar> localVars(@NotNull ImmutableSeq<LocalVar> params) {
+      return params.map(this::param);
     }
   }
 }
