@@ -229,6 +229,33 @@ public sealed interface Term extends Docile {
       new App(new Hcom(r, s, A.app(s), i, new PartEl(elems)), new Coe(r, s, A)));
   }
 
+  /**
+   * Generalized extension type.
+   *
+   * @see FaceLattice
+   */
+  record Ext<F extends FaceLattice>(@NotNull Term type, @NotNull ImmutableSeq<Tuple2<F, Term>> faces) implements Term {
+  }
+
+  /**
+   * Cubical extension type, also known as Path type.
+   *
+   * @implNote The {@link FaceLattice} inside should always be {@link FaceLattice.Cubical}
+   */
+  record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<FaceLattice.Cubical> ext) implements Term {
+  }
+
+  sealed interface FaceLattice {
+    record Cubical(@NotNull Cofib.Conj restr) implements FaceLattice {
+      public @NotNull Cubical map(@NotNull UnaryOperator<Cofib.Conj> f) {
+        return new Cubical(f.apply(restr));
+      }
+    }
+    record Unfolding() implements FaceLattice {}
+    record Sigma() implements FaceLattice {}
+    record Class() implements FaceLattice {}
+  }
+
   /** Let A be argument, then <code>A i -> A j</code> */
   static @NotNull Pi familyI2J(Term term, Term i, Term j) {
     return (Pi) mkPi(new App(term, i), new App(term, j));
