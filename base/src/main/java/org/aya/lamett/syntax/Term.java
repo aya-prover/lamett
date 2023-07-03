@@ -232,31 +232,34 @@ public sealed interface Term extends Docile {
   /**
    * Generalized extension type.
    *
-   * @see FaceLattice
+   * @see Restr
    */
-  record Ext<F extends FaceLattice>(@NotNull Term type, @NotNull ImmutableSeq<Tuple2<F, Term>> faces) implements Term {
+  record Ext<F extends Restr>(@NotNull Term type, @NotNull ImmutableSeq<Tuple2<F, Term>> faces) implements Term {
   }
 
   /**
    * Cubical extension type, also known as Path type.
    *
-   * @implNote The {@link FaceLattice} inside should always be {@link FaceLattice.Cubical}
+   * @implNote The {@link Restr} inside should always be {@link Restr.Cubical}
    */
-  record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<FaceLattice.Cubical> ext) implements Term {
+  record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<Restr.Cubical> ext) implements Term {
     public @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> carryingPartEl() {
       return ext.faces().map(face -> Tuple.of(face.component1().restr(), face.component2()));
     }
   }
 
-  sealed interface FaceLattice {
-    record Cubical(@NotNull Cofib.Conj restr) implements FaceLattice {
+  /**
+   * Context restriction. Aka cofibration in the context of cubical type theory.
+   */
+  sealed interface Restr {
+    record Cubical(@NotNull Cofib.Conj restr) implements Restr {
       public @NotNull Cubical map(@NotNull UnaryOperator<Cofib.Conj> f) {
         return new Cubical(f.apply(restr));
       }
     }
-    record Unfolding() implements FaceLattice {}
-    record Sigma() implements FaceLattice {}
-    record Class() implements FaceLattice {}
+    record Unfolding(@NotNull DefVar<Def.Fn> def) implements Restr {}
+    record Sigma() implements Restr {}
+    record Class() implements Restr {}
   }
 
   /** Let A be argument, then <code>A i -> A j</code> */

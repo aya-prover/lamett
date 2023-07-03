@@ -120,7 +120,7 @@ public class Normalizer {
         var ext = path.ext();
         var faces = partEl(path.carryingPartEl());
         yield new Term.Path(path.binders(), new Term.Ext<>(term(ext.type()),
-          faces.map(t -> Tuple.of(new Term.FaceLattice.Cubical(t.component1()), t.component2()))));
+          faces.map(t -> Tuple.of(new Term.Restr.Cubical(t.component1()), t.component2()))));
       }
     };
   }
@@ -208,10 +208,10 @@ public class Normalizer {
       };
     }
 
-    public <F extends Term.FaceLattice> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
+    public <F extends Term.Restr> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
       return new Term.Ext<>(term(ext.type()), ext.faces().map(face -> switch (face.component1()) {
-        case Term.FaceLattice.Cubical c -> Tuple.of((F) c.map(this::term), face.component2());
-        case Term.FaceLattice misc -> face;
+        case Term.Restr.Cubical c -> Tuple.of((F) c.map(this::term), face.component2());
+        case Term.Restr misc -> face;
       }));
     }
 
