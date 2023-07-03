@@ -115,8 +115,13 @@ public class Normalizer {
           default -> term;
         };
       }
-      case Term.Ext<?> e -> ext(e);
-      case Term.Path(var binders, var ext) -> new Term.Path(binders, ext(ext));
+      case Term.Ext<?>(var type, var faces) -> new Term.Ext<>(term(type), faces); // TODO: handle non-cubical faces
+      case Term.Path path -> {
+        var ext = path.ext();
+        var faces = partEl(path.carryingPartEl());
+        yield new Term.Path(path.binders(), new Term.Ext<>(term(ext.type()),
+          faces.map(t -> Tuple.of(new Term.FaceLattice.Cubical(t.component1()), t.component2()))));
+      }
     };
   }
 
@@ -156,20 +161,6 @@ public class Normalizer {
 
   public @NotNull Term.Cofib term(Term.Cofib.Conj conj) {
     return term(ImmutableSeq.empty(), conj);
-  }
-
-  public <F extends Term.FaceLattice> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
-    if (ext.faces().isEmpty()) return new Term.Ext<>(term(ext.type()), ImmutableSeq.empty());
-    if (ext.faces().first().component1() instanceof Term.FaceLattice.Cubical) {
-      var elems = ext.faces().map(face -> {
-        var restr = ((Term.FaceLattice.Cubical) face.component1()).restr();
-        return Tuple.of(restr, face.component2());
-      });
-      var x = partEl(elems);
-      return new Term.Ext<>(term(ext.type()), x.map(t ->
-        Tuple.of((F) new Term.FaceLattice.Cubical(t.component1()), t.component2())));
-    }
-    return new Term.Ext<>(term(ext.type()), ext.faces());
   }
 
   private @NotNull ImmutableSeq<Tuple2<Term.Cofib.Conj, Term>> partEl(@NotNull ImmutableSeq<Tuple2<Term.Cofib.Conj, Term>> elems) {

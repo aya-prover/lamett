@@ -4,7 +4,6 @@ import kala.collection.Seq;
 import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableList;
-import kala.tuple.Tuple;
 import org.aya.lamett.syntax.DefVar;
 import org.aya.lamett.syntax.Expr;
 import org.aya.lamett.syntax.Term;
@@ -149,15 +148,11 @@ public interface Distiller {
           Doc.symbol(i.name()),
           Doc.plain("=>"),
           term(el, Free))));
-      case Term.Ext<?> ext -> call(envPrec, "Ext", ext.type()); // TODO: ext.faces()
+      case Term.Ext<?>(var type, var faces) -> call(envPrec, "Ext", type); // TODO: faces
       case Term.Path path -> {
-        var elems = path.ext().faces().map(face -> {
-          var restr = face.component1().restr();
-          return Tuple.of(restr, face.component2());
-        });
-        var asPartial = term(new Term.PartEl(elems), envPrec);
+        var last = term(new Term.PartEl(path.carryingPartEl()), envPrec);
         yield Doc.sep(Doc.wrap("[|", "|]",
-          Doc.commaList(path.binders().map(x -> Doc.plain(x.name())))), asPartial);
+          Doc.commaList(path.binders().map(x -> Doc.plain(x.name())))), last);
       }
     };
   }

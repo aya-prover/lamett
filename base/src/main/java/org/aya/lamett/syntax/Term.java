@@ -243,6 +243,9 @@ public sealed interface Term extends Docile {
    * @implNote The {@link FaceLattice} inside should always be {@link FaceLattice.Cubical}
    */
   record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<FaceLattice.Cubical> ext) implements Term {
+    public @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> carryingPartEl() {
+      return ext.faces().map(face -> Tuple.of(face.component1().restr(), face.component2()));
+    }
   }
 
   sealed interface FaceLattice {
