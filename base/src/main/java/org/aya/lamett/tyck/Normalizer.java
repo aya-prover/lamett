@@ -115,7 +115,10 @@ public class Normalizer {
           default -> term;
         };
       }
-      case Term.Ext<?>(var type, var faces) -> new Term.Ext<>(term(type), faces); // TODO: handle non-cubical faces
+      case Term.Ext<?>(var type, var faces) -> switch (faces.firstOption().getOrNull()) {
+        case Term.Restr.Unfolding(var really, var unfolded) when really -> term(unfolded);
+        case Term.Restr misc, null -> new Term.Ext<>(term(type), faces);
+      };
       case Term.Path path -> {
         var faces = partEl(path.carryingPartEl());
         yield new Term.Path(
@@ -212,6 +215,7 @@ public class Normalizer {
     public <F extends Term.Restr> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
       return new Term.Ext<>(term(ext.type()), ext.faces().map(face -> switch (face) {
         case Term.Restr.Cubical(var restr, var term) -> (F) new Term.Restr.Cubical(term(restr), term(term));
+        case Term.Restr.Unfolding(var really, var term) -> (F) new Term.Restr.Unfolding(really, term(term));
         case Term.Restr misc -> face;
       }));
     }
