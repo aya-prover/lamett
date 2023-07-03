@@ -12,6 +12,7 @@ import org.aya.lamett.util.Param;
 import org.aya.pretty.doc.Doc;
 import org.aya.pretty.doc.Docile;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.UnaryOperator;
 
@@ -177,9 +178,11 @@ public sealed interface Term extends Docile {
     public @NotNull PartEl map(UnaryOperator<Tuple2<Cofib.Conj, Term>> f) {
       return new PartEl(elems.map(f));
     }
+
     public @NotNull PartEl map1(UnaryOperator<Cofib.Conj> f) {
       return new PartEl(elems.map(t -> Tuple.of(f.apply(t.component1()), t.component2())));
     }
+
     public @NotNull PartEl map2(UnaryOperator<Term> f) {
       return new PartEl(elems.map(t -> Tuple.of(t.component1(), f.apply(t.component2()))));
     }
@@ -203,6 +206,7 @@ public sealed interface Term extends Docile {
      *   <li>x ∈ FV(A.type()), x ∈ FV(B)</li>
      *   <li>A.ref() ∈ FV(B)</li>
      * </ul>
+     *
      * @return {@code \x : A.type() => B[coe(r, x, A, arg) / A.ref()]}
      */
     public static @NotNull Lam cover(LocalVar x, Param<Term> A, Term B, Term arg, Term r) {
@@ -219,7 +223,8 @@ public sealed interface Term extends Docile {
       return familyI2J(A, r, s);
     }
   }
-  record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i, @NotNull PartEl el) implements Term {}
+  record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i,
+              @NotNull PartEl el) implements Term {}
 
   static @NotNull Term com(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i, @NotNull PartEl el) {
     var M = new LocalVar("f");
@@ -252,6 +257,16 @@ public sealed interface Term extends Docile {
    * Context restriction. Aka cofibration in the context of cubical type theory.
    */
   sealed interface Restr {
+    /** the all-in-one map, maybe there's a better way */
+    default @NotNull Restr map(@NotNull UnaryOperator<Term> mapper, @Nullable UnaryOperator<Cofib.Conj> cubeMapper) {
+      return switch (this) {
+        case Cubical(var restr, var term) ->
+          new Cubical(cubeMapper != null ? cubeMapper.apply(restr) : restr, mapper.apply(term));
+        case Unfolding(var really, var unfolded) -> new Unfolding(really, mapper.apply(unfolded));
+        case Class(var fields) -> new Class(fields.map(t -> Tuple.of(t.component1(), mapper.apply(t.component2()))));
+        case Sigma sigma -> sigma;
+      };
+    }
     record Cubical(@NotNull Cofib.Conj restr, @NotNull Term term) implements Restr {
       public static @NotNull Cubical from(@NotNull Tuple2<Cofib.Conj, Term> elem) {
         return new Cubical(elem.component1(), elem.component2());
