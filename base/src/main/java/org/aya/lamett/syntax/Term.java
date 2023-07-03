@@ -239,7 +239,7 @@ public sealed interface Term extends Docile {
    *
    * @see Restr
    */
-  record Ext<F extends Restr>(@NotNull Term type, @NotNull ImmutableSeq<F> faces) implements Term {
+  record Ext<F extends Restr>(@NotNull Term type, @NotNull F restr) implements Term {
   }
 
   /**
@@ -248,9 +248,6 @@ public sealed interface Term extends Docile {
    * @implNote The {@link Restr} inside should always be {@link Restr.Cubical}
    */
   record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<Restr.Cubical> ext) implements Term {
-    public @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> carryingPartEl() {
-      return ext.faces().map(face -> Tuple.of(face.restr(), face.term()));
-    }
   }
 
   /**
@@ -258,19 +255,16 @@ public sealed interface Term extends Docile {
    */
   sealed interface Restr {
     /** the all-in-one map, maybe there's a better way */
-    default @NotNull Restr map(@NotNull UnaryOperator<Term> mapper, @Nullable UnaryOperator<Cofib.Conj> cubeMapper) {
+    default @NotNull Restr map(@NotNull UnaryOperator<Term> mapTerm, @Nullable UnaryOperator<Cofib.Conj> mapConj) {
       return switch (this) {
-        case Cubical(var restr, var term) ->
-          new Cubical(cubeMapper != null ? cubeMapper.apply(restr) : restr, mapper.apply(term));
-        case Unfolding(var really, var unfolded) -> new Unfolding(really, mapper.apply(unfolded));
-        case Class(var fields) -> new Class(fields.map(t -> Tuple.of(t.component1(), mapper.apply(t.component2()))));
+        case Cubical(var bdry) -> new Cubical(bdry.map(t ->
+          Tuple.of(mapConj != null ? mapConj.apply(t.component1()) : t.component1(), mapTerm.apply(t.component2()))));
+        case Unfolding(var really, var unfolded) -> new Unfolding(really, mapTerm.apply(unfolded));
+        case Class(var fields) -> new Class(fields.map(t -> Tuple.of(t.component1(), mapTerm.apply(t.component2()))));
         case Sigma sigma -> sigma;
       };
     }
-    record Cubical(@NotNull Cofib.Conj restr, @NotNull Term term) implements Restr {
-      public static @NotNull Cubical from(@NotNull Tuple2<Cofib.Conj, Term> elem) {
-        return new Cubical(elem.component1(), elem.component2());
-      }
+    record Cubical(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> boundaries) implements Restr {
     }
     record Unfolding(@NotNull DefVar<Def.Fn> defVar, @NotNull Term unfolded) implements Restr {}
     record Sigma() implements Restr {}

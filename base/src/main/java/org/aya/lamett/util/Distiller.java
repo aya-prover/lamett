@@ -150,7 +150,7 @@ public interface Distiller {
           term(el, Free))));
       case Term.Ext<?>(var type, var faces) -> call(envPrec, "Ext", type); // TODO: faces
       case Term.Path path -> {
-        var last = term(new Term.PartEl(path.carryingPartEl()), envPrec);
+        var last = term(new Term.PartEl(path.ext().restr().boundaries()), envPrec);
         yield Doc.sep(Doc.wrap("[|", "|]",
           Doc.commaList(path.binders().map(x -> Doc.plain(x.name())))), last);
       }

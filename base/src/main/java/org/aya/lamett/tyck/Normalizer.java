@@ -115,15 +115,12 @@ public class Normalizer {
           default -> term;
         };
       }
-      case Term.Ext<?>(var type, var faces) -> new Term.Ext<>(
-        term(type),
-        faces.map(face -> face.map(this::term, null)) // cubical ext type should be Path
-      );
-      case Term.Path path -> {
-        var faces = partEl(path.carryingPartEl());
+      case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type), face.map(this::term, null));
+      case Term.Path(var binders, Term.Ext<?>(var type, Term.Restr.Cubical(var bdry))) -> {
+        var faces = partEl(bdry);
         yield new Term.Path(
-          path.binders(),
-          new Term.Ext<>(term(path.ext().type()), faces.map(Term.Restr.Cubical::from))
+          binders,
+          new Term.Ext<>(term(type), new Term.Restr.Cubical(faces))
         );
       }
     };
@@ -213,8 +210,7 @@ public class Normalizer {
     }
 
     public <F extends Term.Restr> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
-      return new Term.Ext<>(term(ext.type()), ext.faces().map(face ->
-        (F) face.map(this::term, this::term)));
+      return new Term.Ext<>(term(ext.type()), (F) ext.restr().map(this::term, this::term));
     }
 
     public @NotNull Term.Cofib term(@NotNull Term.Cofib cofib) {
