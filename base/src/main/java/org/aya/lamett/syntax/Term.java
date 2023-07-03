@@ -234,7 +234,7 @@ public sealed interface Term extends Docile {
    *
    * @see Restr
    */
-  record Ext<F extends Restr>(@NotNull Term type, @NotNull ImmutableSeq<Tuple2<F, Term>> faces) implements Term {
+  record Ext<F extends Restr>(@NotNull Term type, @NotNull ImmutableSeq<F> faces) implements Term {
   }
 
   /**
@@ -244,7 +244,7 @@ public sealed interface Term extends Docile {
    */
   record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<Restr.Cubical> ext) implements Term {
     public @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> carryingPartEl() {
-      return ext.faces().map(face -> Tuple.of(face.component1().restr(), face.component2()));
+      return ext.faces().map(face -> Tuple.of(face.restr(), face.term()));
     }
   }
 
@@ -252,14 +252,14 @@ public sealed interface Term extends Docile {
    * Context restriction. Aka cofibration in the context of cubical type theory.
    */
   sealed interface Restr {
-    record Cubical(@NotNull Cofib.Conj restr) implements Restr {
-      public @NotNull Cubical map(@NotNull UnaryOperator<Cofib.Conj> f) {
-        return new Cubical(f.apply(restr));
+    record Cubical(@NotNull Cofib.Conj restr, @NotNull Term term) implements Restr {
+      public static @NotNull Cubical from(@NotNull Tuple2<Cofib.Conj, Term> elem) {
+        return new Cubical(elem.component1(), elem.component2());
       }
     }
-    record Unfolding(@NotNull DefVar<Def.Fn> def) implements Restr {}
+    record Unfolding(boolean really, @NotNull Term unfolded) implements Restr {}
     record Sigma() implements Restr {}
-    record Class() implements Restr {}
+    record Class(@NotNull ImmutableSeq<Tuple2<String, Term>> fields) implements Restr {}
   }
 
   /** Let A be argument, then <code>A i -> A j</code> */

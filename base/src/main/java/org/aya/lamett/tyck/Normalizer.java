@@ -117,10 +117,11 @@ public class Normalizer {
       }
       case Term.Ext<?>(var type, var faces) -> new Term.Ext<>(term(type), faces); // TODO: handle non-cubical faces
       case Term.Path path -> {
-        var ext = path.ext();
         var faces = partEl(path.carryingPartEl());
-        yield new Term.Path(path.binders(), new Term.Ext<>(term(ext.type()),
-          faces.map(t -> Tuple.of(new Term.Restr.Cubical(t.component1()), t.component2()))));
+        yield new Term.Path(
+          path.binders(),
+          new Term.Ext<>(term(path.ext().type()), faces.map(Term.Restr.Cubical::from))
+        );
       }
     };
   }
@@ -209,8 +210,8 @@ public class Normalizer {
     }
 
     public <F extends Term.Restr> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
-      return new Term.Ext<>(term(ext.type()), ext.faces().map(face -> switch (face.component1()) {
-        case Term.Restr.Cubical c -> Tuple.of((F) c.map(this::term), face.component2());
+      return new Term.Ext<>(term(ext.type()), ext.faces().map(face -> switch (face) {
+        case Term.Restr.Cubical(var restr, var term) -> (F) new Term.Restr.Cubical(term(restr), term(term));
         case Term.Restr misc -> face;
       }));
     }
