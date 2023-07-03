@@ -12,7 +12,6 @@ import org.aya.lamett.util.Param;
 import org.aya.pretty.doc.Doc;
 import org.aya.pretty.doc.Docile;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.function.UnaryOperator;
 
@@ -255,10 +254,10 @@ public sealed interface Term extends Docile {
    */
   sealed interface Restr {
     /** the all-in-one map, maybe there's a better way */
-    default @NotNull Restr map(@NotNull UnaryOperator<Term> mapTerm, @Nullable UnaryOperator<Cofib.Conj> mapConj) {
+    default @NotNull Restr map(@NotNull UnaryOperator<Term> mapTerm, @NotNull UnaryOperator<Cofib.Conj> mapConj) {
       return switch (this) {
         case Cubical(var bdry) -> new Cubical(bdry.map(t ->
-          Tuple.of(mapConj != null ? mapConj.apply(t.component1()) : t.component1(), mapTerm.apply(t.component2()))));
+          Tuple.of(mapConj.apply(t.component1()), mapTerm.apply(t.component2()))));
         case Unfolding(var really, var unfolded) -> new Unfolding(really, mapTerm.apply(unfolded));
         case Class(var fields) -> new Class(fields.map(t -> Tuple.of(t.component1(), mapTerm.apply(t.component2()))));
         case Sigma sigma -> sigma;

@@ -10,6 +10,8 @@ import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.UnaryOperator;
+
 public class Normalizer {
   private final @NotNull MutableMap<LocalVar, Term> rho;
 
@@ -115,7 +117,7 @@ public class Normalizer {
           default -> term;
         };
       }
-      case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type), face.map(this::term, null));
+      case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type), face.map(this::term, UnaryOperator.identity()));
       case Term.Path(var binders, Term.Ext<?>(var type, Term.Restr.Cubical(var bdry))) -> {
         var faces = partEl(bdry);
         yield new Term.Path(
