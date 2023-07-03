@@ -117,7 +117,7 @@ public class Normalizer {
       }
       case Term.Ext<?>(var type, var faces) -> new Term.Ext<>(
         term(type),
-        faces.map(face -> face.map(this::term, null)) // cubical ext type not available here
+        faces.map(face -> face.map(this::term, null)) // cubical ext type should be Path
       );
       case Term.Path path -> {
         var faces = partEl(path.carryingPartEl());

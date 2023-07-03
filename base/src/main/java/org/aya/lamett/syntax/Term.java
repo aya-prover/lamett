@@ -272,7 +272,7 @@ public sealed interface Term extends Docile {
         return new Cubical(elem.component1(), elem.component2());
       }
     }
-    record Unfolding(boolean really, @NotNull Term unfolded) implements Restr {}
+    record Unfolding(@NotNull DefVar<Def.Fn> defVar, @NotNull Term unfolded) implements Restr {}
     record Sigma() implements Restr {}
     record Class(@NotNull ImmutableSeq<Tuple2<String, Term>> fields) implements Restr {}
   }
