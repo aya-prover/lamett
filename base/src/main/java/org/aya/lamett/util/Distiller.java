@@ -154,6 +154,7 @@ public interface Distiller {
         yield Doc.sep(Doc.wrap("[|", "|]",
           Doc.commaList(path.binders().map(x -> Doc.plain(x.name())))), last);
       }
+      case Term.Sub(Term phi, Term partEl) -> call(envPrec, "Sub", phi, partEl);
       case Term.InS(var phi, var of) -> insideOut(envPrec, phi, of, "inS");
       case Term.OutS(var phi, var partEl, var of) -> insideOut(envPrec, phi, of, "outS");
     };

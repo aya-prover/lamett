@@ -154,6 +154,9 @@ public record LamettProducer(
       }
       if (node.peekChild(KW_PARTIAL) != null) return new Expr.PrimCall(pos, Expr.PrimType.Partial);
       if (node.peekChild(KW_COE) != null) return new Expr.PrimCall(pos, Expr.PrimType.Coe);
+      if (node.peekChild(KW_SUB) != null) return new Expr.PrimCall(pos, Expr.PrimType.Sub);
+      if (node.peekChild(KW_INS) != null) return new Expr.PrimCall(pos, Expr.PrimType.InS);
+      if (node.peekChild(KW_OUTS) != null) return new Expr.PrimCall(pos, Expr.PrimType.OutS);
 
       return unreachable(node);
     }

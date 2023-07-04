@@ -89,10 +89,12 @@ public interface LamettPsiElementTypes {
   IElementType KW_F = new LamettPsiTokenType("KW_F");
   IElementType KW_FORALL = new LamettPsiTokenType("KW_FORALL");
   IElementType KW_INEG = new LamettPsiTokenType("KW_INEG");
+  IElementType KW_INS = new LamettPsiTokenType("KW_INS");
   IElementType KW_INTERVAL = new LamettPsiTokenType("KW_INTERVAL");
   IElementType KW_ISET = new LamettPsiTokenType("ISet");
   IElementType KW_LAMBDA = new LamettPsiTokenType("fn");
   IElementType KW_NEW = new LamettPsiTokenType("new");
+  IElementType KW_OUTS = new LamettPsiTokenType("KW_OUTS");
   IElementType KW_OVERRIDE = new LamettPsiTokenType("override");
   IElementType KW_PARTIAL = new LamettPsiTokenType("KW_PARTIAL");
   IElementType KW_PI = new LamettPsiTokenType("Fn");
@@ -100,6 +102,7 @@ public interface LamettPsiElementTypes {
   IElementType KW_SELF = new LamettPsiTokenType("self");
   IElementType KW_SET = new LamettPsiTokenType("KW_SET");
   IElementType KW_SIGMA = new LamettPsiTokenType("KW_SIGMA");
+  IElementType KW_SUB = new LamettPsiTokenType("KW_SUB");
   IElementType KW_TYPE = new LamettPsiTokenType("Type");
   IElementType KW_ULIFT = new LamettPsiTokenType("KW_ULIFT");
   IElementType LARROW = new LamettPsiTokenType("<-");

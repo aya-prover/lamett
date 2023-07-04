@@ -1,15 +1,16 @@
 // This is a generated file. Not intended for manual editing.
 package org.aya.lamett.parser;
 
+import com.intellij.lang.ASTNode;
+import com.intellij.lang.LightPsiParser;
 import com.intellij.lang.PsiBuilder;
 import com.intellij.lang.PsiBuilder.Marker;
-import static org.aya.lamett.parser.LamettPsiElementTypes.*;
-import static com.intellij.lang.parser.GeneratedParserUtilBase.*;
-import com.intellij.psi.tree.IElementType;
-import com.intellij.lang.ASTNode;
-import com.intellij.psi.tree.TokenSet;
 import com.intellij.lang.PsiParser;
-import com.intellij.lang.LightPsiParser;
+import com.intellij.psi.tree.IElementType;
+import com.intellij.psi.tree.TokenSet;
+
+import static com.intellij.lang.parser.GeneratedParserUtilBase.*;
+import static org.aya.lamett.parser.LamettPsiElementTypes.*;
 
 @SuppressWarnings({"SimplifiableIfStatement", "UnusedAssignment"})
 public class LamettPsiParser implements PsiParser, LightPsiParser {
@@ -290,7 +291,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F | KW_PARTIAL | KW_COE
+  // KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F | KW_PARTIAL | KW_COE | KW_SUB | KW_INS | KW_OUTS
   public static boolean constExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "constExpr")) return false;
     boolean r;
@@ -303,6 +304,9 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     if (!r) r = consumeToken(b, KW_F);
     if (!r) r = consumeToken(b, KW_PARTIAL);
     if (!r) r = consumeToken(b, KW_COE);
+    if (!r) r = consumeToken(b, KW_SUB);
+    if (!r) r = consumeToken(b, KW_INS);
+    if (!r) r = consumeToken(b, KW_OUTS);
     exit_section_(b, l, m, r, false, null);
     return r;
   }
