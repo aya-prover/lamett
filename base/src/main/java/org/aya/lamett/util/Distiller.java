@@ -154,21 +154,29 @@ public interface Distiller {
         yield Doc.sep(Doc.wrap("[|", "|]",
           Doc.commaList(path.binders().map(x -> Doc.plain(x.name())))), last);
       }
+      case Term.InS(var phi, var of) -> insideOut(envPrec, phi, of, "inS");
+      case Term.OutS(var phi, var of, var partEl) -> insideOut(envPrec, phi, of, "outS");
     };
+  }
+  private static @NotNull Doc insideOut(@NotNull Prec envPrec, @NotNull Term phi, @NotNull Term of, String fnName) {
+    var doc = Doc.sep(Doc.plain(fnName), term(phi, AppSpine), term(of, AppSpine));
+    return checkParen(envPrec, doc, AppSpine);
+  }
+  private static @NotNull Doc checkParen(@NotNull Prec outer, @NotNull Doc binApp, @NotNull Prec binOp) {
+    return outer.ordinal() >= binOp.ordinal() ? Doc.parened(binApp) : binApp;
   }
   private static @NotNull Doc call(Prec envPrec, String kw, Term... args) {
     var docs = MutableList.of(Doc.plain(kw));
     for (var arg : args) docs.append(term(arg, AppSpine));
     var doc = Doc.sep(docs);
-    return envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
+    return checkParen(envPrec, doc, AppHead);
   }
   private static @NotNull Doc call(Prec envPrec, SeqView<Term> args, DefVar<?> name) {
     var doc = Doc.sep(args
       .map(t -> term(t, AppSpine)).prepended(Doc.plain(name.name)));
     if (args.isEmpty()) return doc;
-    return envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
+    return checkParen(envPrec, doc, AppHead);
   }
-
   static Doc args(ImmutableSeq<Arg<Term>> args) {
     return Doc.wrap("(", ")", Doc.commaList(args.map(
       arg -> term(arg.term(), Free))));

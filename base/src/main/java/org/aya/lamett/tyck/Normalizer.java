@@ -117,13 +117,39 @@ public class Normalizer {
           default -> term;
         };
       }
-      case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type), face.map(this::term, UnaryOperator.identity()));
+      case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type),
+        face.map(this::term, UnaryOperator.identity()));
       case Term.Path(var binders, Term.Ext<?>(var type, Term.Restr.Cubical(var bdry))) -> {
         var faces = partEl(bdry);
         yield new Term.Path(
           binders,
           new Term.Ext<>(term(type), new Term.Restr.Cubical(faces))
         );
+      }
+      case Term.InS(var phi, var of) -> {
+        var inPhi = term(phi);
+        var inOf = term(of);
+        if (inOf instanceof Term.OutS(var outPhi, var outOf, var outPartEl)
+          && outPhi instanceof Term.Cofib outCofib
+          && inPhi instanceof Term.Cofib inCofib
+          && unifier.cofibImply(outCofib, inCofib))
+          yield term(outOf);
+        yield new Term.InS(inPhi, inOf);
+      }
+      case Term.OutS(var phi, var of, var partEl) -> {
+        var outPhi = term(phi);
+        var outOf = term(of);
+        var outPartEl = term(partEl);
+        if (outOf instanceof Term.InS(var inPhi, var inOf))
+          yield term(inOf);
+        // TODO[is-this-correct?]: check if the partial element is `Partial A { u }`
+        if (outPartEl instanceof Term.PartEl(var elems) && elems.sizeEquals(1)) {
+          var only = elems.first();
+          var unification = unifier.derive();
+          if (unification.addNFConj(only.component1()))
+            yield only.component2();
+        }
+        yield new Term.OutS(outPhi, outOf, outPartEl);
       }
     };
   }
@@ -208,6 +234,8 @@ public class Normalizer {
         }
         case Term.Ext<?> e -> ext(e);
         case Term.Path(var binders, var ext) -> new Term.Path(localVars(binders), ext(ext));
+        case Term.InS(var phi, var of) -> new Term.InS(term(phi), term(of));
+        case Term.OutS(var phi, var of, var partEl) -> new Term.OutS(term(phi), term(of), term(partEl));
       };
     }
 
