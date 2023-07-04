@@ -163,7 +163,7 @@ public interface Distiller {
     return checkParen(envPrec, doc, AppSpine);
   }
   private static @NotNull Doc checkParen(@NotNull Prec outer, @NotNull Doc binApp, @NotNull Prec binOp) {
-    return outer.ordinal() >= binOp.ordinal() ? Doc.parened(binApp) : binApp;
+    return outer.ordinal() > binOp.ordinal() ? Doc.parened(binApp) : binApp;
   }
   private static @NotNull Doc call(Prec envPrec, String kw, Term... args) {
     var docs = MutableList.of(Doc.plain(kw));
