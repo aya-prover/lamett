@@ -27,7 +27,7 @@ public interface Distiller {
       case Expr.Kw u -> Doc.plain(u.keyword().name());
       case Expr.App two -> {
         var inner = Doc.sep(expr(two.f(), AppHead), expr(two.a(), AppSpine));
-        yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(inner) : inner;
+        yield checkParen(envPrec, inner, AppHead);
       }
       case Expr.Pair two -> Doc.wrap("<<", ">>",
         Doc.commaList(Seq.of(expr(two.a(), Free), expr(two.b(), Free))));
@@ -38,41 +38,41 @@ public interface Distiller {
           Doc.plain("=>"),
           expr(lam.a(), Free)
         );
-        yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, Free);
       }
       case Expr.Resolved resolved -> Doc.plain(resolved.ref().name());
       case Expr.Unresolved unresolved -> Doc.plain(unresolved.name());
       case Expr.Proj proj -> Doc.cat(expr(proj.t(), ProjHead), Doc.plain("." + (proj.isOne() ? 1 : 2)));
       case Expr.DT dt -> {
         var doc = dependentType(dt instanceof Expr.Pi, dt.param(), expr(dt.cod(), Cod));
-        yield envPrec.ordinal() > Cod.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, Cod);
       }
       case Expr.INeg neg -> {
         var doc = Doc.sep(Doc.symbol("¬"), expr(neg.body(), UOpSpine));
-        yield envPrec.ordinal() > UOp.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, UOp);
       }
       case Expr.CofibConj conj -> {
         var doc = Doc.sep(expr(conj.lhs(), BinOpSpine), Doc.plain("∧"), expr(conj.rhs(), BinOpSpine));
-        yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, BinOp);
       }
       case Expr.CofibDisj disj -> {
         var doc = Doc.sep(expr(disj.lhs(), BinOpSpine), Doc.plain("∨"), expr(disj.rhs(), BinOpSpine));
-        yield envPrec.ordinal() > BinOp.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, BinOp);
       }
       case Expr.CofibEq eq -> {
         var doc = Doc.sep(expr(eq.lhs(), Free), Doc.plain("="), expr(eq.rhs(), Free));
-        yield envPrec.ordinal() > BinOpSpine.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, BinOpSpine);
       }
       case Expr.CofibForall forall -> {
         var doc = Doc.sep(Doc.plain("∀"), Doc.sep(Doc.plain(forall.i().name()), Doc.plain("=>")), expr(forall.body(), Cod));
-        yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, Free);
       }
       case Expr.PrimCall partial -> Doc.plain(partial.type().prettyName);
       case Expr.PartEl elem -> {
         var clauses = elem.elems().map(tup -> Doc.sep(expr(tup.component1(), Free), Doc.plain(":="), expr(tup.component2(), Free)));
         var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain("|")), d2));
         var doc = Doc.sep(Doc.plain("{|"), center, Doc.plain("|}"));
-        yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, AppHead);
       }
       case Expr.Hole ignored -> Doc.symbol("_");
     };
@@ -86,7 +86,7 @@ public interface Distiller {
     return switch (term) {
       case Term.DT dt -> {
         var doc = dependentType(dt instanceof Term.Pi, dt.param(), term(dt.cod(), Cod));
-        yield envPrec.ordinal() > Cod.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, Cod);
       }
       case Term.Lit ui -> Doc.plain(ui.keyword().name());
       case Term.Ref ref -> Doc.plain(ref.var().name());
@@ -97,12 +97,12 @@ public interface Distiller {
           Doc.plain("=>"),
           term(lam.body(), Free)
         );
-        yield envPrec.ordinal() > Free.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, Free);
       }
       case Term.Proj proj -> Doc.cat(term(proj.t(), ProjHead), Doc.plain("." + (proj.isOne() ? 1 : 2)));
       case Term.App two -> {
         var inner = Doc.sep(term(two.f(), AppHead), term(two.a(), AppSpine));
-        yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(inner) : inner;
+        yield checkParen(envPrec, inner, AppHead);
       }
       case Term.Pair two -> Doc.wrap("<<", ">>",
         Doc.commaList(Seq.of(term(two.f(), Free), term(two.a(), Free))));
@@ -131,7 +131,7 @@ public interface Distiller {
       }
       case Term.Cofib.Eq eq -> {
         var doc = Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp));
-        yield envPrec.ordinal() > BinOpSpine.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, BinOpSpine);
       }
       case Term.PartTy(var cof, var ty) -> call(envPrec, "Partial", cof, ty);
       case Term.PartEl elem -> {
@@ -139,7 +139,7 @@ public interface Distiller {
           Doc.sep(term(new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.of(tup.component1())), Free), Doc.plain(":="), term(tup.component2(), Free)));
         var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain("|")), d2));
         var doc = Doc.sep(Doc.plain("{|"), center, Doc.plain("|}"));
-        yield envPrec.ordinal() > AppHead.ordinal() ? Doc.parened(doc) : doc;
+        yield checkParen(envPrec, doc, AppHead);
       }
       case Term.Error(var msg) -> Doc.plain(msg);
       case Term.Coe(var r, var s, var A) -> call(envPrec, "coe", r, s, A);
