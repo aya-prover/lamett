@@ -133,7 +133,7 @@ public interface Distiller {
         var doc = Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp));
         yield envPrec.ordinal() > BinOpSpine.ordinal() ? Doc.parened(doc) : doc;
       }
-      case Term.Partial(var cof, var ty) -> call(envPrec, "Partial", cof, ty);
+      case Term.PartTy(var cof, var ty) -> call(envPrec, "Partial", cof, ty);
       case Term.PartEl elem -> {
         var clauses = elem.elems().map(tup ->
           Doc.sep(term(new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.of(tup.component1())), Free), Doc.plain(":="), term(tup.component2(), Free)));

@@ -91,7 +91,7 @@ public class Normalizer {
         if (eq.rhs() instanceof Term.Ref(var ref) && var == ref) yield Term.Cofib.known(true);
         yield eq;
       }
-      case Term.Partial partial -> new Term.Partial(term(partial.cofib()), term(partial.type()));
+      case Term.PartTy partTy -> new Term.PartTy(term(partTy.cofib()), term(partTy.type()));
       case Term.PartEl elem -> new Term.PartEl(partEl(elem.elems()));
       case Term.Error error -> error;
       case Term.Coe(var r, var s, var A) -> {
@@ -197,7 +197,7 @@ public class Normalizer {
         case Term.Cofib cofib -> term(cofib);
         case Term.Cofib.Eq eq -> new Term.Cofib.Eq(term(eq.lhs()), term(eq.rhs()));
         case Term.INeg t -> new Term.INeg(term(t));
-        case Term.Partial(var cof, var ty) -> new Term.Partial(term(cof), term(ty));
+        case Term.PartTy(var cof, var ty) -> new Term.PartTy(term(cof), term(ty));
         case Term.PartEl(var elems) ->
           new Term.PartEl(elems.map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
         case Term.Error error -> error;

@@ -172,7 +172,7 @@ public sealed interface Term extends Docile {
     return new INeg(this);
   }
 
-  record Partial(@NotNull Term cofib, @NotNull Term type) implements Term {}
+  record PartTy(@NotNull Term cofib, @NotNull Term type) implements Term {}
   record PartEl(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) implements Term {
     public @NotNull PartEl map(UnaryOperator<Tuple2<Cofib.Conj, Term>> f) {
       return new PartEl(elems.map(f));

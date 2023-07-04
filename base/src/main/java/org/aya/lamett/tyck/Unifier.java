@@ -121,7 +121,7 @@ public class Unifier {
       case Term.ConCall lcall when r instanceof Term.ConCall rcall -> lcall.fn() == rcall.fn()
         && unifySeq(lcall.args(), rcall.args());
       case Term.Cofib lphi when r instanceof Term.Cofib rphi -> cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
-      case Term.Partial lp when r instanceof Term.Partial rp -> untypedInner(lp.cofib(), rp.cofib())
+      case Term.PartTy lp when r instanceof Term.PartTy rp -> untypedInner(lp.cofib(), rp.cofib())
         && untypedInner(lp.type(), rp.type());
       case Term.PartEl le when r instanceof Term.PartEl re -> le.elems().allMatch(ltup ->
         re.elems().allMatch(rtup -> withCofibConj(

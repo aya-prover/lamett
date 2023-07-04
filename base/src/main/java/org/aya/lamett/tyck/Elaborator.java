@@ -50,14 +50,14 @@ public record Elaborator(
         yield new Term.Pair(lhs, inherit(two.b(), dt.codomain(lhs)));
       }
       case Expr.PartEl elem -> {
-        if (!(normalize(type) instanceof Term.Partial partial)) throw new SPE(elem.pos(),
+        if (!(normalize(type) instanceof Term.PartTy partTy)) throw new SPE(elem.pos(),
           Doc.english("Expects a partial type for"), expr, Doc.plain("got"), type);
         var elems = elem.elems().flatMap(tup -> {
           var cofib = checkCofib(tup.component1());
           cofib = normalize(cofib);
           assert cofib.params().isEmpty();
           return cofib.conjs().mapNotNull(conj -> unifier.withCofibConj(
-            conj, () -> new Tuple2<>(conj, inherit(tup.component2(), partial.type())), null));
+            conj, () -> new Tuple2<>(conj, inherit(tup.component2(), partTy.type())), null));
         });
         for (var i = 0; i < elems.size(); i++) {
           for (var j = i + 1; j < elems.size(); j++) {
@@ -65,12 +65,12 @@ public record Elaborator(
             var term1 = elems.get(i).component2();
             var term2 = elems.get(j).component2();
             unifier.withCofibConj(conj, () -> {
-              unify(normalize(term1), normalize(partial.type()), normalize(term2), elem.pos());
+              unify(normalize(term1), normalize(partTy.type()), normalize(term2), elem.pos());
               return null;
             }, null);
           }
         }
-        unify(new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1)), Term.F, partial.cofib(), elem.pos());
+        unify(new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1)), Term.F, partTy.cofib(), elem.pos());
         yield new Term.PartEl(elems);
       }
       case Expr.Hole hole -> {
@@ -219,7 +219,7 @@ public record Elaborator(
           var A = new LocalVar("A");
           var term = Term.mkLam(
             ImmutableSeq.of(phi, A).view(),
-            new Term.Partial(new Term.Ref(phi), new Term.Ref(A)));
+            new Term.PartTy(new Term.Ref(phi), new Term.Ref(A)));
           var type = Term.mkPi(Term.F, Term.mkPi(Term.U, Term.U));
           yield new Synth(term, type);
         }
