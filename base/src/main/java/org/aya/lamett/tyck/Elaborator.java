@@ -4,6 +4,7 @@ import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableArrayList;
 import kala.collection.mutable.MutableList;
 import kala.collection.mutable.MutableMap;
+import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
 import org.aya.lamett.syntax.*;
 import org.aya.lamett.util.LocalVar;
@@ -123,13 +124,13 @@ public record Elaborator(
     var synth = switch (expr) {
       case Expr.Unresolved unresolved -> throw new InternalError("Unresolved expr: " + unresolved);
       case Expr.Kw(var $, var kw) when
-          kw == Keyword.I -> new Synth(new Term.Lit(kw), Term.ISet);
+        kw == Keyword.I -> new Synth(new Term.Lit(kw), Term.ISet);
       case Expr.Kw(var $, var kw) when
         kw == Keyword.F ||
           kw == Keyword.ISet ||
           kw == Keyword.Set -> new Synth(new Term.Lit(kw), Term.Set);
       case Expr.Kw(var $, var kw) when
-          kw == Keyword.U -> new Synth(new Term.Lit(kw), Term.U);
+        kw == Keyword.U -> new Synth(new Term.Lit(kw), Term.U);
       case Expr.Kw(var $, var kw) when
         kw == Keyword.Zero ||
           kw == Keyword.One -> new Synth(new Term.Lit(kw), Term.I);
@@ -225,6 +226,58 @@ public record Elaborator(
         }
         case Coe -> throw new UnsupportedOperationException("TODO");
         case Hcom -> throw new UnsupportedOperationException("TODO");
+        case Sub -> {
+          // Sub (A : U) (φ : F) (partEl : Partial φ A) : Set
+          var A = new LocalVar("A");
+          var phi = new LocalVar("φ");
+          var partEl = new LocalVar("partEl");
+          var term = Term.mkLam(
+            ImmutableSeq.of(A, phi, partEl).view(),
+            new Term.Sub(new Term.Ref(phi), new Term.Ref(partEl)));
+          var type = Term.mkPi(ImmutableSeq.of(
+              new Param<>(A, Term.U),
+              new Param<>(phi, Term.F),
+              new Param<>(partEl, new Term.PartTy(new Term.Ref(phi), new Term.Ref(A)))
+            ),
+            Term.Set);
+          yield new Synth(term, type);
+        }
+        case InS -> {
+          // inS (A : U) (φ : F) (of : A) : Sub A φ {|φ ↦ of|}
+          var A = new LocalVar("A");
+          var phi = new LocalVar("φ");
+          var of = new LocalVar("of");
+          var term = Term.mkLam(
+            ImmutableSeq.of(A, phi, of).view(),
+            new Term.InS(new Term.Ref(phi), new Term.Ref(of)));
+          var type = Term.mkPi(ImmutableSeq.of(
+              new Param<>(A, Term.U),
+              new Param<>(phi, Term.F),
+              new Param<>(of, new Term.Ref(A))
+            ),
+            new Term.Sub(new Term.Ref(phi), new Term.PartEl(ImmutableSeq.of(
+              Tuple.of(new Term.Cofib.Conj(ImmutableSeq.of(new Term.Ref(phi))), new Term.Ref(of))
+            ))));
+          yield new Synth(term, type);
+        }
+        case OutS -> {
+          // outS (A : U) (φ : F) (partEl : Partial φ A) (of : Sub A φ partEl) : A
+          var A = new LocalVar("A");
+          var phi = new LocalVar("φ");
+          var partEl = new LocalVar("partEl");
+          var of = new LocalVar("of");
+          var term = Term.mkLam(
+            ImmutableSeq.of(A, phi, partEl, of).view(),
+            new Term.OutS(new Term.Ref(phi), new Term.Ref(partEl), new Term.Ref(of)));
+          var type = Term.mkPi(ImmutableSeq.of(
+              new Param<>(A, Term.U),
+              new Param<>(phi, Term.F),
+              new Param<>(partEl, new Term.PartTy(new Term.Ref(phi), new Term.Ref(A))),
+              new Param<>(of, new Term.Sub(new Term.Ref(phi), new Term.Ref(partEl)))
+            ),
+            new Term.Ref(A));
+          yield new Synth(term, type);
+        }
       };
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };

@@ -129,27 +129,27 @@ public class Normalizer {
       case Term.InS(var phi, var of) -> {
         var inPhi = term(phi);
         var inOf = term(of);
-        if (inOf instanceof Term.OutS(var outPhi, var outOf, var outPartEl)
+        if (inOf instanceof Term.OutS(var outPhi, var outPartEl, var outOf)
           && outPhi instanceof Term.Cofib outCofib
           && inPhi instanceof Term.Cofib inCofib
           && unifier.cofibImply(outCofib, inCofib))
           yield term(outOf);
         yield new Term.InS(inPhi, inOf);
       }
-      case Term.OutS(var phi, var of, var partEl) -> {
+      case Term.OutS(var phi, var partEl, var of) -> {
         var outPhi = term(phi);
-        var outOf = term(of);
         var outPartEl = term(partEl);
+        var outOf = term(of);
         if (outOf instanceof Term.InS(var inPhi, var inOf))
           yield term(inOf);
-        // TODO[is-this-correct?]: check if the partial element is `Partial A { u }`
+        // TODO[is-this-correct?]: check if the partial element is constant
         if (outPartEl instanceof Term.PartEl(var elems) && elems.sizeEquals(1)) {
           var only = elems.first();
           var unification = unifier.derive();
           if (unification.addNFConj(only.component1()))
             yield only.component2();
         }
-        yield new Term.OutS(outPhi, outOf, outPartEl);
+        yield new Term.OutS(outPhi, outPartEl, outOf);
       }
     };
   }
@@ -235,7 +235,7 @@ public class Normalizer {
         case Term.Ext<?> e -> ext(e);
         case Term.Path(var binders, var ext) -> new Term.Path(localVars(binders), ext(ext));
         case Term.InS(var phi, var of) -> new Term.InS(term(phi), term(of));
-        case Term.OutS(var phi, var of, var partEl) -> new Term.OutS(term(phi), term(of), term(partEl));
+        case Term.OutS(var phi, var partEl, var of) -> new Term.OutS(term(phi), term(partEl), term(of));
       };
     }
 

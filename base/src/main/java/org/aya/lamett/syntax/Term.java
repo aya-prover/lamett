@@ -270,8 +270,9 @@ public sealed interface Term extends Docile {
     record Class(@NotNull ImmutableSeq<Tuple2<String, Term>> fields) implements Restr {}
   }
 
+  record Sub(@NotNull Term phi, @NotNull Term partEl) implements Term {}
   record InS(@NotNull Term phi, @NotNull Term of) implements Term {}
-  record OutS(@NotNull Term phi, @NotNull Term of, @NotNull Term partEl) implements Term {}
+  record OutS(@NotNull Term phi, @NotNull Term partEl, @NotNull Term of) implements Term {}
 
   /** Let A be argument, then <code>A i -> A j</code> */
   static @NotNull Pi familyI2J(Term term, Term i, Term j) {

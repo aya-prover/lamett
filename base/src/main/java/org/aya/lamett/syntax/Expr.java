@@ -42,7 +42,9 @@ public sealed interface Expr extends Docile {
   record CofibEq(@Override @NotNull SourcePos pos, Expr lhs, Expr rhs) implements Cofib {}
   record INeg(@Override @NotNull SourcePos pos, Expr body) implements Expr {}
   enum PrimType {
-    Partial("Partial"), Coe("coe"), Hcom("hcom");
+    Partial("Partial"), Coe("coe"), Hcom("hcom"),
+    Sub("Sub"), InS("inS"), OutS("outS"),
+    ;
     public final String prettyName;
 
     PrimType(String prettyName) {
