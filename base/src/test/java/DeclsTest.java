@@ -95,6 +95,13 @@ public class DeclsTest {
       """);
   }
 
+  /*@Test*/ public void cubicalSubtype() {
+    tyck("""
+      def test1 (A : U) (φ : F) (a : A) : A
+        => outS A φ {| φ := a |} (inS A φ a)
+      """);
+  }
+
   @Test public void coverageNat() {
     assertThrowsExactly(RuntimeException.class, () -> tyck("""
       data Nat

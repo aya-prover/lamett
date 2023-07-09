@@ -54,24 +54,26 @@ public record Elaborator(
         if (!(normalize(type) instanceof Term.PartTy partTy)) throw new SPE(elem.pos(),
           Doc.english("Expects a partial type for"), expr, Doc.plain("got"), type);
         var elems = elem.elems().flatMap(tup -> {
-          var cofib = checkCofib(tup.component1());
-          cofib = normalize(cofib);
+          var cofib = normalize(checkCofib(tup.component1()));
           assert cofib.params().isEmpty();
           return cofib.conjs().mapNotNull(conj -> unifier.withCofibConj(
-            conj, () -> new Tuple2<>(conj, inherit(tup.component2(), partTy.type())), null));
+            conj, () -> Tuple.of(conj, inherit(tup.component2(), partTy.type())), null));
         });
         for (var i = 0; i < elems.size(); i++) {
           for (var j = i + 1; j < elems.size(); j++) {
-            var conj = elems.get(i).component1().conj(elems.get(j).component1());
-            var term1 = elems.get(i).component2();
-            var term2 = elems.get(j).component2();
+            var cls1 = elems.get(i);
+            var cls2 = elems.get(j);
+            var conj = cls1.component1().conj(cls2.component1());
+            var term1 = cls1.component2();
+            var term2 = cls2.component2();
             unifier.withCofibConj(conj, () -> {
-              unify(normalize(term1), normalize(partTy.type()), normalize(term2), elem.pos());
+              unify(term1, normalize(partTy.type()), term2, elem.pos());
               return null;
             }, null);
           }
         }
-        unify(new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1)), Term.F, partTy.cofib(), elem.pos());
+        var ty = new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1));
+        unify(ty, Term.F, partTy.cofib(), elem.pos());
         yield new Term.PartEl(elems);
       }
       case Expr.Hole hole -> {
