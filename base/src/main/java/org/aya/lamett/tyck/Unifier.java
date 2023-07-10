@@ -120,6 +120,8 @@ public class Unifier {
       // We probably won't need to compare dataArgs cus the two sides of conversion should be of the same type
       case Term.ConCall lcall when r instanceof Term.ConCall rcall -> lcall.fn() == rcall.fn()
         && unifySeq(lcall.args(), rcall.args());
+      case Term.Ref lphi when r instanceof Term.Cofib rphi -> untypedInner(Term.Cofib.atom(lphi), rphi);
+      case Term.Cofib lphi when r instanceof Term.Ref rphi -> untypedInner(lphi, Term.Cofib.atom(rphi));
       case Term.Cofib lphi when r instanceof Term.Cofib rphi -> cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
       case Term.PartTy lp when r instanceof Term.PartTy rp -> untypedInner(lp.cofib(), rp.cofib())
         && untypedInner(lp.type(), rp.type());
