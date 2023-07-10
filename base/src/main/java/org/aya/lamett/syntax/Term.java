@@ -94,6 +94,10 @@ public sealed interface Term extends Docile {
     public boolean isUniv() {
       return keyword == Keyword.U || keyword == Keyword.Set || keyword == Keyword.ISet;
     }
+
+    @Override public boolean equals(Object o) {
+      return o instanceof Lit lit && lit.keyword == keyword;
+    }
   }
 
   record Cofib(@NotNull ImmutableSeq<LocalVar> params, @NotNull ImmutableSeq<Conj> conjs) implements Term {
