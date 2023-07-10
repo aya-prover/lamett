@@ -97,7 +97,11 @@ public record Elaborator(
       default -> {
         var synth = synth(expr);
         unify(normalize(type), synth.wellTyped, synth.type, expr.pos());
-        yield synth.wellTyped;
+        if (synth.type instanceof Term.Lit lit && lit.keyword() == Keyword.F && synth.wellTyped instanceof Term.Ref) {
+          yield Term.Cofib.atom(synth.wellTyped);
+        } else {
+          yield synth.wellTyped;
+        }
       }
     };
   }
