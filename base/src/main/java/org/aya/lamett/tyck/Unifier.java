@@ -3,6 +3,7 @@ package org.aya.lamett.tyck;
 import kala.collection.immutable.ImmutableSeq;
 import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
+import org.aya.lamett.syntax.Type;
 import org.aya.lamett.util.LocalVar;
 import org.aya.util.error.InternalException;
 import org.jetbrains.annotations.NotNull;
@@ -78,6 +79,19 @@ public class Unifier {
     var unifier = new Unifier();
     unifier.loadNFConj(conjunction);
     return unifier;
+  }
+
+  public boolean type(@NotNull Type l, @NotNull Type r) {
+    if (l == r) return true; // This includes the case of `Type.Lit`
+    return switch (l) {
+      case Type.El ll when r instanceof Type.El rr -> untyped(ll.term(), rr.term());
+      case Type.Pi lpi when r instanceof Type.Pi rpi -> type(lpi.param().type(), rpi.param().type())
+        && type(lpi.cod(), rpi.cod());
+      case Type.Sigma lsig when r instanceof Type.Sigma rsig -> type(lsig.param().type(), rsig.param().type())
+        && type(lsig.cod(), rsig.cod());
+      case Type.Sub lsub when r instanceof Type.Sub rsub -> type(lsub.underlying(), rsub.underlying()); // TODO: check the cofib
+      default -> false;
+    };
   }
 
   public boolean untyped(@NotNull Term oldL, @NotNull Term oldR) {
