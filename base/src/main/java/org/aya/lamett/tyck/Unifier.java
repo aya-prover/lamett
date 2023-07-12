@@ -86,9 +86,9 @@ public class Unifier {
     return switch (l) {
       case Type.El ll when r instanceof Type.El rr -> untyped(ll.term(), rr.term());
       case Type.Pi lpi when r instanceof Type.Pi rpi -> type(lpi.param().type(), rpi.param().type())
-        && type(lpi.cod(), rpi.cod());
+        && type(lpi.cod(), rhs(rpi.cod(), rpi.param().x(), lpi.param().x()));
       case Type.Sigma lsig when r instanceof Type.Sigma rsig -> type(lsig.param().type(), rsig.param().type())
-        && type(lsig.cod(), rsig.cod());
+        && type(lsig.cod(), rhs(rsig.cod(), rsig.param().x(), lsig.param().x()));
       case Type.Sub lsub when r instanceof Type.Sub rsub -> type(lsub.underlying(), rsub.underlying())
         && lsub.restrs().allMatch(ltup ->
         rsub.restrs().allMatch(rtup -> withCofibConj(
@@ -178,6 +178,9 @@ public class Unifier {
   }
 
   private static @NotNull Term rhs(Term rhs, LocalVar rb, LocalVar lb) {
+    return rhs.subst(rb, new Term.Ref(lb));
+  }
+  private static @NotNull Type rhs(Type rhs, LocalVar rb, LocalVar lb) {
     return rhs.subst(rb, new Term.Ref(lb));
   }
 }

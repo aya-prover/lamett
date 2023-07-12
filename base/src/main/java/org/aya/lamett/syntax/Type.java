@@ -24,20 +24,34 @@ public sealed interface Type extends Docile {
     public boolean isUniv() {
       return this == U || this == ISet || this == Set;
     }
+
+    @Override @NotNull public Doc toDoc() {
+      return Doc.plain(name());
+    }
   }
 
   record El(@NotNull Term term) implements Type {
+    @Override @NotNull public Doc toDoc() {
+      return Doc.wrap("El(", ")", term.toDoc());
+    }
   }
 
   record Pi(@NotNull Param<Type> param, @NotNull Type cod) implements Type {
     public Type codomain(Term tm) {
       return cod.subst(param.x(), tm);
     }
+
+    @Override @NotNull public Doc toDoc() {
+      return Doc.parened(Doc.sep(param.toDoc(), Doc.symbol("->"), cod.toDoc()));
+    }
   }
 
   record Sigma(@NotNull Param<Type> param, @NotNull Type cod) implements Type {
     public Type codomain(Term tm) {
       return cod.subst(param.x(), tm);
+    }
+    @Override @NotNull public Doc toDoc() {
+      return Doc.parened(Doc.sep(param.toDoc(), Doc.symbol("**"), cod.toDoc()));
     }
   }
 
@@ -52,12 +66,18 @@ public sealed interface Type extends Docile {
     @NotNull Type underlying,
     @NotNull ImmutableSeq<Term.Cofib.Conj> restrs
   ) implements Type {
+    @Override @NotNull public Doc toDoc() {
+      return Doc.plain("PartTy");
+    }
   }
 
   record Sub(
     @NotNull Type underlying,
     @NotNull ImmutableSeq<Tuple2<Term.Cofib.Conj, Term>> restrs
   ) implements Type {
+    @Override @NotNull public Doc toDoc() {
+      return Doc.plain("Sub");
+    }
   }
 
   default @NotNull Type subst(@NotNull LocalVar x, @NotNull Term t) {
