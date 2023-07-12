@@ -89,7 +89,10 @@ public class Unifier {
         && type(lpi.cod(), rpi.cod());
       case Type.Sigma lsig when r instanceof Type.Sigma rsig -> type(lsig.param().type(), rsig.param().type())
         && type(lsig.cod(), rsig.cod());
-      case Type.Sub lsub when r instanceof Type.Sub rsub -> type(lsub.underlying(), rsub.underlying()); // TODO: check the cofib
+      case Type.Sub lsub when r instanceof Type.Sub rsub -> type(lsub.underlying(), rsub.underlying())
+        && lsub.restrs().allMatch(ltup ->
+        rsub.restrs().allMatch(rtup -> withCofibConj(
+          ltup.component1().conj(rtup.component1()), () -> untyped(ltup.component2(), rtup.component2()), true)));
       default -> false;
     };
   }

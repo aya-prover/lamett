@@ -6,6 +6,7 @@ import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
 import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
+import org.aya.lamett.syntax.Type;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.jetbrains.annotations.NotNull;
@@ -36,6 +37,16 @@ public class Normalizer {
 
   public Param<Term> param(Param<Term> param) {
     return new Param<>(param.x(), term(param.type()));
+  }
+
+  public Type type(Type type) {
+    return switch (type) {
+      case Type.El(var tm) -> new WeaklyTarski(this).el(term(tm));
+      case Type.Pi pi -> new Type.Pi(new Param<>(pi.param().x(), type(pi.param().type())), type(pi.cod()));
+      case Type.Sigma sig -> new Type.Sigma(new Param<>(sig.param().x(), type(sig.param().type())), type(sig.cod()));
+      case Type.Sub sub -> new Type.Sub(type(sub.underlying()), sub.restrs().map(tup -> Tuple.of(tup.component1(), term(tup.component2()))));
+      default -> type;
+    };
   }
 
   public Term term(Term term) {
