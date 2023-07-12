@@ -41,11 +41,16 @@ public class Normalizer {
 
   public Type type(Type type) {
     return switch (type) {
-      case Type.El(var tm) -> new WeaklyTarski(this).el(term(tm));
+      case Type.Lit lit -> lit;
+      case Type.El(var tm) -> new WeaklyTarski(this).el(tm);
       case Type.Pi pi -> new Type.Pi(new Param<>(pi.param().x(), type(pi.param().type())), type(pi.cod()));
       case Type.Sigma sig -> new Type.Sigma(new Param<>(sig.param().x(), type(sig.param().type())), type(sig.cod()));
-      case Type.Sub sub -> new Type.Sub(type(sub.underlying()), sub.restrs().map(tup -> Tuple.of(tup.component1(), term(tup.component2()))));
-      default -> type;
+      case Type.PartTy partTy -> new Type.PartTy(type(partTy.underlying()), term(new Term.Cofib(ImmutableSeq.empty(), partTy.restrs())).conjs());
+      case Type.Sub sub -> new Type.Sub(type(sub.underlying()), sub.restrs().flatMap(tup -> {
+        var cofib = term(tup.component1());
+        var term = term(tup.component2());
+        return cofib.conjs().map(conf -> Tuple.of(conf, term));
+      }));
     };
   }
 
@@ -137,7 +142,7 @@ public class Normalizer {
           new Term.Ext<>(term(type), new Term.Restr.Cubical(faces))
         );
       }
-      case Term.Sub(var phi, var partEl) -> new Term.Sub(term(phi), term(partEl));
+      case Term.Sub(var A, var phi, var partEl) -> new Term.Sub(term(A), term(phi), term(partEl));
       case Term.InS(var phi, var of) -> {
         var inPhi = term(phi);
         var inOf = term(of);
@@ -157,7 +162,7 @@ public class Normalizer {
         // TODO[is-this-correct?]: check if the partial element is constant
         if (outPartEl instanceof Term.PartEl(var elems) && elems.sizeEquals(1)) {
           var only = elems.first();
-          var unification = unifier.derive();
+          var unification = unifier.derive(); // To Kiva: you can use `withCofibConj`
           if (unification.addNFConj(only.component1()))
             yield only.component2();
         }
@@ -246,7 +251,7 @@ public class Normalizer {
         }
         case Term.Ext<?> e -> ext(e);
         case Term.Path(var binders, var ext) -> new Term.Path(localVars(binders), ext(ext));
-        case Term.Sub(var phi, var partEl) -> new Term.Sub(term(phi), term(partEl));
+        case Term.Sub(var A, var phi, var partEl) -> new Term.Sub(term(A), term(phi), term(partEl));
         case Term.InS(var phi, var of) -> new Term.InS(term(phi), term(of));
         case Term.OutS(var phi, var partEl, var of) -> new Term.OutS(term(phi), term(partEl), term(of));
       };

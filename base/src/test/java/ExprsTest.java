@@ -70,7 +70,7 @@ public class ExprsTest {
   private static @NotNull Term tyck(@Language("TEXT") String term, @Language("TEXT") String type) {
     var akJr = CliMain.andrasKovacs();
     var Id = akJr.synth(resolve(type));
-    return akJr.inherit(resolve(term), Id.wellTyped());
+    return akJr.inherit(resolve(term), akJr.el(Id.wellTyped()));
   }
 
   private static @NotNull Expr resolve(String s) {

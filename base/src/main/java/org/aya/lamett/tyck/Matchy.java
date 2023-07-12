@@ -17,12 +17,12 @@ public record Matchy(@NotNull Elaborator elaborator) {
     @NotNull Pat.Clause<Expr> clause
   ) {
     pats(params, clause.pats());
-    return new Pat.Clause<>(clause.pats(), elaborator.inherit(clause.body(), result));
+    return new Pat.Clause<>(clause.pats(), elaborator.inherit(clause.body(), elaborator.el(result)));
   }
 
   public void pat(@NotNull Pat pat, @NotNull Term type) {
     switch (pat) {
-      case Pat.Bind bind -> elaborator.gamma().put(bind.bind(), type);
+      case Pat.Bind bind -> elaborator.gamma().put(bind.bind(), elaborator.el(type));
       case Pat.Con con when type instanceof Term.DataCall data -> {
         var core = con.ref().core;
         if (!core.tele().sizeEquals(con.pats()))

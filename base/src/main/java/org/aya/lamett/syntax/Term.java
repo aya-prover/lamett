@@ -100,6 +100,7 @@ public sealed interface Term extends Docile {
     }
   }
 
+  // Once normalized, `params` becomes empty
   record Cofib(@NotNull ImmutableSeq<LocalVar> params, @NotNull ImmutableSeq<Conj> conjs) implements Term {
     public @NotNull Cofib forall(@NotNull LocalVar i) {
       return new Cofib(params.appended(i), conjs);
@@ -274,7 +275,7 @@ public sealed interface Term extends Docile {
     record Class(@NotNull ImmutableSeq<Tuple2<String, Term>> fields) implements Restr {}
   }
 
-  record Sub(@NotNull Term phi, @NotNull Term partEl) implements Term {}
+  record Sub(@NotNull Term type, @NotNull Term phi, @NotNull Term partEl) implements Term {}
   record InS(@NotNull Term phi, @NotNull Term of) implements Term {}
   record OutS(@NotNull Term phi, @NotNull Term partEl, @NotNull Term of) implements Term {}
 

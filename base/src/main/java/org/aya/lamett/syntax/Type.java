@@ -48,6 +48,12 @@ public sealed interface Type extends Docile {
     return new Type.Pi(new Param<>(new LocalVar("_"), dom), cod);
   }
 
+  record PartTy(
+    @NotNull Type underlying,
+    @NotNull ImmutableSeq<Term.Cofib.Conj> restrs
+  ) implements Type {
+  }
+
   record Sub(
     @NotNull Type underlying,
     @NotNull ImmutableSeq<Tuple2<Term.Cofib.Conj, Term>> restrs

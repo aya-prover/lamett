@@ -22,42 +22,49 @@ import static org.aya.lamett.tyck.Normalizer.rename;
 
 public record Elaborator(
   @NotNull MutableMap<DefVar<?>, Def> sigma,
-  @NotNull MutableMap<LocalVar, Term> gamma,
+  @NotNull MutableMap<LocalVar, Type> gamma,
   @NotNull Unifier unifier
 ) {
   @NotNull public Term normalize(@NotNull Term term) {
     return term.subst(unifier.unification().toSubst());
+  }
+  @NotNull public Type normalize(@NotNull Type type) {
+    return type.subst(unifier.unification().toSubst());
   }
 
   @NotNull public Term.Cofib normalize(@NotNull Term.Cofib cofib) {
     return new Normalizer(unifier.unification().toSubst()).term(cofib);
   }
 
-  public record Synth(@NotNull Term wellTyped, @NotNull Term type) {}
+  public Type el(Term tm) {
+    return new WeaklyTarski(new Normalizer(unifier)).el(tm);
+  }
 
-  public Term inherit(Expr expr, Term type) {
+  public record Synth(@NotNull Term wellTyped, @NotNull Type type) {}
+
+  public Term inherit(Expr expr, Type type) {
     return switch (expr) {
       case Expr.Lam lam -> {
-        if (normalize(type) instanceof Term.Pi dt)
+        if (normalize(type) instanceof Type.Pi dt)
           yield new Term.Lam(lam.x(), hof(lam.x(), dt.param().type(), () ->
             inherit(lam.a(), dt.codomain(new Term.Ref(lam.x())))));
         else throw new SPE(lam.pos(),
           Doc.english("Expects a right adjoint for"), expr, Doc.plain("got"), type);
       }
       case Expr.Pair two -> {
-        if (!(normalize(type) instanceof Term.Sigma dt)) throw new SPE(two.pos(),
+        if (!(normalize(type) instanceof Type.Sigma dt)) throw new SPE(two.pos(),
           Doc.english("Expects a left adjoint for"), expr, Doc.plain("got"), type);
         var lhs = inherit(two.a(), dt.param().type());
         yield new Term.Pair(lhs, inherit(two.b(), dt.codomain(lhs)));
       }
       case Expr.PartEl elem -> {
-        if (!(normalize(type) instanceof Term.PartTy partTy)) throw new SPE(elem.pos(),
+        if (!(normalize(type) instanceof Type.PartTy partTy)) throw new SPE(elem.pos(),
           Doc.english("Expects a partial type for"), expr, Doc.plain("got"), type);
         var elems = elem.elems().flatMap(tup -> {
           var cofib = normalize(checkCofib(tup.component1()));
           assert cofib.params().isEmpty();
           return cofib.conjs().mapNotNull(conj -> unifier.withCofibConj(
-            conj, () -> Tuple.of(conj, inherit(tup.component2(), partTy.type())), null));
+            conj, () -> Tuple.of(conj, inherit(tup.component2(), partTy.underlying())), null));
         });
         for (var i = 0; i < elems.size(); i++) {
           for (var j = i + 1; j < elems.size(); j++) {
@@ -67,13 +74,14 @@ public record Elaborator(
             var term1 = cls1.component2();
             var term2 = cls2.component2();
             unifier.withCofibConj(conj, () -> {
-              unify(term1, normalize(partTy.type()), term2, elem.pos());
+              unify(term1, partTy.underlying(), term2, elem.pos());
               return null;
             }, null);
           }
         }
         var ty = new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1));
-        unify(ty, Term.F, partTy.cofib(), elem.pos());
+        var restrCofib = new Term.Cofib(ImmutableSeq.empty(), partTy.restrs());
+        unify(ty, Term.F, restrCofib, elem.pos());
         yield new Term.PartEl(elems);
       }
       case Expr.Hole hole -> {
@@ -97,13 +105,22 @@ public record Elaborator(
       default -> {
         var synth = synth(expr);
         unify(normalize(type), synth.wellTyped, synth.type, expr.pos());
-        if (synth.type.equals(Term.F) && synth.wellTyped instanceof Term.Ref) {
+        if (synth.type == Type.Lit.F && synth.wellTyped instanceof Term.Ref) {
           yield Term.Cofib.atom(synth.wellTyped);
         } else {
           yield synth.wellTyped;
         }
       }
     };
+  }
+
+  private void unify(Type ty, Docile on, @NotNull Type actual, SourcePos pos) {
+    unify(ty, actual, pos, u -> unifyDoc(ty, on, actual, u));
+  }
+
+  private void unify(Type ty, Type actual, SourcePos pos, Function<Unifier, Doc> message) {
+    if (!unifier.type(actual, ty))
+      throw new SPE(pos, message.apply(unifier));
   }
 
   private void unify(Term ty, Docile on, @NotNull Term actual, SourcePos pos) {
@@ -130,27 +147,28 @@ public record Elaborator(
     var synth = switch (expr) {
       case Expr.Unresolved unresolved -> throw new InternalError("Unresolved expr: " + unresolved);
       case Expr.Kw(var $, var kw) when
-        kw == Keyword.I -> new Synth(new Term.Lit(kw), Term.ISet);
+        kw == Keyword.I -> new Synth(new Term.Lit(kw), Type.Lit.ISet);
       case Expr.Kw(var $, var kw) when
         kw == Keyword.F ||
           kw == Keyword.ISet ||
-          kw == Keyword.Set -> new Synth(new Term.Lit(kw), Term.Set);
+          kw == Keyword.Set -> new Synth(new Term.Lit(kw), Type.Lit.Set);
       case Expr.Kw(var $, var kw) when
-        kw == Keyword.U -> new Synth(new Term.Lit(kw), Term.U);
+        kw == Keyword.U -> new Synth(new Term.Lit(kw), Type.Lit.U);
       case Expr.Kw(var $, var kw) when
         kw == Keyword.Zero ||
-          kw == Keyword.One -> new Synth(new Term.Lit(kw), Term.I);
+          kw == Keyword.One -> new Synth(new Term.Lit(kw), Type.Lit.I);
       case Expr.Resolved resolved -> switch (resolved.ref()) {
         case DefVar<?> defv -> {
           var def = defv.core;
           if (def == null) {
             var sig = defv.signature;
-            var pi = Term.mkPi(sig.telescope(), sig.result());
+            // TODO[is-this-correct?]: how to deal with definitions
+            var pi = Type.mkPi(sig.telescope().map(param -> new Param<>(param.x(), el(param.type()))), el(sig.result()));
             var call = mkCall(defv, sig);
             yield new Synth(rename(Term.mkLam(
               sig.teleVars(), call)), pi);
           }
-          var pi = Term.mkPi(def.telescope(), def.result());
+          var pi = Type.mkPi(def.telescope().map(param -> new Param<>(param.x(), el(param.type()))), el(def.result()));
           yield switch (def) {
             case Def.Fn fn -> new Synth(rename(Term.mkLam(
               fn.teleVars(), new Term.FnCall(fn.name(), fn.teleRefs().toImmutableSeq()))), pi);
@@ -167,7 +185,7 @@ public record Elaborator(
       };
       case Expr.Proj(var pos, var t, var isOne) -> {
         var t_ = synth(t);
-        if (!(t_.type instanceof Term.Sigma dt))
+        if (!(t_.type instanceof Type.Sigma dt))
           throw new SPE(pos, Doc.english("Expects a left adjoint, got"), t_.type);
         var fst = t_.wellTyped.proj(true);
         if (isOne) yield new Synth(fst, dt.param().type());
@@ -175,7 +193,7 @@ public record Elaborator(
       }
       case Expr.App two -> {
         var f = synth(two.f());
-        if (!(f.type instanceof Term.Pi dt))
+        if (!(f.type instanceof Type.Pi dt))
           throw new SPE(two.pos(), Doc.english("Expects pi, got"), f.type, Doc.plain("when checking"), two);
         var a = hof(dt.param().x(), dt.param().type(), () -> inherit(two.a(), dt.param().type()));
         yield new Synth(f.wellTyped.app(a), dt.codomain(a));
@@ -184,29 +202,29 @@ public record Elaborator(
         var a = synth(two.a());
         var b = synth(two.b());
         yield new Synth(new Term.Pair(b.wellTyped, a.wellTyped),
-          new Term.Sigma(new Param<>(new LocalVar("_"), b.type), a.type));
+          new Type.Sigma(new Param<>(new LocalVar("_"), b.type), a.type));
       }
       case Expr.DT dt -> {
         var param = synth(dt.param().type());
         var x = dt.param().x();
-        var cod = hof(x, param.wellTyped, () -> synth(dt.cod()));
-        assert param.type() instanceof Term.Lit;
-        var domKw = ((Term.Lit) param.type()).keyword();
-        var codKw = ((Term.Lit) cod.type()).keyword();
-        Term.Lit resType;
-        if (domKw == Keyword.ISet) {
-          if (codKw == Keyword.U) {
-            resType = Term.U;
+        var cod = hof(x, el(param.wellTyped), () -> synth(dt.cod()));
+        assert param.type() instanceof Type.Lit;
+        var domKw = (Type.Lit) param.type();
+        var codKw = (Type.Lit) cod.type();
+        Type.Lit resType;
+        if (domKw == Type.Lit.ISet) {
+          if (codKw == Type.Lit.U) {
+            resType = Type.Lit.U;
           } else {
-            resType = Term.Set;
+            resType = Type.Lit.Set;
           }
         } else {
-          if (codKw == Keyword.ISet)
+          if (codKw == Type.Lit.ISet)
             throw new SPE(dt.pos(), Doc.english("Expects a U or Set in codomain, got"), cod.type);
-          if (domKw == Keyword.U && codKw == Keyword.U) {
-            resType = Term.U;
+          if (domKw == Type.Lit.U && codKw == Type.Lit.U) {
+            resType = Type.Lit.U;
           } else {
-            resType = Term.Set;
+            resType = Type.Lit.Set;
           }
         }
         yield new Synth(
@@ -216,10 +234,10 @@ public record Elaborator(
           resType);
       }
       case Expr.INeg neg -> {
-        var t = inherit(neg.body(), Term.I);
-        yield new Synth(new Term.INeg(t), Term.I);
+        var t = inherit(neg.body(), Type.Lit.I);
+        yield new Synth(new Term.INeg(t), Type.Lit.I);
       }
-      case Expr.Cofib cofib -> new Synth(checkCofib(cofib), Term.F);
+      case Expr.Cofib cofib -> new Synth(checkCofib(cofib), Type.Lit.F);
       case Expr.PrimCall prim -> switch (prim.type()) {
         case Partial -> {
           var phi = new LocalVar("φ");
@@ -227,11 +245,10 @@ public record Elaborator(
           var term = Term.mkLam(
             ImmutableSeq.of(phi, A).view(),
             new Term.PartTy(new Term.Ref(phi), new Term.Ref(A)));
-          var type = Term.mkPi(Term.F, Term.mkPi(Term.U, Term.U));
+          var type = Type.mkPi(Type.Lit.F, Type.mkPi(Type.Lit.U, Type.Lit.U));
           yield new Synth(term, type);
         }
-        case Coe -> throw new UnsupportedOperationException("TODO");
-        case Hcom -> throw new UnsupportedOperationException("TODO");
+        case Coe, Hcom -> throw new UnsupportedOperationException("TODO");
         case Sub -> {
           // Sub (A : U) (φ : F) (partEl : Partial φ A) : Set
           var A = new LocalVar("A");
@@ -239,13 +256,13 @@ public record Elaborator(
           var partEl = new LocalVar("partEl");
           var term = Term.mkLam(
             ImmutableSeq.of(A, phi, partEl).view(),
-            new Term.Sub(new Term.Ref(phi), new Term.Ref(partEl)));
-          var type = Term.mkPi(ImmutableSeq.of(
-              new Param<>(A, Term.U),
-              new Param<>(phi, Term.F),
-              new Param<>(partEl, new Term.PartTy(new Term.Ref(phi), new Term.Ref(A)))
+            new Term.Sub(new Term.Ref(A), new Term.Ref(phi), new Term.Ref(partEl)));
+          var type = Type.mkPi(ImmutableSeq.of(
+              new Param<>(A, Type.Lit.U),
+              new Param<>(phi, Type.Lit.F),
+              new Param<>(partEl, new Type.El(new Term.PartTy(new Term.Ref(phi), new Term.Ref(A))))
             ),
-            Term.Set);
+            Type.Lit.Set);
           yield new Synth(term, type);
         }
         case InS -> {
@@ -256,14 +273,14 @@ public record Elaborator(
           var term = Term.mkLam(
             ImmutableSeq.of(A, phi, of).view(),
             new Term.InS(new Term.Ref(phi), new Term.Ref(of)));
-          var type = Term.mkPi(ImmutableSeq.of(
-              new Param<>(A, Term.U),
-              new Param<>(phi, Term.F),
-              new Param<>(of, new Term.Ref(A))
+          var type = Type.mkPi(ImmutableSeq.of(
+              new Param<>(A, Type.Lit.U),
+              new Param<>(phi, Type.Lit.F),
+              new Param<>(of, Type.ref(A))
             ),
-            new Term.Sub(new Term.Ref(phi), new Term.PartEl(ImmutableSeq.of(
+            new Type.Sub(new Type.El(new Term.Ref(phi)), ImmutableSeq.of(
               Tuple.of(new Term.Cofib.Conj(ImmutableSeq.of(new Term.Ref(phi))), new Term.Ref(of))
-            ))));
+            )));
           yield new Synth(term, type);
         }
         case OutS -> {
@@ -275,13 +292,13 @@ public record Elaborator(
           var term = Term.mkLam(
             ImmutableSeq.of(A, phi, partEl, of).view(),
             new Term.OutS(new Term.Ref(phi), new Term.Ref(partEl), new Term.Ref(of)));
-          var type = Term.mkPi(ImmutableSeq.of(
-              new Param<>(A, Term.U),
-              new Param<>(phi, Term.F),
-              new Param<>(partEl, new Term.PartTy(new Term.Ref(phi), new Term.Ref(A))),
-              new Param<>(of, new Term.Sub(new Term.Ref(phi), new Term.Ref(partEl)))
+          var type = Type.mkPi(ImmutableSeq.of(
+              new Param<>(A, Type.Lit.U),
+              new Param<>(phi, Type.Lit.F),
+              new Param<>(partEl, new Type.El(new Term.PartTy(new Term.Ref(phi), new Term.Ref(A)))),
+              new Param<>(of, new Type.El(new Term.Sub(new Term.Ref(A), new Term.Ref(phi), new Term.Ref(partEl))))
             ),
-            new Term.Ref(A));
+            Type.ref(A));
           yield new Synth(term, type);
         }
       };
@@ -291,11 +308,13 @@ public record Elaborator(
     return new Synth(synth.wellTyped, type);
   }
 
+
+
   public Term.Cofib checkCofib(Expr expr) {
     return switch (expr) {
       case Expr.CofibEq eq -> {
-        var lhs = inherit(eq.lhs(), Term.I);
-        var rhs = inherit(eq.rhs(), Term.I);
+        var lhs = inherit(eq.lhs(), Type.Lit.I);
+        var rhs = inherit(eq.rhs(), Type.Lit.I);
         yield Term.Cofib.eq(lhs, rhs);
       }
       case Expr.CofibConj conj -> {
@@ -309,10 +328,10 @@ public record Elaborator(
         yield lhs.disj(rhs);
       }
       case Expr.CofibForall forall -> {
-        var phi = hof(forall.i(), Term.I, () -> checkCofib(forall.body()));
+        var phi = hof(forall.i(), Type.Lit.I, () -> checkCofib(forall.body()));
         yield phi.forall(forall.i());
       }
-      default -> Term.Cofib.atom(inherit(expr, Term.F));
+      default -> Term.Cofib.atom(inherit(expr, Type.Lit.F));
     };
   }
 
@@ -322,7 +341,7 @@ public record Elaborator(
       sig.teleRefs().toImmutableSeq());
   }
 
-  private <T> T hof(@NotNull LocalVar x, @NotNull Term type, @NotNull Supplier<T> t) {
+  private <T> T hof(@NotNull LocalVar x, @NotNull Type type, @NotNull Supplier<T> t) {
     gamma.put(x, type);
     var ok = t.get();
     gamma.remove(x);
@@ -334,11 +353,11 @@ public record Elaborator(
     return switch (def) {
       case Decl.Fn fn -> {
         var result = synth(fn.result());
-        if (!((Term.Lit) result.type()).isUniv())
+        if (!((Type.Lit) result.type()).isUniv())
           throw new SPE(fn.result().pos(), Doc.english("Expects a type, got"), result.wellTyped());
         fn.name().signature = new Def.Signature(false, telescope, result.wellTyped());
         var body = fn.body().map(
-          expr -> inherit(expr, result.wellTyped()),
+          expr -> inherit(expr, el(result.wellTyped())),
           clauses -> tyckFunBody(telescope, result.wellTyped(), clauses.getLeftValue())
         );
         telescope.forEach(key -> gamma.remove(key.x()));
@@ -346,9 +365,9 @@ public record Elaborator(
       }
       case Decl.Print print -> {
         var result = synth(print.result());
-        if (!((Term.Lit) result.type()).isUniv())
+        if (!((Type.Lit) result.type()).isUniv())
           throw new SPE(print.result().pos(), Doc.english("Expects a type, got"), result.wellTyped());
-        var body = inherit(print.body(), result.wellTyped());
+        var body = inherit(print.body(), el(result.wellTyped()));
         telescope.forEach(key -> gamma.remove(key.x()));
         yield new Def.Print(telescope, result.wellTyped(), body);
       }
@@ -379,10 +398,10 @@ public record Elaborator(
     var telescope = MutableArrayList.<Param<Term>>create(tele.scope().size());
     for (var param : tele.scope()) {
       var ty = synth(param.type());
-      if (!((Term.Lit) ty.type()).isUniv())
+      if (!((Type.Lit) ty.type()).isUniv())
         throw new SPE(param.type().pos(), Doc.english("Expects a type, got"), ty.wellTyped());
       telescope.append(new Param<>(param.x(), ty.wellTyped()));
-      gamma.put(param.x(), ty.wellTyped());
+      gamma.put(param.x(), el(ty.wellTyped()));
     }
     return telescope.toImmutableArray();
   }
