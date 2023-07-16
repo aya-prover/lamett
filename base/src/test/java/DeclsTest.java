@@ -95,10 +95,17 @@ public class DeclsTest {
       """);
   }
 
-  /*@Test*/ public void cubicalSubtype() {
+  @Test public void cubicalSubtype() {
     tyck("""
       def test1 (A : U) (φ : F) (a : A) : A
         => outS A φ {| φ := a |} (inS A φ a)
+      """);
+  }
+
+  @Test public void whatTypeAmI() {
+    tyck("""
+      def typeOfMe (A : U) (φ : F) (of : A) : Sub A φ {| φ := of |}
+        => inS A φ of
       """);
   }
 

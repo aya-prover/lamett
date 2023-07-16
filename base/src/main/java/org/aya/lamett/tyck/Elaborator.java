@@ -278,7 +278,7 @@ public record Elaborator(
               new Param<>(phi, Type.Lit.F),
               new Param<>(of, Type.ref(A))
             ),
-            new Type.Sub(new Type.El(new Term.Ref(phi)), ImmutableSeq.of(
+            new Type.Sub(new Type.El(new Term.Ref(A)), ImmutableSeq.of(
               Tuple.of(new Term.Cofib.Conj(ImmutableSeq.of(new Term.Ref(phi))), new Term.Ref(of))
             )));
           yield new Synth(term, type);
