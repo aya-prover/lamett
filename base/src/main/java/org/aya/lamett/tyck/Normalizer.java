@@ -144,9 +144,10 @@ public class Normalizer {
         var inOf = term(of);
         if (inOf instanceof Term.OutS(var outPhi, var outPartEl, var outOf)
           && outPhi instanceof Term.Cofib outCofib
-          && inPhi instanceof Term.Cofib inCofib
-          && unifier.cofibImply(outCofib, inCofib))
+          && inPhi instanceof Term.Cofib inCofib) {
+          assert unifier.untyped(outCofib, inCofib);
           yield term(outOf);
+        }
         yield new Term.InS(inPhi, inOf);
       }
       case Term.OutS(var phi, var partEl, var of) -> {
