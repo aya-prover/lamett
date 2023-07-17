@@ -131,7 +131,7 @@ public class Normalizer {
       }
       case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type),
         face.map(this::term, UnaryOperator.identity()));
-      case Term.Path(var binders, Term.Ext<?>(var type, Term.Restr.Cubical(var bdry))) -> {
+      case Term.Path(var binders, Term.Ext<Term.Restr.Cubical>(var type, Term.Restr.Cubical(var bdry))) -> {
         var faces = partEl(bdry);
         yield new Term.Path(
           binders,
