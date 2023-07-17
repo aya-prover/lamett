@@ -159,9 +159,8 @@ public class Normalizer {
         // TODO[is-this-correct?]: check if the partial element is constant
         if (outPartEl instanceof Term.PartEl(var elems) && elems.sizeEquals(1)) {
           var only = elems.first();
-          var unification = unifier.derive(); // To Kiva: you can use `withCofibConj`
-          if (unification.addNFConj(only.component1()))
-            yield only.component2();
+          yield unifier.withCofibConj(only.component1(), only::component2,
+            new Term.OutS(outPhi, outPartEl, outOf));
         }
         yield new Term.OutS(outPhi, outPartEl, outOf);
       }
