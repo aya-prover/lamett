@@ -29,6 +29,7 @@ public record Elaborator(
   @NotNull public Term normalize(@NotNull Term term) {
     return term.subst(unifier.unification().toSubst());
   }
+
   @NotNull public Type normalize(@NotNull Type type) {
     return type.subst(unifier.unification().toSubst());
   }
@@ -282,7 +283,7 @@ public record Elaborator(
         var ty = el(codeType);
         var partial = elaboratePartial(ext.partial(), new Type.PartTy(ty, ImmutableSeq.of() /* TODO: face check */), false);
         var wellTyped = new Term.Path(ext.i(), new Term.Ext<>(codeType, Term.Restr.Cubical.fromPartial(partial)));
-        return new Synth(wellTyped, Type.Lit.U);    // TODO: which universe?
+        return new Synth(wellTyped, Type.Lit.U);
       });
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };
