@@ -206,6 +206,8 @@ public record LamettProducer(
     if (node.is(INEG_EXPR)) return new Expr.INeg(pos, expr(node.child(EXPR)));
     /// endregion cubical cofibration
 
+    if (node.is(CALM_FACE_EXPR)) todo();
+
     return unreachable(node);
   }
 

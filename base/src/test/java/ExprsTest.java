@@ -77,7 +77,7 @@ public class ExprsTest {
     return new Resolver(MutableMap.create()).expr(parse(s));
   }
 
-  private static @NotNull Expr parse(String s) {
+  public static @NotNull Expr parse(String s) {
     var reporter = CliMain.newReporter();
     return new LamettParserImpl(reporter).expr(s, SourcePos.NONE);
   }

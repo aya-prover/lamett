@@ -80,12 +80,15 @@ public interface Distiller {
       case Expr.PrimCall partial -> Doc.plain(partial.type().prettyName);
       case Expr.PartEl elem -> {
         var clauses = elem.elems().map(tup -> Doc.sep(expr(tup.component1(), Free), Doc.plain(":="), expr(tup.component2(), Free)));
-        var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain("|")), d2));
+        var center = Doc.join(Doc.spaced(Doc.symbol("|")), clauses);
         var doc = Doc.sep(Doc.plain("{|"), center, Doc.plain("|}"));
         yield checkParen(envPrec, doc, AppHead);
       }
       case Expr.Ext ext -> {
-        throw new UnsupportedOperationException("TODO");
+        var is = Doc.wrap("[ ", " ]", Doc.sep(ext.i().map(x -> Doc.plain(x.name()))));
+        var type = expr(ext.type(), Free);
+        var partell = expr(ext.partial(), Free);
+        yield Doc.sep(is, type, partell);
       }
       case Expr.Hole ignored -> Doc.symbol("_");
     };
