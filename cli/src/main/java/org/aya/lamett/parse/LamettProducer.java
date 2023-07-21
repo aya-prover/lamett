@@ -107,7 +107,11 @@ public record LamettProducer(
 
     if (node.is(PATH_EXPR)) {
       // pathExpr ::= LPATH weakId+ RPATH expr partialBlock?
-      return todo();
+      var ids = node.childrenOfType(WEAK_ID).map(x -> LocalVar.from(weakId(x))).toImmutableSeq();
+      var type = type(node);
+      var partial = partial(node.peekChild(PARTIAL_BLOCK), pos);    // partialBlock has the same format as partialAtom
+
+      return new Expr.Ext(pos, ids, type, partial);
     }
 
     if (node.is(ARROW_EXPR)) {

@@ -1,5 +1,6 @@
 package org.aya.lamett.tyck;
 
+import kala.collection.Map;
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableArrayList;
 import kala.collection.mutable.MutableList;
@@ -57,33 +58,7 @@ public record Elaborator(
         var lhs = inherit(two.a(), dt.param().type());
         yield new Term.Pair(lhs, inherit(two.b(), dt.codomain(lhs)));
       }
-      case Expr.PartEl elem -> {
-        if (!(normalize(type) instanceof Type.PartTy partTy)) throw new SPE(elem.pos(),
-          Doc.english("Expects a partial type for"), expr, Doc.plain("got"), type);
-        var elems = elem.elems().flatMap(tup -> {
-          var cofib = normalize(checkCofib(tup.component1()));
-          assert cofib.params().isEmpty();
-          return cofib.conjs().mapNotNull(conj -> unifier.withCofibConj(
-            conj, () -> Tuple.of(conj, inherit(tup.component2(), partTy.underlying())), null));
-        });
-        for (var i = 0; i < elems.size(); i++) {
-          for (var j = i + 1; j < elems.size(); j++) {
-            var cls1 = elems.get(i);
-            var cls2 = elems.get(j);
-            var conj = cls1.component1().conj(cls2.component1());
-            var term1 = cls1.component2();
-            var term2 = cls2.component2();
-            unifier.withCofibConj(conj, () -> {
-              unify(term1, partTy.underlying(), term2, elem.pos());
-              return null;
-            }, null);
-          }
-        }
-        var ty = new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1));
-        var restrCofib = new Term.Cofib(ImmutableSeq.empty(), partTy.restrs());
-        unify(ty, Term.F, restrCofib, elem.pos());
-        yield new Term.PartEl(elems);
-      }
+      case Expr.PartEl elem -> elaboratePartial(elem, type, true);
       case Expr.Hole hole -> {
         var docs = MutableList.<Doc>create();
         gamma.forEach((k, v) -> {
@@ -302,13 +277,18 @@ public record Elaborator(
           yield new Synth(term, type);
         }
       };
+      case Expr.Ext ext -> hhof(ext.i().map(x -> Tuple.of(x, Type.Lit.I)), () -> {
+        var codeType = synth(ext.type()).wellTyped;
+        var ty = el(codeType);
+        var partial = elaboratePartial(ext.partial(), new Type.PartTy(ty, ImmutableSeq.of() /* TODO: face check */), false);
+        var wellTyped = new Term.Path(ext.i(), new Term.Ext<>(codeType, Term.Restr.Cubical.fromPartial(partial)));
+        return new Synth(wellTyped, Type.Lit.U);    // TODO: which universe?
+      });
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);
     };
     var type = normalize(synth.type);
     return new Synth(synth.wellTyped, type);
   }
-
-
 
   public Term.Cofib checkCofib(Expr expr) {
     return switch (expr) {
@@ -339,6 +319,14 @@ public record Elaborator(
     return sig.isData() ? new Term.DataCall((DefVar<Def.Data>) defv,
       sig.teleRefs().toImmutableSeq()) : new Term.FnCall((DefVar<Def.Fn>) defv,
       sig.teleRefs().toImmutableSeq());
+  }
+
+  private <T> T hhof(@NotNull ImmutableSeq<Tuple2<LocalVar, Type>> xs, @NotNull Supplier<T> t) {
+    var map = Map.from(xs);
+    gamma.putAll(map);
+    var ook = t.get();
+    gamma.removeAll(map.keysView());
+    return ook;
   }
 
   private <T> T hof(@NotNull LocalVar x, @NotNull Type type, @NotNull Supplier<T> t) {
@@ -378,6 +366,45 @@ public record Elaborator(
         yield new Def.Data(ref, telescope, data.cons().map(c -> cons(ref, c)));
       }
     };
+  }
+
+  /**
+   * @param faceCheck i am sorry
+   * @author Alias Qli
+   */
+  private @NotNull Term.PartEl elaboratePartial(@NotNull Expr.PartEl elem, @NotNull Type type, boolean faceCheck) {
+    if (!(normalize(type) instanceof Type.PartTy partTy)) throw new SPE(elem.pos(),
+      Doc.english("Expects a partial type for"), elem, Doc.plain("got"), type);
+    var elems = elem.elems().flatMap(tup -> {
+      var cofib = normalize(checkCofib(tup.component1()));
+      assert cofib.params().isEmpty();
+      // type check
+      return cofib.conjs().mapNotNull(conj -> unifier.withCofibConj(
+        conj, () -> Tuple.of(conj, inherit(tup.component2(), partTy.underlying())), null));
+    });
+
+    // confluence check
+    for (var i = 0; i < elems.size(); i++) {
+      for (var j = i + 1; j < elems.size(); j++) {
+        var cls1 = elems.get(i);
+        var cls2 = elems.get(j);
+        var conj = cls1.component1().conj(cls2.component1());
+        var term1 = cls1.component2();
+        var term2 = cls2.component2();
+        unifier.withCofibConj(conj, () -> {
+          unify(term1, partTy.underlying(), term2, elem.pos());
+          return null;
+        }, null);
+      }
+    }
+
+    if (faceCheck) {
+      var ty = new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1));
+      var restrCofib = new Term.Cofib(ImmutableSeq.empty(), partTy.restrs());
+      unify(ty, Term.F, restrCofib, elem.pos());
+    }
+
+    return new Term.PartEl(elems);
   }
 
   private Pat.ClauseSet<Term> tyckFunBody(

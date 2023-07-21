@@ -22,6 +22,16 @@ public interface Distiller {
   enum Prec {
     Free, Cod, BinOp, BinOpSpine, UOp, AppHead, AppSpine, UOpSpine, ProjHead
   }
+
+  static @NotNull Doc toDoc(@NotNull Docile docile, Prec envPrec) {
+    if (docile instanceof Doc doc) return doc;
+    if (docile instanceof Expr expr) return expr(expr, envPrec);
+    if (docile instanceof Term term) return term(term, envPrec);
+    if (docile instanceof Term.Restr restr) return restr(restr, envPrec);
+
+    throw new UnsupportedOperationException(docile.getClass().toString());
+  }
+
   static @NotNull Doc expr(@NotNull Expr expr, Prec envPrec) {
     return switch (expr) {
       case Expr.Kw u -> Doc.plain(u.keyword().name());
@@ -73,6 +83,9 @@ public interface Distiller {
         var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain("|")), d2));
         var doc = Doc.sep(Doc.plain("{|"), center, Doc.plain("|}"));
         yield checkParen(envPrec, doc, AppHead);
+      }
+      case Expr.Ext ext -> {
+        throw new UnsupportedOperationException("TODO");
       }
       case Expr.Hole ignored -> Doc.symbol("_");
     };
@@ -148,15 +161,30 @@ public interface Distiller {
           Doc.symbol(i.name()),
           Doc.plain("=>"),
           term(el, Free))));
-      case Term.Ext<?>(var type, var faces) -> call(envPrec, "Ext", type); // TODO: faces
+      case Term.Ext<?>(var type, var faces) -> call(envPrec, "Ext", type, faces); // TODO: faces
       case Term.Path path -> {
-        var last = term(new Term.PartEl(path.ext().restr().boundaries()), envPrec);
+        var last = restr(path.ext().restr(), envPrec);
         yield Doc.sep(Doc.wrap("[|", "|]",
           Doc.commaList(path.binders().map(x -> Doc.plain(x.name())))), last);
       }
       case Term.Sub(Term A, Term phi, Term partEl) -> call(envPrec, "Sub", A, phi, partEl);
       case Term.InS(var phi, var of) -> insideOut(envPrec, phi, of, "inS");
       case Term.OutS(var phi, var partEl, var of) -> insideOut(envPrec, phi, of, "outS");
+    };
+  }
+
+  static @NotNull Doc restr(@NotNull Term.Restr restriction, Prec envPrec) {
+    return switch (restriction) {
+      case Term.Restr.Class aClass -> {
+        throw new UnsupportedOperationException("TODO");
+      }
+      case Term.Restr.Cubical cubical -> term(new Term.PartEl(cubical.boundaries()), envPrec);
+      case Term.Restr.Sigma sigma -> {
+        throw new UnsupportedOperationException("TODO");
+      }
+      case Term.Restr.Unfolding unfolding -> {
+        throw new UnsupportedOperationException("TODO");
+      }
     };
   }
   private static @NotNull Doc insideOut(@NotNull Prec envPrec, @NotNull Term phi, @NotNull Term of, String fnName) {
@@ -166,9 +194,9 @@ public interface Distiller {
   private static @NotNull Doc checkParen(@NotNull Prec outer, @NotNull Doc binApp, @NotNull Prec binOp) {
     return outer.ordinal() > binOp.ordinal() ? Doc.parened(binApp) : binApp;
   }
-  private static @NotNull Doc call(Prec envPrec, String kw, Term... args) {
+  private static @NotNull Doc call(Prec envPrec, String kw, Docile... args) {
     var docs = MutableList.of(Doc.plain(kw));
-    for (var arg : args) docs.append(term(arg, AppSpine));
+    for (var arg : args) docs.append(toDoc(arg, AppSpine));
     var doc = Doc.sep(docs);
     return checkParen(envPrec, doc, AppHead);
   }

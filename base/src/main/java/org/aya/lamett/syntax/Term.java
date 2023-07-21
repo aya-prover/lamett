@@ -257,7 +257,7 @@ public sealed interface Term extends Docile {
   /**
    * Context restriction. Aka cofibration in the context of cubical type theory.
    */
-  sealed interface Restr {
+  sealed interface Restr extends Docile {
     /** the all-in-one map, maybe there's a better way */
     default @NotNull Restr map(@NotNull UnaryOperator<Term> mapTerm, @NotNull UnaryOperator<Cofib.Conj> mapConj) {
       return switch (this) {
@@ -268,7 +268,16 @@ public sealed interface Term extends Docile {
         case Sigma sigma -> sigma;
       };
     }
+
+    @Override
+    default @NotNull Doc toDoc() {
+      return Distiller.restr(this, Distiller.Prec.Free);
+    }
+
     record Cubical(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> boundaries) implements Restr {
+      public static @NotNull Cubical fromPartial(@NotNull PartEl partial) {
+        return new Cubical(partial.elems());
+      }
     }
     record Unfolding(@NotNull DefVar<Def.Fn> defVar, @NotNull Term unfolded) implements Restr {}
     record Sigma() implements Restr {}

@@ -1,5 +1,6 @@
 package org.aya.lamett.tyck;
 
+import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableArrayList;
 import kala.collection.mutable.MutableMap;
 import kala.control.Either;
@@ -13,6 +14,8 @@ import org.aya.lamett.util.Param;
 import org.aya.lamett.util.SPE;
 import org.aya.pretty.doc.Doc;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Supplier;
 
 public record Resolver(@NotNull MutableMap<String, AnyVar> env) {
   private @NotNull TeleCache mkCache(int initialCapacity) {
@@ -108,7 +111,23 @@ public record Resolver(@NotNull MutableMap<String, AnyVar> env) {
       case Expr.PartEl elem -> new Expr.PartEl(elem.pos(), elem.elems().map(tup ->
         Tuple.of(expr(tup.component1()), expr(tup.component2()))));
       case Expr.PrimCall primCall -> primCall;
+      case Expr.Ext(var pos, var i, var type, var partial) -> subscope(i, () -> {
+        return new Expr.Ext(pos, i, expr(type), (Expr.PartEl) expr(partial));   // garbage code (cast)
+      });
     };
+  }
+
+  private @NotNull Expr subscope(@NotNull ImmutableSeq<LocalVar> xs, Supplier<Expr> block) {
+    var olds = xs.zip(xs.view().map(this::put));
+    var e = block.get();
+
+    olds.view().reversed().forEach((pair) -> {
+      var id = pair.component1();
+      var old = pair.component2();
+      old.map(this::put).getOrElse(() -> env.remove(id.name()));
+    });
+
+    return e;
   }
 
   private @NotNull Expr bodied(LocalVar x, Expr expr) {

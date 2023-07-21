@@ -53,4 +53,6 @@ public sealed interface Expr extends Docile {
   }
   record PrimCall(@Override @NotNull SourcePos pos, @NotNull PrimType type) implements Expr {}
   record PartEl(@Override @NotNull SourcePos pos, @NotNull ImmutableSeq<Tuple2<Expr, Expr>> elems) implements Expr {}
+  record Ext(@Override @NotNull SourcePos pos, @NotNull ImmutableSeq<LocalVar> i, @NotNull Expr type,
+             @NotNull PartEl partial) implements Expr {}
 }

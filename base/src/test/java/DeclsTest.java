@@ -71,24 +71,24 @@ public class DeclsTest {
 
   @Test public void cofibTest() {
     tyck("""
-      def f (i j : I) (φ : F) : F => (i = 0) ∧ (j = 1) ∨ φ
-    """);
+        def f (i j : I) (φ : F) : F => (i = 0) ∧ (j = 1) ∨ φ
+      """);
   }
 
   @Test public void partialTest() {
     tyck("""
-      data Nat
-      | zero
-      | succ (n : Nat)
+        data Nat
+        | zero
+        | succ (n : Nat)
 
-      def plus (a : Nat) (b : Nat) : Nat
-      | zero, b => b
-      | succ a, b => succ (plus a b)
-      def one : Nat => succ zero
-      def two : Nat => succ (succ zero)
-      
-      def partial (i j : I) (φ : F) : Partial (φ ∨ i = 1) Nat => {| φ := plus one one | (i = 1) := two |}
-    """);
+        def plus (a : Nat) (b : Nat) : Nat
+        | zero, b => b
+        | succ a, b => succ (plus a b)
+        def one : Nat => succ zero
+        def two : Nat => succ (succ zero)
+        
+        def partial (i j : I) (φ : F) : Partial (φ ∨ i = 1) Nat => {| φ := plus one one | (i = 1) := two |}
+      """);
     tyck("""
       def test (i j : I) (f : F) : F => (i = 0) ∧ (j = 1) ∨ f
       def test2 (i j : I) : U => Partial (test i j (i = 0)) U
@@ -117,6 +117,12 @@ public class DeclsTest {
       def plus-bad (a : Nat) (b : Nat) : Nat
       | succ a, b => succ (plus-bad a b)
       """));
+  }
+
+  @Test public void ext() {
+    tyck("""
+      def foo (A : U) (a : A) : ( [| i |] A { i = 0 := a | i = 1 := a } ) => (fn i => inS A ((i = 0) ∨ (i = 1)) a)
+      """);
   }
 
   private static @NotNull Elaborator tyck(@Language("TEXT") String s) {
