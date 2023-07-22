@@ -85,7 +85,7 @@ public interface Distiller {
         yield checkParen(envPrec, doc, AppHead);
       }
       case Expr.Ext ext -> {
-        var is = Doc.wrap("[ ", " ]", Doc.sep(ext.i().map(x -> Doc.plain(x.name()))));
+        var is = Doc.wrap("[|", "|]", Doc.spaced(Doc.sep(ext.i().map(x -> Doc.plain(x.name())))));
         var type = expr(ext.type(), Free);
         var partell = expr(ext.partial(), Free);
         yield Doc.sep(is, type, partell);
