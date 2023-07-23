@@ -15,6 +15,7 @@ import org.aya.pretty.doc.Doc;
 import org.aya.pretty.doc.Docile;
 import org.aya.util.error.SourcePos;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -44,7 +45,23 @@ public record Elaborator(
 
   public record Synth(@NotNull Term wellTyped, @NotNull Type type) {}
 
-  public Term inherit(Expr expr, Type type) {
+  public @NotNull Term inherit(@NotNull Expr expr, @NotNull Type type) {
+    try {
+      return doInherit(expr, type);
+    } catch (SPE e) {
+      // try implicitly coerce
+      var wellwellTyped = implicitCoerce(expr, type);
+      if (wellwellTyped == null) {
+        // I am sorry
+        throw e;
+      }
+
+      System.out.printf("[Warn] %s Implicitly coerce %s as one term of type %s. \n", expr.pos(), expr.toDoc().debugRender(), type.toDoc().debugRender());
+      return wellwellTyped;
+    }
+  }
+
+  public Term doInherit(Expr expr, Type type) {
     return switch (expr) {
       case Expr.Lam lam -> {
         if (normalize(type) instanceof Type.Pi dt)
@@ -88,6 +105,48 @@ public record Elaborator(
         }
       }
     };
+  }
+
+  public @Nullable Term tryInherit(@NotNull Expr expr, @NotNull Type type) {
+    try {
+      return inherit(expr, type);
+    } catch (SPE e) {
+      return null;
+    }
+  }
+
+  private @Nullable Term implicitCoerce(@NotNull Expr expr, @NotNull Type type) {
+    // try implicitly coerce
+    var typeNF = normalize(type);
+    if (typeNF instanceof Type.Sub subtype) {
+      // Γ ⊢ A : U
+      // Γ ⊢ u : A
+      // ∀ i, (Γ, φ_i ⊢ u ≡ v_i)
+      // ---------------------------
+      // Γ ⊢ inS(u) : Sub A (φ_0 ∨ φ_1 ∨ ...) {| φ_0 ↦ v_0 | ... |}
+
+      // underlying type check
+      var wellTyped = tryInherit(expr, subtype.underlying());
+      if (wellTyped == null) return null;
+
+      // face check
+      for (var restr : subtype.restrs()) {
+        var result = unifier.withCofibConj(restr.component1(),
+          // TODO:
+          () -> unifier.untyped(wellTyped, restr.component2()),
+          true);
+
+        if (!result) {
+          return null;
+        }
+      }
+
+      // We claim `inS ... u` has type `subtype`
+      var phi = new Term.Cofib(ImmutableSeq.empty(), subtype.restrs().map(Tuple2::component1));
+      return new Term.InS(phi, wellTyped);
+    }
+
+    return null;
   }
 
   private void unify(Type ty, Docile on, @NotNull Type actual, SourcePos pos) {

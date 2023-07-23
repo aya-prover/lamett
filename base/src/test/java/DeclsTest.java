@@ -2,6 +2,7 @@ import org.aya.lamett.cli.CliMain;
 import org.aya.lamett.syntax.Def;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.tyck.Elaborator;
+import org.aya.lamett.util.SPE;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -122,6 +123,26 @@ public class DeclsTest {
   @Test public void ext() {
     tyck("""
       def foo (A : U) (a : A) : ( [| i |] A { i = 0 := a | i = 1 := a } ) => (fn i => inS A ((i = 0) ∨ (i = 1)) a)
+      """);
+  }
+
+  @Test public void implicitCoe() {
+    tyck("""
+      def foo (A : U) (φ0 : F) (φ1 : F) (a : A) : Sub A (φ0 ∨ φ1) {| φ0 := a | φ1 := a |} => a
+      """);
+  }
+
+  @Test public void failImplicitCoe() {
+    assertThrowsExactly(SPE.class, () -> {
+      tyck("""
+        def foo (A : U) (φ0 : F) (φ1 : F) (a : A) (b : A) : Sub A (φ0 ∨ φ1) {| φ0 := a | φ1 := b |} => a
+        """);
+    });
+  }
+
+  @Test public void implicitExt() {
+    tyck("""
+      def foo (A : U) (a : A) : ( [| i |] A { i = 0 := a | i = 1 := a } ) => (fn i => a)
       """);
   }
 
