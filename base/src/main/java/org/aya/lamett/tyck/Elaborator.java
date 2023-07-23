@@ -132,7 +132,6 @@ public record Elaborator(
       // face check
       for (var restr : subtype.restrs()) {
         var result = unifier.withCofibConj(restr.component1(),
-          // TODO:
           () -> unifier.untyped(wellTyped, restr.component2()),
           true);
 
