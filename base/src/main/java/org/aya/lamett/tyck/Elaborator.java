@@ -188,22 +188,7 @@ public record Elaborator(
         assert param.type() instanceof Type.Lit;
         var domKw = (Type.Lit) param.type();
         var codKw = (Type.Lit) cod.type();
-        Type.Lit resType;
-        if (domKw == Type.Lit.ISet) {
-          if (codKw == Type.Lit.U) {
-            resType = Type.Lit.U;
-          } else {
-            resType = Type.Lit.Set;
-          }
-        } else {
-          if (codKw == Type.Lit.ISet)
-            throw new SPE(dt.pos(), Doc.english("Expects a U or Set in codomain, got"), cod.type);
-          if (domKw == Type.Lit.U && codKw == Type.Lit.U) {
-            resType = Type.Lit.U;
-          } else {
-            resType = Type.Lit.Set;
-          }
-        }
+        var resType = computeMax(domKw, codKw, cod, dt.pos());
         yield new Synth(
           dt instanceof Expr.Pi
             ? new Term.Pi(new Param<>(x, param.wellTyped), cod.wellTyped)
@@ -290,6 +275,13 @@ public record Elaborator(
     };
     var type = normalize(synth.type);
     return new Synth(synth.wellTyped, type);
+  }
+
+  private static @NotNull Type.Lit computeMax(Type.Lit domKw, Type.Lit codKw, Synth cod, @NotNull SourcePos pos) {
+    if (domKw == Type.Lit.ISet) return codKw == Type.Lit.U ? Type.Lit.U : Type.Lit.Set;
+    if (codKw == Type.Lit.ISet)
+      throw new SPE(pos, Doc.english("Expects a U or Set in codomain, got"), cod.type);
+    return domKw == Type.Lit.U && codKw == Type.Lit.U ? Type.Lit.U : Type.Lit.Set;
   }
 
   public Term.Cofib checkCofib(Expr expr) {
