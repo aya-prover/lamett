@@ -1,10 +1,12 @@
 package org.aya.lamett.tyck;
 
+import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
 import kala.collection.mutable.MutableSet;
 import kala.control.Either;
 import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
+import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.util.LocalVar;
 import org.aya.util.error.InternalException;
@@ -16,6 +18,47 @@ import org.jetbrains.annotations.Nullable;
  */
 public class Unification {
   public Unification() {}
+
+  public Unification(Term.Cofib.Conj conj) {
+    if (!addNFConj(conj)) throw new InternalException("loading a false conj: " + conj);
+    conjunction = conj;
+  }
+  private Term.Cofib.Conj conjunction = new Term.Cofib.Conj(ImmutableSeq.empty());
+
+  /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
+  public boolean addNFConj(Term.Cofib.Conj conj) {
+    for (var atom : conj.atoms()) {
+      switch (atom) {
+        case Term.Cofib.Eq eq -> {
+          assert eq.lhs() instanceof Term.Ref;
+          var lvar = Unification.LocalVarWithNeg.from(eq.lhs());
+          switch (eq.rhs()) {
+            case Term.Ref(var var) -> {
+              if (!setEquiv(lvar, Unification.LocalVarWithNeg.from(var))) return false;
+            }
+            case Term.INeg(var body) when body instanceof Term.Ref -> {
+              if (!setEquiv(lvar, Unification.LocalVarWithNeg.from(body))) return false;
+            }
+            case Term.Lit lit when lit.keyword() == Keyword.One -> {
+              if (!setValue(lvar, true)) return false;
+            }
+            case Term.Lit lit when lit.keyword() == Keyword.Zero -> {
+              if (!setValue(lvar, false)) return false;
+            }
+            default -> throw new InternalException("not a nf conj: found " + eq.rhs());
+          }
+        }
+        case Term.Ref(var ref) -> cofibVars.add(ref);
+        default -> throw new InternalException("not a nf conj: found " + atom);
+      }
+    }
+    conjunction = conjunction.conj(conj);
+    return true;
+  }
+
+  public Unification derive() {
+    return new Unification(conjunction);
+  }
 
   private static class Node {
     int rank = 0;

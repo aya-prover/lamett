@@ -1,7 +1,6 @@
 package org.aya.lamett.tyck;
 
 import kala.collection.immutable.ImmutableSeq;
-import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.syntax.Type;
 import org.aya.lamett.util.LocalVar;
@@ -14,46 +13,6 @@ public class Unifier {
   public record FailureData(@NotNull Term l, @NotNull Term r) {}
   public FailureData data;
 
-  /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
-  public boolean addNFConj(Term.Cofib.Conj conj) {
-    for (var atom : conj.atoms()) {
-      switch (atom) {
-        case Term.Cofib.Eq eq -> {
-          assert eq.lhs() instanceof Term.Ref;
-          var lvar = Unification.LocalVarWithNeg.from(eq.lhs());
-          switch (eq.rhs()) {
-            case Term.Ref(var var) -> {
-              if (!unification.setEquiv(lvar, Unification.LocalVarWithNeg.from(var))) return false;
-            }
-            case Term.INeg(var body) when body instanceof Term.Ref -> {
-              if (!unification.setEquiv(lvar, Unification.LocalVarWithNeg.from(body))) return false;
-            }
-            case Term.Lit lit when lit.keyword() == Keyword.One -> {
-              if (!unification.setValue(lvar, true)) return false;
-            }
-            case Term.Lit lit when lit.keyword() == Keyword.Zero -> {
-              if (!unification.setValue(lvar, false)) return false;
-            }
-            default -> throw new InternalException("not a nf conj: found " + eq.rhs());
-          }
-        }
-        case Term.Ref(var ref) -> unification.cofibVars.add(ref);
-        default -> throw new InternalException("not a whnf conj: found " + atom);
-      }
-    }
-    conjunction = conjunction.conj(conj);
-    return true;
-  }
-
-  public void loadNFConj(Term.Cofib.Conj conj) {
-    unification = new Unification();
-    if (!addNFConj(conj)) throw new InternalException("loading a false conj: " + conj);
-    conjunction = conj;
-  }
-
-  private Term.Cofib.Conj conjunction = new Term.Cofib.Conj(ImmutableSeq.empty());
-
-  // This is but a cache of the conjunction
   private Unification unification = new Unification();
 
   public Unification unification() {
@@ -61,24 +20,18 @@ public class Unifier {
   }
 
   public <U> U withCofibConj(Term.Cofib.Conj conj, Supplier<U> f, U succeed) {
-    var oldConj = conjunction;
-    if (addNFConj(conj)) {
+    var oldU = unification.derive();
+    if (unification.addNFConj(conj)) {
       var res = f.get();
-      loadNFConj(oldConj);
+      unification = oldU;
       return res;
     } else {
       return succeed;
     }
   }
 
-  public boolean withCofib(@NotNull Term.Cofib cofib, Supplier<Boolean> f, boolean succeed) {
-    return cofib.conjs().allMatch(conj -> withCofibConj(conj, f, succeed));
-  }
-
-  public @NotNull Unifier derive() {
-    var unifier = new Unifier();
-    unifier.loadNFConj(conjunction);
-    return unifier;
+  public boolean withCofibDisj(@NotNull ImmutableSeq<Term.Cofib.Conj> disj, Supplier<Boolean> f, boolean succeed) {
+    return disj.allMatch(conj -> withCofibConj(conj, f, succeed));
   }
 
   public boolean type(@NotNull Type l, @NotNull Type r) {
@@ -93,6 +46,8 @@ public class Unifier {
         && lsub.restrs().allMatch(ltup ->
         rsub.restrs().allMatch(rtup -> withCofibConj(
           ltup.component1().conj(rtup.component1()), () -> untyped(ltup.component2(), rtup.component2()), true)));
+      case Type.PartTy lpty when r instanceof Type.PartTy rpty -> type(lpty.underlying(), rpty.underlying())
+        && cofibDisjImply(lpty.restrs(), rpty.restrs()) && cofibDisjImply(rpty.restrs(), lpty.restrs());
       default -> false;
     };
   }
@@ -130,7 +85,8 @@ public class Unifier {
         && unifySeq(lcall.args(), rcall.args());
       case Term.Ref lphi when r instanceof Term.Cofib rphi -> untypedInner(Term.Cofib.atom(lphi), rphi);
       case Term.Cofib lphi when r instanceof Term.Ref rphi -> untypedInner(lphi, Term.Cofib.atom(rphi));
-      case Term.Cofib lphi when r instanceof Term.Cofib rphi -> cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
+      case Term.Cofib lphi when r instanceof Term.Cofib rphi -> // already normalized so `params` is empty
+        cofibDisjImply(lphi.conjs(), rphi.conjs()) && cofibDisjImply(rphi.conjs(), lphi.conjs());
       case Term.PartTy lp when r instanceof Term.PartTy rp -> untypedInner(lp.cofib(), rp.cofib())
         && untypedInner(lp.type(), rp.type());
       case Term.PartEl le when r instanceof Term.PartEl re -> le.elems().allMatch(ltup ->
@@ -153,20 +109,16 @@ public class Unifier {
     return happy;
   }
 
-  public boolean untypedUnderCofib(Term.Cofib cofib, @NotNull Term l, @NotNull Term r) {
-    return withCofib(cofib, () -> untyped(l, r), true);
-  }
-
-  boolean cofibIsTrue(@NotNull Term.Cofib p) {
-    return p.conjs().anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
+  boolean cofibDisjIsTrue(@NotNull ImmutableSeq<Term.Cofib.Conj> disj) {
+    return disj.anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
       case Term.Cofib.Eq eq -> untyped(eq.lhs(), eq.rhs());
       case Term.Ref(var ref) -> unification.cofibVars.contains(ref);
       default -> throw new InternalException("Unexpected cofib atom: " + atom);
     }));
   }
 
-  boolean cofibImply(@NotNull Term.Cofib p, @NotNull Term.Cofib q) {
-    return withCofib(p, () -> cofibIsTrue(q), true);
+  boolean cofibDisjImply(@NotNull ImmutableSeq<Term.Cofib.Conj> p, @NotNull ImmutableSeq<Term.Cofib.Conj> q) {
+    return withCofibDisj(p, () -> cofibDisjIsTrue(q), true);
   }
 
   private boolean unifySeq(@NotNull ImmutableSeq<Term> l, @NotNull ImmutableSeq<Term> r) {
