@@ -39,7 +39,11 @@ public record Elaborator(
   }
 
   public Type el(Term tm) {
-    return new WeaklyTarski(new Normalizer(unifier)).el(tm);
+    return tarski().el(tm);
+  }
+
+  private @NotNull WeaklyTarski tarski() {
+    return new WeaklyTarski(new Normalizer(unifier));
   }
 
   public record Synth(@NotNull Term wellTyped, @NotNull Type type) {}
@@ -138,13 +142,10 @@ public record Elaborator(
           var def = defv.core;
           if (def == null) {
             var sig = defv.signature;
-            // TODO[is-this-correct?]: how to deal with definitions
-            var pi = Type.mkPi(sig.telescope().map(param -> new Param<>(param.x(), el(param.type()))), el(sig.result()));
-            var call = mkCall(defv, sig);
             yield new Synth(rename(Term.mkLam(
-              sig.teleVars(), call)), pi);
+              sig.teleVars(), mkCall(defv, sig))), sig.type(tarski()));
           }
-          var pi = Type.mkPi(def.telescope().map(param -> new Param<>(param.x(), el(param.type()))), el(def.result()));
+          var pi = def.type(tarski());
           yield switch (def) {
             case Def.Fn fn -> new Synth(rename(Term.mkLam(
               fn.teleVars(), new Term.FnCall(fn.name(), fn.teleRefs().toImmutableSeq()))), pi);
