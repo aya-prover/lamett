@@ -101,6 +101,7 @@ public sealed interface Term extends Docile {
   }
 
   // Once normalized, `params` becomes empty
+  // TODO: remove `params`
   record Cofib(@NotNull ImmutableSeq<LocalVar> params, @NotNull ImmutableSeq<Conj> conjs) implements Term {
     public @NotNull Cofib forall(@NotNull LocalVar i) {
       return new Cofib(params.appended(i), conjs);
@@ -119,7 +120,7 @@ public sealed interface Term extends Docile {
     }
 
     static public @NotNull Cofib atom(@NotNull Term atom) {
-      return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.of(atom))));
+      return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(Conj.atom(atom)));
     }
 
     static public @NotNull Cofib known(boolean isTrue) {
@@ -142,6 +143,10 @@ public sealed interface Term extends Docile {
   record Conj(@NotNull ImmutableSeq<Term> atoms) {
     public @NotNull Conj conj(@NotNull Conj conj2) {
       return new Conj(atoms.appendedAll(conj2.atoms));
+    }
+
+    static public @NotNull Conj atom(@NotNull Term atom) {
+      return new Conj(ImmutableSeq.of(atom));
     }
   }
   record Eq(@NotNull Term lhs, @NotNull Term rhs) implements Term {

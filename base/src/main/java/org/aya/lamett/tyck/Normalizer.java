@@ -1,6 +1,7 @@
 package org.aya.lamett.tyck;
 
 import kala.collection.immutable.ImmutableSeq;
+import kala.collection.mutable.MutableList;
 import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
@@ -181,7 +182,7 @@ public class Normalizer {
   }
 
   public @NotNull Term.Cofib term(ImmutableSeq<LocalVar> params, Term.Conj conj) {
-    var cofib = Term.Cofib.known(true);
+    var cofib = MutableList.<Term.Conj>create();
     for (var atom : conj.atoms()) {
       atom = term(atom);
       switch (atom) {
@@ -189,17 +190,16 @@ public class Normalizer {
           if (eq.freeVars().anyMatch(params::contains)) return Term.Cofib.known(false);
         }
         case Term.Cofib cofib1 -> {
-          cofib = cofib.conj(cofib1);
-          if (cofib.isFalse()) break;
+          cofib.appendAll(cofib1.conjs());
+          if (cofib1.isFalse()) return Term.Cofib.known(false);
           continue;
         }
         default -> {
         }
       }
-      cofib = cofib.conj(Term.Cofib.atom(atom));
+      cofib.append(Term.Conj.atom(atom));
     }
-    assert cofib.params().isEmpty();
-    return cofib;
+    return new Term.Cofib(ImmutableSeq.empty(), cofib.toImmutableSeq());
   }
 
   public @NotNull Term.Cofib term(Term.Conj conj) {
