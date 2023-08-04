@@ -150,8 +150,7 @@ public sealed interface Term extends Docile {
     }
   }
   record Eq(@NotNull Term lhs, @NotNull Term rhs) implements Term {
-    @Override
-    public @NotNull Eq neg() {
+    @Override public @NotNull Eq neg() {
       return map(Term::neg);
     }
 
