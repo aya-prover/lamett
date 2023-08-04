@@ -140,7 +140,7 @@ public class Normalizer {
           new Term.Ext<>(term(type), new Restr.Cubical(faces))
         );
       }
-      case Term.Sub(var A, var phi, var partEl) -> new Term.Sub(term(A), term(phi), term(partEl));
+      case Term.Sub(var A, var partEl) -> new Term.Sub(term(A), term(partEl));
       case Term.InS(var phi, var of) -> {
         var inPhi = term(phi);
         var inOf = term(of);
@@ -248,7 +248,7 @@ public class Normalizer {
         }
         case Term.Ext<?> e -> ext(e);
         case Term.Path(var binders, var ext) -> new Term.Path(localVars(binders), ext(ext));
-        case Term.Sub(var A, var phi, var partEl) -> new Term.Sub(term(A), term(phi), term(partEl));
+        case Term.Sub(var A, var partEl) -> new Term.Sub(term(A), term(partEl));
         case Term.InS(var phi, var of) -> new Term.InS(term(phi), term(of));
         case Term.OutS(var phi, var partEl, var of) -> new Term.OutS(term(phi), term(partEl), term(of));
       };

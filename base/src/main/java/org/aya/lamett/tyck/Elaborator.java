@@ -104,12 +104,8 @@ public record Elaborator(
   }
 
   private void unify(Term ty, Docile on, @NotNull Term actual, SourcePos pos) {
-    unify(ty, actual, pos, u -> unifyDoc(ty, on, actual, u));
-  }
-
-  private void unify(Term ty, Term actual, SourcePos pos, Function<Unifier, Doc> message) {
     if (!unifier.untyped(actual, ty))
-      throw new SPE(pos, message.apply(unifier));
+      throw new SPE(pos, unifyDoc(ty, on, actual, unifier));
   }
 
   private static @NotNull Doc unifyDoc(Docile ty, Docile on, Docile actual, Unifier unifier) {
@@ -218,7 +214,7 @@ public record Elaborator(
           var partEl = new LocalVar("partEl");
           var term = Term.mkLam(
             ImmutableSeq.of(A, phi, partEl).view(),
-            new Term.Sub(new Term.Ref(A), new Term.Ref(phi), new Term.Ref(partEl)));
+            new Term.Sub(new Term.Ref(A), new Term.Ref(partEl)));
           var type = Type.mkPi(ImmutableSeq.of(
               new Param<>(A, Type.Lit.U),
               new Param<>(phi, Type.Lit.F),
@@ -258,7 +254,7 @@ public record Elaborator(
               new Param<>(A, Type.Lit.U),
               new Param<>(phi, Type.Lit.F),
               new Param<>(partEl, new Type.El(new Term.PartTy(new Term.Ref(phi), new Term.Ref(A)))),
-              new Param<>(of, new Type.El(new Term.Sub(new Term.Ref(A), new Term.Ref(phi), new Term.Ref(partEl))))
+              new Param<>(of, new Type.El(new Term.Sub(new Term.Ref(A), new Term.Ref(partEl))))
             ),
             Type.ref(A));
           yield new Synth(term, type);

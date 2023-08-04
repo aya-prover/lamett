@@ -252,7 +252,7 @@ public sealed interface Term extends Docile {
   record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<Restr.Cubical> ext) implements Term {
   }
 
-  record Sub(@NotNull Term type, @NotNull Term phi, @NotNull Term partEl) implements Term {}
+  record Sub(@NotNull Term type, @NotNull Term partEl) implements Term {}
   record InS(@NotNull Term phi, @NotNull Term of) implements Term {}
   record OutS(@NotNull Term phi, @NotNull Term partEl, @NotNull Term of) implements Term {}
 
