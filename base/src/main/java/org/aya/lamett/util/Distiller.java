@@ -6,6 +6,7 @@ import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableList;
 import org.aya.lamett.syntax.DefVar;
 import org.aya.lamett.syntax.Expr;
+import org.aya.lamett.syntax.Restr;
 import org.aya.lamett.syntax.Term;
 import org.aya.pretty.doc.Doc;
 import org.aya.pretty.doc.Docile;
@@ -27,7 +28,7 @@ public interface Distiller {
     if (docile instanceof Doc doc) return doc;
     if (docile instanceof Expr expr) return expr(expr, envPrec);
     if (docile instanceof Term term) return term(term, envPrec);
-    if (docile instanceof Term.Restr restr) return restr(restr, envPrec);
+    if (docile instanceof Restr restr) return restr(restr, envPrec);
 
     throw new UnsupportedOperationException(docile.getClass().toString());
   }
@@ -176,16 +177,16 @@ public interface Distiller {
     };
   }
 
-  static @NotNull Doc restr(@NotNull Term.Restr restriction, Prec envPrec) {
+  static @NotNull Doc restr(@NotNull Restr restriction, Prec envPrec) {
     return switch (restriction) {
-      case Term.Restr.Class aClass -> {
+      case Restr.Class aClass -> {
         throw new UnsupportedOperationException("TODO");
       }
-      case Term.Restr.Cubical cubical -> term(new Term.PartEl(cubical.boundaries()), envPrec);
-      case Term.Restr.Sigma sigma -> {
+      case Restr.Cubical cubical -> term(new Term.PartEl(cubical.boundaries()), envPrec);
+      case Restr.Sigma sigma -> {
         throw new UnsupportedOperationException("TODO");
       }
-      case Term.Restr.Unfolding unfolding -> {
+      case Restr.Unfolding unfolding -> {
         throw new UnsupportedOperationException("TODO");
       }
     };

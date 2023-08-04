@@ -5,6 +5,7 @@ import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
 import org.aya.lamett.syntax.Keyword;
+import org.aya.lamett.syntax.Restr;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.syntax.Type;
 import org.aya.lamett.util.LocalVar;
@@ -131,11 +132,11 @@ public class Normalizer {
       }
       case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type),
         face.map(this::term, UnaryOperator.identity()));
-      case Term.Path(var binders, Term.Ext<Term.Restr.Cubical>(var type, Term.Restr.Cubical(var bdry))) -> {
+      case Term.Path(var binders, Term.Ext<Restr.Cubical>(var type, Restr.Cubical(var bdry))) -> {
         var faces = partEl(bdry);
         yield new Term.Path(
           binders,
-          new Term.Ext<>(term(type), new Term.Restr.Cubical(faces))
+          new Term.Ext<>(term(type), new Restr.Cubical(faces))
         );
       }
       case Term.Sub(var A, var phi, var partEl) -> new Term.Sub(term(A), term(phi), term(partEl));
@@ -253,7 +254,7 @@ public class Normalizer {
       };
     }
 
-    public <F extends Term.Restr> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
+    public <F extends Restr> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
       return new Term.Ext<>(term(ext.type()), (F) ext.restr().map(this::term, this::term));
     }
 

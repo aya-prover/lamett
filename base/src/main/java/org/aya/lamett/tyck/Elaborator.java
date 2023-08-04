@@ -268,7 +268,7 @@ public record Elaborator(
         var codeType = synth(ext.type()).wellTyped;
         var ty = el(codeType);
         var partial = elaboratePartial(ext.partial(), new Type.PartTy(ty, ImmutableSeq.of() /* TODO: face check */), false);
-        var wellTyped = new Term.Path(ext.i(), new Term.Ext<>(codeType, Term.Restr.Cubical.fromPartial(partial)));
+        var wellTyped = new Term.Path(ext.i(), new Term.Ext<>(codeType, Restr.Cubical.fromPartial(partial)));
         return new Synth(wellTyped, Type.Lit.U);
       });
       default -> throw new SPE(expr.pos(), Doc.english("Synthesis failed for"), expr);

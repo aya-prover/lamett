@@ -254,36 +254,6 @@ public sealed interface Term extends Docile {
   record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<Restr.Cubical> ext) implements Term {
   }
 
-  /**
-   * Context restriction. Aka cofibration in the context of cubical type theory.
-   */
-  sealed interface Restr extends Docile {
-    /** the all-in-one map, maybe there's a better way */
-    default @NotNull Restr map(@NotNull UnaryOperator<Term> mapTerm, @NotNull UnaryOperator<Cofib.Conj> mapConj) {
-      return switch (this) {
-        case Cubical(var bdry) -> new Cubical(bdry.map(t ->
-          Tuple.of(mapConj.apply(t.component1()), mapTerm.apply(t.component2()))));
-        case Unfolding(var really, var unfolded) -> new Unfolding(really, mapTerm.apply(unfolded));
-        case Class(var fields) -> new Class(fields.map(t -> Tuple.of(t.component1(), mapTerm.apply(t.component2()))));
-        case Sigma sigma -> sigma;
-      };
-    }
-
-    @Override
-    default @NotNull Doc toDoc() {
-      return Distiller.restr(this, Distiller.Prec.Free);
-    }
-
-    record Cubical(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> boundaries) implements Restr {
-      public static @NotNull Cubical fromPartial(@NotNull PartEl partial) {
-        return new Cubical(partial.elems());
-      }
-    }
-    record Unfolding(@NotNull DefVar<Def.Fn> defVar, @NotNull Term unfolded) implements Restr {}
-    record Sigma() implements Restr {}
-    record Class(@NotNull ImmutableSeq<Tuple2<String, Term>> fields) implements Restr {}
-  }
-
   record Sub(@NotNull Term type, @NotNull Term phi, @NotNull Term partEl) implements Term {}
   record InS(@NotNull Term phi, @NotNull Term of) implements Term {}
   record OutS(@NotNull Term phi, @NotNull Term partEl, @NotNull Term of) implements Term {}
