@@ -241,7 +241,7 @@ public record Elaborator(
               new Param<>(of, Type.ref(A))
             ),
             new Type.Sub(new Type.El(new Term.Ref(A)), ImmutableSeq.of(
-              Tuple.of(new Term.Cofib.Conj(ImmutableSeq.of(new Term.Ref(phi))), new Term.Ref(of))
+              Tuple.of(new Term.Conj(ImmutableSeq.of(new Term.Ref(phi))), new Term.Ref(of))
             )));
           yield new Synth(term, type);
         }

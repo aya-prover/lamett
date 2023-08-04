@@ -19,17 +19,17 @@ import org.jetbrains.annotations.Nullable;
 public class Unification {
   public Unification() {}
 
-  public Unification(Term.Cofib.Conj conj) {
+  public Unification(Term.Conj conj) {
     if (!addNFConj(conj)) throw new InternalException("loading a false conj: " + conj);
     conjunction = conj;
   }
-  private Term.Cofib.Conj conjunction = new Term.Cofib.Conj(ImmutableSeq.empty());
+  private Term.Conj conjunction = new Term.Conj(ImmutableSeq.empty());
 
   /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
-  public boolean addNFConj(Term.Cofib.Conj conj) {
+  public boolean addNFConj(Term.Conj conj) {
     for (var atom : conj.atoms()) {
       switch (atom) {
-        case Term.Cofib.Eq eq -> {
+        case Term.Eq eq -> {
           assert eq.lhs() instanceof Term.Ref;
           var lvar = Unification.LocalVarWithNeg.from(eq.lhs());
           switch (eq.rhs()) {

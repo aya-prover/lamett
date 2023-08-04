@@ -19,7 +19,7 @@ public class Unifier {
     return unification;
   }
 
-  public <U> U withCofibConj(Term.Cofib.Conj conj, Supplier<U> f, U succeed) {
+  public <U> U withCofibConj(Term.Conj conj, Supplier<U> f, U succeed) {
     var oldU = unification.derive();
     if (unification.addNFConj(conj)) {
       var res = f.get();
@@ -30,7 +30,7 @@ public class Unifier {
     }
   }
 
-  public boolean withCofibDisj(@NotNull ImmutableSeq<Term.Cofib.Conj> disj, Supplier<Boolean> f, boolean succeed) {
+  public boolean withCofibDisj(@NotNull ImmutableSeq<Term.Conj> disj, Supplier<Boolean> f, boolean succeed) {
     return disj.allMatch(conj -> withCofibConj(conj, f, succeed));
   }
 
@@ -109,15 +109,15 @@ public class Unifier {
     return happy;
   }
 
-  boolean cofibDisjIsTrue(@NotNull ImmutableSeq<Term.Cofib.Conj> disj) {
+  boolean cofibDisjIsTrue(@NotNull ImmutableSeq<Term.Conj> disj) {
     return disj.anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
-      case Term.Cofib.Eq eq -> untyped(eq.lhs(), eq.rhs());
+      case Term.Eq eq -> untyped(eq.lhs(), eq.rhs());
       case Term.Ref(var ref) -> unification.cofibVars.contains(ref);
       default -> throw new InternalException("Unexpected cofib atom: " + atom);
     }));
   }
 
-  boolean cofibDisjImply(@NotNull ImmutableSeq<Term.Cofib.Conj> p, @NotNull ImmutableSeq<Term.Cofib.Conj> q) {
+  boolean cofibDisjImply(@NotNull ImmutableSeq<Term.Conj> p, @NotNull ImmutableSeq<Term.Conj> q) {
     return withCofibDisj(p, () -> cofibDisjIsTrue(q), true);
   }
 

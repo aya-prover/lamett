@@ -155,15 +155,11 @@ public sealed interface Term extends Docile {
     }
 
     public @NotNull ImmutableSeq<LocalVar> freeVars() {
-      if (lhs instanceof Ref(var lvar)) {
-        return switch (rhs) {
-          case Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
-          case INeg(var body) when body instanceof Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
-          default -> ImmutableSeq.of(lvar);
-        };
-      } else {
-        return ImmutableSeq.empty();
-      }
+      return lhs instanceof Ref(var lvar) ? switch (rhs) {
+        case Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
+        case INeg(var body) when body instanceof Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
+        default -> ImmutableSeq.of(lvar);
+      } : ImmutableSeq.empty();
     }
   }
 

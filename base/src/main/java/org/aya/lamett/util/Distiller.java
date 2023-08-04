@@ -146,7 +146,7 @@ public interface Distiller {
         yield envPrec.ordinal() > Free.ordinal() && (fst.isNotEmpty() || !(cofib.isFalse() || cofib.isTrue()))
           ? Doc.parened(doc) : Doc.sep(doc);
       }
-      case Term.Cofib.Eq eq -> {
+      case Term.Eq eq -> {
         var doc = Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp));
         yield checkParen(envPrec, doc, BinOpSpine);
       }

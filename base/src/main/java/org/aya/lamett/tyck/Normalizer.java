@@ -84,7 +84,7 @@ public class Normalizer {
       case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
       case Term.INeg(var t) -> term(t).neg();
       case Term.Cofib cofib -> term(cofib);
-      case Term.Cofib.Eq eq -> {
+      case Term.Eq eq -> {
         eq = eq.map(this::term);
 
         if (eq.lhs() instanceof Term.INeg) {
@@ -93,7 +93,7 @@ public class Normalizer {
           if (eq.rhs() instanceof Term.Lit ri) {
             yield Term.Cofib.known(li.keyword() == ri.keyword());
           } else {
-            eq = new Term.Cofib.Eq(eq.rhs(), eq.lhs());
+            eq = new Term.Eq(eq.rhs(), eq.lhs());
             if (eq.lhs() instanceof Term.INeg) eq = eq.neg();
           }
         }
@@ -180,12 +180,12 @@ public class Normalizer {
     return res;
   }
 
-  public @NotNull Term.Cofib term(ImmutableSeq<LocalVar> params, Term.Cofib.Conj conj) {
+  public @NotNull Term.Cofib term(ImmutableSeq<LocalVar> params, Term.Conj conj) {
     var cofib = Term.Cofib.known(true);
     for (var atom : conj.atoms()) {
       atom = term(atom);
       switch (atom) {
-        case Term.Cofib.Eq eq -> {
+        case Term.Eq eq -> {
           if (eq.freeVars().anyMatch(params::contains)) return Term.Cofib.known(false);
         }
         case Term.Cofib cofib1 -> {
@@ -202,11 +202,11 @@ public class Normalizer {
     return cofib;
   }
 
-  public @NotNull Term.Cofib term(Term.Cofib.Conj conj) {
+  public @NotNull Term.Cofib term(Term.Conj conj) {
     return term(ImmutableSeq.empty(), conj);
   }
 
-  private @NotNull ImmutableSeq<Tuple2<Term.Cofib.Conj, Term>> partEl(@NotNull ImmutableSeq<Tuple2<Term.Cofib.Conj, Term>> elems) {
+  private @NotNull ImmutableSeq<Tuple2<Term.Conj, Term>> partEl(@NotNull ImmutableSeq<Tuple2<Term.Conj, Term>> elems) {
     return elems.flatMap(tup ->
       term(tup.component1()).conjs().map(conj -> Tuple.of(conj, term(tup.component2()))));
   }
@@ -235,7 +235,7 @@ public class Normalizer {
           new Term.ConCall(conCall.fn(), conCall.args().map(this::term), conCall.dataArgs().map(this::term));
         case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
         case Term.Cofib cofib -> term(cofib);
-        case Term.Cofib.Eq eq -> new Term.Cofib.Eq(term(eq.lhs()), term(eq.rhs()));
+        case Term.Eq eq -> new Term.Eq(term(eq.lhs()), term(eq.rhs()));
         case Term.INeg t -> new Term.INeg(term(t));
         case Term.PartTy(var cof, var ty) -> new Term.PartTy(term(cof), term(ty));
         case Term.PartEl(var elems) ->
@@ -263,8 +263,8 @@ public class Normalizer {
       return new Term.Cofib(params, cofib.conjs().map(this::term));
     }
 
-    public @NotNull Term.Cofib.Conj term(@NotNull Term.Cofib.Conj conj) {
-      return new Term.Cofib.Conj(conj.atoms().map(this::term));
+    public @NotNull Term.Conj term(@NotNull Term.Conj conj) {
+      return new Term.Conj(conj.atoms().map(this::term));
     }
 
     private @NotNull LocalVar vv(@NotNull LocalVar var) {
