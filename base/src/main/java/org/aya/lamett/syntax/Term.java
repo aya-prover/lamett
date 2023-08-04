@@ -137,32 +137,32 @@ public sealed interface Term extends Docile {
     public boolean isFalse() {
       return conjs.isEmpty();
     }
+  }
 
-    public record Conj(@NotNull ImmutableSeq<Term> atoms) {
-      public @NotNull Conj conj(@NotNull Conj conj2) {
-        return new Conj(atoms.appendedAll(conj2.atoms));
-      }
+  record Conj(@NotNull ImmutableSeq<Term> atoms) {
+    public @NotNull Conj conj(@NotNull Conj conj2) {
+      return new Conj(atoms.appendedAll(conj2.atoms));
     }
-    public record Eq(@NotNull Term lhs, @NotNull Term rhs) implements Term {
-      @Override
-      public @NotNull Eq neg() {
-        return map(Term::neg);
-      }
+  }
+  record Eq(@NotNull Term lhs, @NotNull Term rhs) implements Term {
+    @Override
+    public @NotNull Eq neg() {
+      return map(Term::neg);
+    }
 
-      public @NotNull Eq map(@NotNull UnaryOperator<Term> f) {
-        return new Eq(f.apply(lhs), f.apply(rhs));
-      }
+    public @NotNull Eq map(@NotNull UnaryOperator<Term> f) {
+      return new Eq(f.apply(lhs), f.apply(rhs));
+    }
 
-      public @NotNull ImmutableSeq<LocalVar> freeVars() {
-        if (lhs instanceof Ref(var lvar)) {
-          return switch (rhs) {
-            case Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
-            case INeg(var body) when body instanceof Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
-            default -> ImmutableSeq.of(lvar);
-          };
-        } else {
-          return ImmutableSeq.empty();
-        }
+    public @NotNull ImmutableSeq<LocalVar> freeVars() {
+      if (lhs instanceof Ref(var lvar)) {
+        return switch (rhs) {
+          case Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
+          case INeg(var body) when body instanceof Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
+          default -> ImmutableSeq.of(lvar);
+        };
+      } else {
+        return ImmutableSeq.empty();
       }
     }
   }
@@ -248,8 +248,6 @@ public sealed interface Term extends Docile {
 
   /**
    * Cubical extension type, also known as Path type.
-   *
-   * @implNote The {@link Restr} inside should always be {@link Restr.Cubical}
    */
   record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<Restr.Cubical> ext) implements Term {
   }

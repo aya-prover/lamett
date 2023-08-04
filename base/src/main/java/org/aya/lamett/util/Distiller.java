@@ -186,7 +186,7 @@ public interface Distiller {
       case Restr.Sigma sigma -> {
         throw new UnsupportedOperationException("TODO");
       }
-      case Restr.Unfolding unfolding -> {
+      case Restr.Unfold unfold -> {
         throw new UnsupportedOperationException("TODO");
       }
     };
