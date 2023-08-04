@@ -163,6 +163,12 @@ public class Normalizer {
         }
         yield new Term.OutS(outPhi, outPartEl, outOf);
       }
+      case Term.Box(var r, var s, var N, var M) -> {
+        throw new UnsupportedOperationException("TODO");    // TODO
+      }
+      case Term.Cap cap -> {
+        throw new UnsupportedOperationException("TODO");    // TODO
+      }
     };
   }
 
@@ -244,6 +250,8 @@ public class Normalizer {
         case Term.Sub(var A, var partEl) -> new Term.Sub(term(A), term(partEl));
         case Term.InS(var phi, var of) -> new Term.InS(term(phi), term(of));
         case Term.OutS(var phi, var partEl, var of) -> new Term.OutS(term(phi), term(partEl), term(of));
+        case Term.Box(var r, var s, var ceil, var floor) -> new Term.Box(term(r), term(s), term(ceil), term(floor));
+        case Term.Cap(var r, var s, var hcom) -> new Term.Cap(term(r), term(s), term(hcom));
       };
     }
 

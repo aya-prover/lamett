@@ -1,6 +1,7 @@
 package org.aya.lamett.tyck;
 
 import kala.collection.mutable.MutableMap;
+import org.aya.lamett.syntax.Restr;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.util.LocalVar;
 import org.jetbrains.annotations.NotNull;
@@ -74,5 +75,13 @@ public interface KanPDF {
     var comType = new Term.Lam(z, sigma.codomain(m0.apply(new Term.Ref(z))));
     var m1 = Term.com(hcomR, hcomS, comType, phi, i, partEl.map2(t -> t.proj(false)));
     return new Term.Pair(m0.apply(hcomS), m1);
+  }
+
+  static @NotNull Term hcomU(
+    @NotNull Term hcomR,
+    @NotNull Term hcomS,
+    @NotNull LocalVar i,
+    @NotNull Term.PartEl el) {
+    return new Term.HcomU(hcomR, hcomS, i, Restr.Cubical.fromPartial(el));
   }
 }

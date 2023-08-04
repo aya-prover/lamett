@@ -210,9 +210,40 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<Restr.Cubical> ext) implements Term {
   }
 
+  /// region Cubical Subtype
+
   record Sub(@NotNull Term type, @NotNull Term partEl) implements Term {}
   record InS(@NotNull Term phi, @NotNull Term of) implements Term {}
   record OutS(@NotNull Term phi, @NotNull Term partEl, @NotNull Term of) implements Term {}
+
+  /// endregion Cubical Subtype
+
+  /// region HcompU
+
+  // Composition type in Kan.pdf, but there is already a class Hcom! So I use HcomU.
+  record HcomU(
+    @NotNull Term r /* : I */,
+    @NotNull Term s /* : I */,
+    @NotNull LocalVar i /* : I*/,
+    // @NotNull Cofib φ, // come from PartEl
+    @NotNull Restr.Cubical A /* Partial (i = r \/ φ) code(U) // under i */
+  ) implements Term {
+  }
+
+  record Box(
+    @NotNull Term r, @NotNull Term s,
+    @NotNull Term ceiling /* : A[ i ↦ s ] // under φ */,
+    @NotNull Term floor /* : Sub (A[ i ↦ r ]) {| φ ↦ coe^{s ~> r}_{λ i, A i} ceiling |} */
+  ) implements Term {
+  }
+
+  record Cap(
+    @NotNull Term r, @NotNull Term s,
+    @NotNull Term hcompU /* : HcomU (r ~> s) i A */
+  ) implements Term {
+  }
+
+  /// endregion HcompU
 
   /** Let A be argument, then <code>A i -> A j</code> */
   static @NotNull Pi familyI2J(Term term, Term i, Term j) {
