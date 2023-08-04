@@ -55,7 +55,7 @@ public record Matchy(@NotNull Elaborator elaborator) {
         if (con.ref() != call.fn()) yield false;
         yield buildSubst(con.pats().view(), call.args().view(), subst);
       }
-      case default -> false;
+      default -> false;
     };
   }
 

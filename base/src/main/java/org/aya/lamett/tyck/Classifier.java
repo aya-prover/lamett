@@ -67,10 +67,6 @@ public class Classifier implements ClassifierUtil<Normalizer, Term, Param<Term>,
   ) {
     var whnfTy = normalizer.term(param.type());
     switch (whnfTy) {
-      default -> {
-      }
-      // Note that we cannot have ill-typed patterns such as constructor patterns,
-      // since patterns here are already well-typed
       case Term.Sigma $ -> {
         throw new UnsupportedOperationException("unimplemented");
       }
@@ -118,6 +114,10 @@ public class Classifier implements ClassifierUtil<Normalizer, Term, Param<Term>,
         }
         return buffer.toImmutableSeq();
       }
+      default -> {
+      }
+      // Note that we cannot have ill-typed patterns such as constructor patterns,
+      // since patterns here are already well-typed
     }
     var bind = new Term.Ref(param.x());
     return ImmutableSeq.of(new PatClass<>(new Arg<>(bind, true), Indexed.indices(clauses)));
