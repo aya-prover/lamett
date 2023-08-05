@@ -82,6 +82,6 @@ public interface KanPDF {
     @NotNull Term hcomS,
     @NotNull LocalVar i,
     @NotNull Term.PartEl el) {
-    return new Term.HcomU(hcomR, hcomS, i, Restr.Cubical.fromPartial(el));
+    return new Term.HcomU(hcomR, hcomS, i, el);
   }
 }

@@ -129,6 +129,10 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
     public @NotNull PartEl map2(UnaryOperator<Term> f) {
       return new PartEl(elems.map(t -> Tuple.of(t.component1(), f.apply(t.component2()))));
     }
+
+    public @NotNull Cofib phi() {
+      return new Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1));
+    }
   }
 
 
@@ -226,12 +230,13 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
     @NotNull Term s /* : I */,
     @NotNull LocalVar i /* : I*/,
     // @NotNull Cofib φ, // come from PartEl
-    @NotNull Restr.Cubical A /* Partial (i = r \/ φ) code(U) // under i */
+    @NotNull PartEl A /* Partial (i = r \/ φ) code(U) // under i */
   ) implements Term {
   }
 
   record Box(
     @NotNull Term r, @NotNull Term s,
+    @NotNull Term phi,
     @NotNull Term ceiling /* : A[ i ↦ s ] // under φ */,
     @NotNull Term floor /* : Sub (A[ i ↦ r ]) {| φ ↦ coe^{s ~> r}_{λ i, A i} ceiling |} */
   ) implements Term {
@@ -239,6 +244,7 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
 
   record Cap(
     @NotNull Term r, @NotNull Term s,
+    @NotNull Term phi,
     @NotNull Term hcompU /* : HcomU (r ~> s) i A */
   ) implements Term {
   }
