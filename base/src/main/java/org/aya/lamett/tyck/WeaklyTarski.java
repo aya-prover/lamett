@@ -1,6 +1,7 @@
 package org.aya.lamett.tyck;
 
 import org.aya.lamett.syntax.Cofib;
+import kala.tuple.Tuple;
 import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.syntax.Type;
@@ -25,6 +26,13 @@ public record WeaklyTarski(@NotNull Normalizer n) {
       case Term.PartTy(var c, var type) when c instanceof Cofib cofib -> new Type.PartTy(el(type), n.term(cofib));
       case Term.Sub(var A, var p) when p instanceof Term.PartEl partEl ->
         new Type.Sub(el(A), partEl.elems());
+      // composition type
+      case Term.Hcom hcom when hcom.A() instanceof Term.Lit tyLit && tyLit.keyword() == Keyword.U -> {
+        // hcom is wellTyped, then hcom.el has type `Partial U (i = r ∨ φ) {| ... |}`
+        // constructing `Partial Type (i = r ∨ φ) {| ... |}` from hcom.el
+        var tyPartEl = hcom.el().elems().map(x -> Tuple.of(x.component1(), el(x.component2())));
+        yield new Type.HcomU(hcom.r(), hcom.s(), hcom.i(), tyPartEl);
+      }
       case Term misc -> new Type.El(misc);
     };
   }

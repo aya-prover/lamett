@@ -225,14 +225,14 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   /// region HcompU
 
   // Composition type in Kan.pdf, but there is already a class Hcom! So I use HcomU.
-  record HcomU(
-    @NotNull Term r /* : I */,
-    @NotNull Term s /* : I */,
-    @NotNull LocalVar i /* : I*/,
-    // @NotNull Cofib φ, // come from PartEl
-    @NotNull PartEl A /* Partial (i = r \/ φ) code(U) // under i */
-  ) implements Term {
-  }
+  // record HcomU(
+  //   @NotNull Term r /* : I */,
+  //   @NotNull Term s /* : I */,
+  //   @NotNull LocalVar i /* : I*/,
+  //   // @NotNull Cofib φ, // come from PartEl
+  //   @NotNull PartEl A /* Partial (i = r \/ φ) code(U) // under i */
+  // ) implements Term {
+  // }
 
   record Box(
     @NotNull Term r, @NotNull Term s,

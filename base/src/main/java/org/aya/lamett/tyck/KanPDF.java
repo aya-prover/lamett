@@ -76,12 +76,4 @@ public interface KanPDF {
     var m1 = Term.com(hcomR, hcomS, comType, phi, i, partEl.map2(t -> t.proj(false)));
     return new Term.Pair(m0.apply(hcomS), m1);
   }
-
-  static @NotNull Term hcomU(
-    @NotNull Term hcomR,
-    @NotNull Term hcomS,
-    @NotNull LocalVar i,
-    @NotNull Term.PartEl el) {
-    return new Term.HcomU(hcomR, hcomS, i, el);
-  }
 }
