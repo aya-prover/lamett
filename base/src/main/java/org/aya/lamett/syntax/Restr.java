@@ -16,7 +16,7 @@ import java.util.function.UnaryOperator;
  */
 sealed public interface Restr extends Docile {
   /** the all-in-one map, maybe there's a better way */
-  default @NotNull Restr map(@NotNull UnaryOperator<Term> mapTerm, @NotNull UnaryOperator<Term.Conj> mapConj) {
+  default @NotNull Restr map(@NotNull UnaryOperator<Term> mapTerm, @NotNull UnaryOperator<Cofib.Conj> mapConj) {
     return switch (this) {
       case Cubical(var bdry) -> new Cubical(bdry.map(t ->
         Tuple.of(mapConj.apply(t.component1()), mapTerm.apply(t.component2()))));
@@ -30,7 +30,7 @@ sealed public interface Restr extends Docile {
     return Distiller.restr(this, Distiller.Prec.Free);
   }
 
-  record Cubical(@NotNull ImmutableSeq<Tuple2<Term.Conj, Term>> boundaries) implements Restr {
+  record Cubical(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> boundaries) implements Restr {
     public static @NotNull Cubical fromPartial(@NotNull Term.PartEl partial) {
       return new Cubical(partial.elems());
     }

@@ -15,7 +15,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.UnaryOperator;
 
-public sealed interface Term extends Docile {
+public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, Term.Coe, Term.ConCall, Term.DT, Term.DataCall,
+  Term.Error, Term.Ext, Term.FnCall, Term.Hcom, Term.INeg, Term.InS, Term.Lam, Term.Lit, Term.OutS, Term.Pair, Term.PartEl,
+  Term.PartTy, Term.Path, Term.Proj, Term.Ref, Term.Sub {
   @Override default @NotNull Doc toDoc() {
     return Distiller.term(this, Distiller.Prec.Free);
   }
@@ -97,73 +99,6 @@ public sealed interface Term extends Docile {
 
     @Override public boolean equals(Object o) {
       return o instanceof Lit lit && lit.keyword == keyword;
-    }
-  }
-
-  // Once normalized, `params` becomes empty
-  // TODO: remove `params`
-  record Cofib(@NotNull ImmutableSeq<LocalVar> params, @NotNull ImmutableSeq<Conj> conjs) implements Term {
-    public @NotNull Cofib forall(@NotNull LocalVar i) {
-      return new Cofib(params.appended(i), conjs);
-    }
-
-    public @NotNull Cofib disj(@NotNull Cofib cofib) {
-      return new Cofib(params.appendedAll(cofib.params), conjs.appendedAll(cofib.conjs));
-    }
-
-    public @NotNull Cofib conj(@NotNull Cofib cofib) {
-      return new Cofib(params.appendedAll(cofib.params), conjs.flatMap(conj -> cofib.conjs.map(conj::conj)));
-    }
-
-    static public @NotNull Cofib eq(@NotNull Term lhs, @NotNull Term rhs) {
-      return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.of(new Eq(lhs, rhs)))));
-    }
-
-    static public @NotNull Cofib atom(@NotNull Term atom) {
-      return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(Conj.atom(atom)));
-    }
-
-    static public @NotNull Cofib known(boolean isTrue) {
-      if (isTrue) {
-        return new Cofib(ImmutableSeq.empty(), ImmutableSeq.of(new Cofib.Conj(ImmutableSeq.empty())));
-      } else {
-        return new Cofib(ImmutableSeq.empty(), ImmutableSeq.empty());
-      }
-    }
-
-    public boolean isTrue() {
-      return !isFalse() && conjs.allMatch(conj -> conj.atoms.isEmpty());
-    }
-
-    public boolean isFalse() {
-      return conjs.isEmpty();
-    }
-  }
-
-  record Conj(@NotNull ImmutableSeq<Term> atoms) {
-    public @NotNull Conj conj(@NotNull Conj conj2) {
-      return new Conj(atoms.appendedAll(conj2.atoms));
-    }
-
-    static public @NotNull Conj atom(@NotNull Term atom) {
-      return new Conj(ImmutableSeq.of(atom));
-    }
-  }
-  record Eq(@NotNull Term lhs, @NotNull Term rhs) implements Term {
-    @Override public @NotNull Eq neg() {
-      return map(Term::neg);
-    }
-
-    public @NotNull Eq map(@NotNull UnaryOperator<Term> f) {
-      return new Eq(f.apply(lhs), f.apply(rhs));
-    }
-
-    public @NotNull ImmutableSeq<LocalVar> freeVars() {
-      return lhs instanceof Ref(var lvar) ? switch (rhs) {
-        case Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
-        case INeg(var body) when body instanceof Ref(var rvar) -> ImmutableSeq.of(lvar, rvar);
-        default -> ImmutableSeq.of(lvar);
-      } : ImmutableSeq.empty();
     }
   }
 

@@ -1,19 +1,16 @@
 package org.aya.lamett.tyck;
 
 import kala.collection.immutable.ImmutableSeq;
-import kala.collection.mutable.MutableList;
 import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
-import org.aya.lamett.syntax.Keyword;
-import org.aya.lamett.syntax.Restr;
-import org.aya.lamett.syntax.Term;
-import org.aya.lamett.syntax.Type;
+import org.aya.lamett.syntax.*;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.UnaryOperator;
+
 
 public class Normalizer {
   private final @NotNull MutableMap<LocalVar, Term> rho;
@@ -47,7 +44,7 @@ public class Normalizer {
       case Type.El(var tm) -> new WeaklyTarski(this).el(tm);
       case Type.Pi pi -> new Type.Pi(new Param<>(pi.param().x(), type(pi.param().type())), type(pi.cod()));
       case Type.Sigma sig -> new Type.Sigma(new Param<>(sig.param().x(), type(sig.param().type())), type(sig.cod()));
-      case Type.PartTy partTy -> new Type.PartTy(type(partTy.underlying()), term(new Term.Cofib(ImmutableSeq.empty(), partTy.restrs())).conjs());
+      case Type.PartTy partTy -> new Type.PartTy(type(partTy.underlying()), term(new Cofib(partTy.restrs())).conjs());
       case Type.Sub sub -> new Type.Sub(type(sub.underlying()), partEl(sub.restrs()));
     };
   }
@@ -84,27 +81,8 @@ public class Normalizer {
         new Term.ConCall(conCall.fn(), conCall.args().map(this::term), conCall.dataArgs().map(this::term));
       case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
       case Term.INeg(var t) -> term(t).neg();
-      case Term.Cofib cofib -> term(cofib);
-      case Term.Eq eq -> {
-        eq = eq.map(this::term);
-
-        if (eq.lhs() instanceof Term.INeg) {
-          eq = eq.neg();
-        } else if (eq.lhs() instanceof Term.Lit li) {
-          if (eq.rhs() instanceof Term.Lit ri) {
-            yield Term.Cofib.known(li.keyword() == ri.keyword());
-          } else {
-            eq = new Term.Eq(eq.rhs(), eq.lhs());
-            if (eq.lhs() instanceof Term.INeg) eq = eq.neg();
-          }
-        }
-
-        assert eq.lhs() instanceof Term.Ref;
-        var var = ((Term.Ref) eq.lhs()).var();
-
-        if (eq.rhs() instanceof Term.Ref(var ref) && var == ref) yield Term.Cofib.known(true);
-        yield eq;
-      }
+      case Cofib cofib -> term(cofib);
+      case Cofib.Eq eq -> eq.map(this::term).norm();
       case Term.PartTy partTy -> new Term.PartTy(term(partTy.cofib()), term(partTy.type()));
       case Term.PartEl elem -> new Term.PartEl(partEl(elem.elems()));
       case Term.Error error -> error;
@@ -145,8 +123,8 @@ public class Normalizer {
         var inPhi = term(phi);
         var inOf = term(of);
         if (inOf instanceof Term.OutS(var outPhi, var outPartEl, var outOf)
-          && outPhi instanceof Term.Cofib outCofib
-          && inPhi instanceof Term.Cofib inCofib) {
+          && outPhi instanceof Cofib outCofib
+          && inPhi instanceof Cofib inCofib) {
           assert unifier.untyped(outCofib, inCofib);
           yield term(outOf);
         }
@@ -174,39 +152,28 @@ public class Normalizer {
     return Term.mkLam(ImmutableSeq.of(x).view(), new Term.Ref(x));
   }
 
-  public @NotNull Term.Cofib term(Term.Cofib cofib) {
-    var res = Term.Cofib.known(false);
+  public @NotNull Cofib term(Cofib cofib) {
+    var res = Cofib.known(false);
     for (var conj : cofib.conjs())
-      res = res.disj(term(cofib.params(), conj));
+      res = res.disj(term(conj));
     return res;
   }
 
-  public @NotNull Term.Cofib term(ImmutableSeq<LocalVar> params, Term.Conj conj) {
-    var cofib = MutableList.<Term.Conj>create();
+  public @NotNull Cofib term(Cofib.Conj conj) {
+    var cofib = Cofib.known(true);
     for (var atom : conj.atoms()) {
       atom = term(atom);
-      switch (atom) {
-        case Term.Eq eq -> {
-          if (eq.freeVars().anyMatch(params::contains)) return Term.Cofib.known(false);
-        }
-        case Term.Cofib cofib1 -> {
-          cofib.appendAll(cofib1.conjs());
-          if (cofib1.isFalse()) return Term.Cofib.known(false);
-          continue;
-        }
-        default -> {
-        }
+      if (atom instanceof Cofib cofib1) {
+        if (cofib1.isFalse()) return Cofib.known(false);
+        cofib.conj(cofib1);
+        continue;
       }
-      cofib.append(Term.Conj.atom(atom));
+      cofib.conj(Cofib.from(atom));
     }
-    return new Term.Cofib(ImmutableSeq.empty(), cofib.toImmutableSeq());
+    return cofib;
   }
 
-  public @NotNull Term.Cofib term(Term.Conj conj) {
-    return term(ImmutableSeq.empty(), conj);
-  }
-
-  private @NotNull ImmutableSeq<Tuple2<Term.Conj, Term>> partEl(@NotNull ImmutableSeq<Tuple2<Term.Conj, Term>> elems) {
+  private @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> partEl(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) {
     return elems.flatMap(tup ->
       term(tup.component1()).conjs().map(conj -> Tuple.of(conj, term(tup.component2()))));
   }
@@ -234,8 +201,8 @@ public class Normalizer {
         case Term.ConCall conCall ->
           new Term.ConCall(conCall.fn(), conCall.args().map(this::term), conCall.dataArgs().map(this::term));
         case Term.DataCall dataCall -> new Term.DataCall(dataCall.fn(), dataCall.args().map(this::term));
-        case Term.Cofib cofib -> term(cofib);
-        case Term.Eq eq -> new Term.Eq(term(eq.lhs()), term(eq.rhs()));
+        case Cofib cofib -> new Cofib(cofib.conjs().map(this::term));
+        case Cofib.Eq eq -> new Cofib.Eq(term(eq.lhs()), term(eq.rhs()));
         case Term.INeg t -> new Term.INeg(term(t));
         case Term.PartTy(var cof, var ty) -> new Term.PartTy(term(cof), term(ty));
         case Term.PartEl(var elems) ->
@@ -258,13 +225,8 @@ public class Normalizer {
       return new Term.Ext<>(term(ext.type()), (F) ext.restr().map(this::term, this::term));
     }
 
-    public @NotNull Term.Cofib term(@NotNull Term.Cofib cofib) {
-      var params = cofib.params().map(this::param);
-      return new Term.Cofib(params, cofib.conjs().map(this::term));
-    }
-
-    public @NotNull Term.Conj term(@NotNull Term.Conj conj) {
-      return new Term.Conj(conj.atoms().map(this::term));
+    public @NotNull Cofib.Conj term(@NotNull Cofib.Conj conj) {
+      return new Cofib.Conj(conj.atoms().map(this::term));
     }
 
     private @NotNull LocalVar vv(@NotNull LocalVar var) {

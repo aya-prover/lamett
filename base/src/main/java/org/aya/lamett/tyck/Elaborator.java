@@ -34,7 +34,7 @@ public record Elaborator(
     return type.subst(unifier.unification().toSubst());
   }
 
-  @NotNull public Term.Cofib normalize(@NotNull Term.Cofib cofib) {
+  @NotNull public Cofib normalize(@NotNull Cofib cofib) {
     return new Normalizer(unifier.unification().toSubst()).term(cofib);
   }
 
@@ -86,7 +86,7 @@ public record Elaborator(
         var synth = synth(expr);
         unify(normalize(type), synth.wellTyped, synth.type, expr.pos());
         if (synth.type == Type.Lit.F && synth.wellTyped instanceof Term.Ref) {
-          yield Term.Cofib.atom(synth.wellTyped);
+          yield Cofib.from(synth.wellTyped);
         } else {
           yield synth.wellTyped;
         }
@@ -237,7 +237,7 @@ public record Elaborator(
               new Param<>(of, Type.ref(A))
             ),
             new Type.Sub(new Type.El(new Term.Ref(A)), ImmutableSeq.of(
-              Tuple.of(new Term.Conj(ImmutableSeq.of(new Term.Ref(phi))), new Term.Ref(of))
+              Tuple.of(new Cofib.Conj(ImmutableSeq.of(new Term.Ref(phi))), new Term.Ref(of))
             )));
           yield new Synth(term, type);
         }
@@ -280,12 +280,12 @@ public record Elaborator(
     return domKw == Type.Lit.U && codKw == Type.Lit.U ? Type.Lit.U : Type.Lit.Set;
   }
 
-  public Term.Cofib checkCofib(Expr expr) {
+  public Cofib checkCofib(Expr expr) {
     return switch (expr) {
       case Expr.CofibEq eq -> {
         var lhs = inherit(eq.lhs(), Type.Lit.I);
         var rhs = inherit(eq.rhs(), Type.Lit.I);
-        yield Term.Cofib.eq(lhs, rhs);
+        yield Cofib.from(normalize(new Cofib.Eq(lhs, rhs)));
       }
       case Expr.CofibConj conj -> {
         var lhs = checkCofib(conj.lhs());
@@ -299,9 +299,9 @@ public record Elaborator(
       }
       case Expr.CofibForall forall -> {
         var phi = hof(forall.i(), Type.Lit.I, () -> checkCofib(forall.body()));
-        yield phi.forall(forall.i());
+        yield phi.forall(forall.i(), unifier);
       }
-      default -> Term.Cofib.atom(inherit(expr, Type.Lit.F));
+      default -> Cofib.from(inherit(expr, Type.Lit.F));
     };
   }
 
@@ -367,7 +367,6 @@ public record Elaborator(
       Doc.english("Expects a partial type for"), elem, Doc.plain("got"), type);
     var elems = elem.elems().flatMap(tup -> {
       var cofib = normalize(checkCofib(tup.component1()));
-      assert cofib.params().isEmpty();
       // type check
       return cofib.conjs().mapNotNull(conj -> unifier.withCofibConj(
         conj, () -> Tuple.of(conj, inherit(tup.component2(), partTy.underlying())), null));
@@ -389,8 +388,8 @@ public record Elaborator(
     }
 
     if (faceCheck) {
-      var ty = new Term.Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1));
-      var restrCofib = new Term.Cofib(ImmutableSeq.empty(), partTy.restrs());
+      var ty = new Cofib(elems.map(Tuple2::component1));
+      var restrCofib = new Cofib(partTy.restrs());
       unify(ty, Term.F, restrCofib, elem.pos());
     }
 

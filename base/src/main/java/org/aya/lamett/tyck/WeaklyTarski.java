@@ -1,5 +1,6 @@
 package org.aya.lamett.tyck;
 
+import org.aya.lamett.syntax.Cofib;
 import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.syntax.Type;
@@ -21,7 +22,7 @@ public record WeaklyTarski(@NotNull Normalizer n) {
         yield Type.mkPi(binders.map(i -> new Param<>(i, Type.Lit.I)), sub);
       }
       // `el(PartTy())` is stuck when c !is Cofib
-      case Term.PartTy(var c, var type) when c instanceof Term.Cofib cofib -> {
+      case Term.PartTy(var c, var type) when c instanceof Cofib cofib -> {
         var conjs = n.term(cofib).conjs();
         yield new Type.PartTy(el(type), conjs);
       }

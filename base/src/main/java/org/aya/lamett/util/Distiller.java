@@ -4,10 +4,7 @@ import kala.collection.Seq;
 import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableList;
-import org.aya.lamett.syntax.DefVar;
-import org.aya.lamett.syntax.Expr;
-import org.aya.lamett.syntax.Restr;
-import org.aya.lamett.syntax.Term;
+import org.aya.lamett.syntax.*;
 import org.aya.pretty.doc.Doc;
 import org.aya.pretty.doc.Docile;
 import org.aya.util.Arg;
@@ -127,12 +124,7 @@ public interface Distiller {
       case Term.ConCall conCall -> call(envPrec, conCall.args().view(), conCall.fn());
       case Term.DataCall dataCall -> call(envPrec, dataCall.args().view(), dataCall.fn());
       case Term.INeg neg -> Doc.sep(Doc.symbol("¬"), term(neg.body(), UOpSpine));
-      case Term.Cofib cofib -> {
-        var fst = cofib.params().isNotEmpty()
-          ? Doc.sep(
-          Doc.plain("∀"),
-          Doc.cat(cofib.params().map(var -> Doc.plain(var.name())).fold(Doc.empty(), Doc::sep), Doc.plain("=>")))
-          : Doc.empty();
+      case Cofib cofib -> {
         var conjs = cofib.conjs().mapNotNull(
           conj -> conj.atoms().isEmpty() ? null : conj.atoms()
             .map(atom -> term(atom, BinOpSpine))
@@ -140,20 +132,18 @@ public interface Distiller {
         );
         var inner = conjs.isEmpty() ? Doc.empty() :
           conjs.reduce((doc1, doc2) -> Doc.sep(Doc.parened(doc1), Doc.plain("∨"), Doc.parened(doc2)));
-        var snd = cofib.isFalse() ? Doc.plain("⊥") :
+        var doc = cofib.isFalse() ? Doc.plain("⊥") :
           cofib.isTrue() ? Doc.plain("⊤") : inner;
-        var doc = fst.isNotEmpty() ? Doc.sep(fst, snd) : snd;
-        yield envPrec.ordinal() > Free.ordinal() && (fst.isNotEmpty() || !(cofib.isFalse() || cofib.isTrue()))
-          ? Doc.parened(doc) : Doc.sep(doc);
+        yield Doc.sep(doc);
       }
-      case Term.Eq eq -> {
+      case Cofib.Eq eq -> {
         var doc = Doc.sep(term(eq.lhs(), BinOp), Doc.plain("="), term(eq.rhs(), BinOp));
         yield checkParen(envPrec, doc, BinOpSpine);
       }
       case Term.PartTy(var cof, var ty) -> call(envPrec, "Partial", cof, ty);
       case Term.PartEl elem -> {
         var clauses = elem.elems().map(tup ->
-          Doc.sep(term(new Term.Cofib(ImmutableSeq.empty(), ImmutableSeq.of(tup.component1())), Free), Doc.plain(":="), term(tup.component2(), Free)));
+          Doc.sep(term(Cofib.of(tup.component1()), Free), Doc.plain(":="), term(tup.component2(), Free)));
         var center = clauses.isEmpty() ? Doc.empty() : clauses.reduce((d1, d2) -> Doc.sep(Doc.cat(d1, Doc.plain("|")), d2));
         var doc = Doc.sep(Doc.plain("{|"), center, Doc.plain("|}"));
         yield checkParen(envPrec, doc, AppHead);

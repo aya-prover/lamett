@@ -1,11 +1,11 @@
 package org.aya.lamett.tyck;
 
-import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
 import kala.collection.mutable.MutableSet;
 import kala.control.Either;
 import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
+import org.aya.lamett.syntax.Cofib;
 import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.util.LocalVar;
@@ -19,17 +19,17 @@ import org.jetbrains.annotations.Nullable;
 public class Unification {
   public Unification() {}
 
-  public Unification(Term.Conj conj) {
+  public Unification(Cofib.Conj conj) {
     if (!addNFConj(conj)) throw new InternalException("loading a false conj: " + conj);
     conjunction = conj;
   }
-  private Term.Conj conjunction = new Term.Conj(ImmutableSeq.empty());
+  private Cofib.Conj conjunction = Cofib.Conj.of();
 
   /** @return {@literal false} if `conj` is `⊥`, thus any subsequent unification succeeds immediately */
-  public boolean addNFConj(Term.Conj conj) {
+  public boolean addNFConj(Cofib.Conj conj) {
     for (var atom : conj.atoms()) {
       switch (atom) {
-        case Term.Eq eq -> {
+        case Cofib.Eq eq -> {
           assert eq.lhs() instanceof Term.Ref;
           var lvar = Unification.LocalVarWithNeg.from(eq.lhs());
           switch (eq.rhs()) {
@@ -207,7 +207,7 @@ public class Unification {
       }
     }
     for (var cofibVar : cofibVars) {
-      map.put(cofibVar, Term.Cofib.known(true));
+      map.put(cofibVar, Cofib.known(true));
     }
     return map;
   }
