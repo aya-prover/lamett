@@ -84,7 +84,7 @@ public sealed interface Type extends Docile {
   record HcomU(
     @NotNull Term r, @NotNull Term s,
     @NotNull LocalVar i,
-    @NotNull ImmutableSeq<Tuple2<Term.Conj, Type>> restrs // under i
+    @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Type>> restrs // under i
   ) implements Type {
     @Override
     public @NotNull Doc toDoc() {

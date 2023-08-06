@@ -172,7 +172,7 @@ public class Normalizer {
         var ceil = term(box.ceiling());
         var floor = term(box.floor());
 
-        if (floor instanceof Term.Cap cap && phi instanceof Term.Cofib coffee) {
+        if (floor instanceof Term.Cap cap && phi instanceof Cofib coffee) {
           // unique rule
           var success = unifier.withCofibDisj(coffee.conjs(), () ->
               unifier.untyped(ceil, cap.hcompU()),

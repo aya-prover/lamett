@@ -21,7 +21,7 @@ import java.util.function.UnaryOperator;
 
 public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, Term.Coe, Term.ConCall, Term.DT, Term.DataCall,
   Term.Error, Term.Ext, Term.FnCall, Term.Hcom, Term.INeg, Term.InS, Term.Lam, Term.Lit, Term.OutS, Term.Pair, Term.PartEl,
-  Term.PartTy, Term.Path, Term.Proj, Term.Ref, Term.Sub {
+  Term.PartTy, Term.Path, Term.Proj, Term.Ref, Term.Sub, Term.Box, Term.Cap {
   @Override default @NotNull Doc toDoc() {
     return Distiller.term(this, Distiller.Prec.Free);
   }
@@ -135,7 +135,7 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
     }
 
     public @NotNull Cofib phi() {
-      return new Cofib(ImmutableSeq.empty(), elems.map(Tuple2::component1));
+      return new Cofib(elems.map(Tuple2::component1));
     }
   }
 
