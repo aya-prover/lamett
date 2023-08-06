@@ -28,7 +28,7 @@ public record WeaklyTarski(@NotNull Normalizer n) {
         new Type.Sub(el(A), partEl.elems());
       // composition type
       case Term.Hcom hcom when hcom.A() instanceof Term.Lit tyLit && tyLit.keyword() == Keyword.U -> {
-        // hcom is wellTyped, then hcom.el has type `Partial U (i = r ∨ φ) {| ... |}`
+        // hcom is wellTyped, then hcom.el has type `Partial U φ {| ... |}`
         // constructing `Partial Type (i = r ∨ φ) {| ... |}` from hcom.el
         var tyPartEl = hcom.el().elems().map(x -> Tuple.of(x.component1(), el(x.component2())));
         yield new Type.HcomU(hcom.r(), hcom.s(), hcom.i(), tyPartEl);

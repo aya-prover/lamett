@@ -16,6 +16,7 @@ import org.aya.pretty.doc.Docile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
@@ -54,6 +55,11 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
 
   static @NotNull Term mkLam(@NotNull SeqView<LocalVar> telescope, @NotNull Term body) {
     return telescope.foldRight(body, Lam::new);
+  }
+
+  static @NotNull Term mkLam(@NotNull String name, @NotNull Function<LocalVar, Term> closeBody) {
+    var i = new LocalVar(name);
+    return new Lam(i, closeBody.apply(i));
   }
 
   default @NotNull Term app(@NotNull Term... args) {
@@ -242,7 +248,9 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
     @NotNull Term r, @NotNull Term s,
     @NotNull Term phi,
     @NotNull Term ceiling /* : A[ i ↦ s ] // under φ */,
-    @NotNull Term floor /* : Sub (A[ i ↦ r ]) {| φ ↦ coe^{s ~> r}_{λ i, A i} ceiling |} */
+    @NotNull Term floor
+    /* : A[ i ↦ r ] for user
+     * : Sub (A[ i ↦ r ]) {| φ ↦ coe^{s ~> r}_{λ i, A i} ceiling |} for compiler */
   ) implements Term {
   }
 
