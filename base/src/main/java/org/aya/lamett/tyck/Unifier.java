@@ -16,8 +16,9 @@ public class Unifier {
 
   private Unification unification = new Unification();
 
-  public Unification unification() {
-    return unification;
+  public Unifier() {}
+  public Unifier(Unification unification) {
+    this.unification = unification;
   }
 
   public <U> U withCofibConj(Cofib.Conj conj, Supplier<U> f, U succeed) {
@@ -55,7 +56,7 @@ public class Unifier {
 
   public boolean untyped(@NotNull Term oldL, @NotNull Term oldR) {
     if (oldL == oldR) return true;
-    var normalizer = new Normalizer(this);
+    var normalizer = new Normalizer(unification);
     final var l = normalizer.term(oldL);
     final var r = normalizer.term(oldR);
     return untypedInner(l, r);

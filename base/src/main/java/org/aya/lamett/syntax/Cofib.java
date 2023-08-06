@@ -2,6 +2,7 @@ package org.aya.lamett.syntax;
 
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableList;
+import org.aya.lamett.tyck.Unification;
 import org.aya.lamett.tyck.Unifier;
 import org.aya.lamett.util.LocalVar;
 import org.jetbrains.annotations.NotNull;
@@ -11,12 +12,12 @@ import java.util.function.UnaryOperator;
 /** @implNote Cofibration, in disjunction normal form.
  * `Forall`s eleminated in elaboration. */
 public record Cofib(@NotNull ImmutableSeq<Conj> conjs) implements Term {
-  public @NotNull Cofib forall(@NotNull LocalVar i, Unifier unifier) {
+  public @NotNull Cofib forall(@NotNull LocalVar i, Unification unification) {
     var cofib = MutableList.<Cofib.Conj>create();
       for (Conj(var atoms) : conjs) {
         for (var atom : atoms) {
           if (atom instanceof Eq eq) {
-            if (unifier.untyped(eq.lhs(), eq.lhs())) continue;
+            if ((new Unifier(unification)).untyped(eq.lhs(), eq.lhs())) continue;
             if (eq.freeVars().contains(i)) break;
           }
           cofib.append(Conj.of(atom));

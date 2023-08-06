@@ -4,6 +4,7 @@ import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple2;
 import org.aya.lamett.tyck.Normalizer;
+import org.aya.lamett.tyck.Unification;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.aya.pretty.doc.Doc;
@@ -85,6 +86,9 @@ public sealed interface Type extends Docile {
   }
   default @NotNull Type subst(@NotNull MutableMap<LocalVar, Term> map) {
     return new Normalizer(map).type(this);
+  }
+  default @NotNull Type subst(@NotNull Unification unification) {
+    return new Normalizer(unification).type(this);
   }
 
   static Type ref(LocalVar var) {

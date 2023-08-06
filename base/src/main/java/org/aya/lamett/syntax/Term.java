@@ -6,6 +6,7 @@ import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
 import org.aya.lamett.tyck.Normalizer;
+import org.aya.lamett.tyck.Unification;
 import org.aya.lamett.util.Distiller;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
@@ -26,6 +27,9 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   }
   default @NotNull Term subst(@NotNull MutableMap<LocalVar, Term> map) {
     return new Normalizer(map).term(this);
+  }
+  default @NotNull Term subst(@NotNull Unification unification) {
+    return new Normalizer(unification).term(this);
   }
 
   record Error(@NotNull String msg) implements Term {}

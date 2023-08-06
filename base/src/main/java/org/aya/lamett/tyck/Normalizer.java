@@ -17,17 +17,22 @@ public class Normalizer {
 
   public MutableMap<LocalVar, Term> rho() {return rho;}
 
-  private final @NotNull Unifier unifier;
+  private final @NotNull Unification unification;
 
   /** @apiNote Arguments should agree */
-  public Normalizer(@NotNull Unifier unifier) {
-    this.unifier = unifier;
-    this.rho = unifier.unification().toSubst();
+  public Normalizer(@NotNull Unification unification) {
+    this.unification = unification;
+    this.rho = unification.toSubst();
   }
 
   public Normalizer(@NotNull MutableMap<LocalVar, Term> rho) {
     this.rho = rho;
-    this.unifier = new Unifier();
+    this.unification = new Unification();
+  }
+
+  public Normalizer(@NotNull MutableMap<LocalVar, Term> rho, @NotNull Unification unification) {
+    this.rho = rho;
+    this.unification = unification;
   }
 
   public static @NotNull Term rename(@NotNull Term term) {
@@ -50,6 +55,7 @@ public class Normalizer {
   }
 
   public Term term(Term term) {
+    var unifier = new Unifier(unification);
     return switch (term) {
       case Term.Ref ref -> rho.getOption(ref.var()).map(Normalizer::rename).map(this::term).getOrDefault(ref);
       case Term.Lit u -> u;
@@ -179,7 +185,7 @@ public class Normalizer {
   }
 
   public @NotNull Normalizer derive() {
-    return new Normalizer(MutableMap.from(rho));
+    return new Normalizer(MutableMap.from(rho), unification.derive());
   }
 
   record Renamer(MutableMap<LocalVar, LocalVar> map) {

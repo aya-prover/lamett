@@ -24,18 +24,18 @@ import static org.aya.lamett.tyck.Normalizer.rename;
 public record Elaborator(
   @NotNull MutableMap<DefVar<?>, Def> sigma,
   @NotNull MutableMap<LocalVar, Type> gamma,
-  @NotNull Unifier unifier
+  @NotNull Unification unification
 ) {
   @NotNull public Term normalize(@NotNull Term term) {
-    return term.subst(unifier.unification().toSubst());
+    return term.subst(unification);
   }
 
   @NotNull public Type normalize(@NotNull Type type) {
-    return type.subst(unifier.unification().toSubst());
+    return type.subst(unification);
   }
 
   @NotNull public Cofib normalize(@NotNull Cofib cofib) {
-    return new Normalizer(unifier.unification().toSubst()).term(cofib);
+    return new Normalizer(unification).term(cofib);
   }
 
   public Type el(Term tm) {
@@ -43,7 +43,7 @@ public record Elaborator(
   }
 
   private @NotNull WeaklyTarski tarski() {
-    return new WeaklyTarski(new Normalizer(unifier));
+    return new WeaklyTarski(new Normalizer(unification));
   }
 
   public record Synth(@NotNull Term wellTyped, @NotNull Type type) {}
@@ -99,11 +99,13 @@ public record Elaborator(
   }
 
   private void unify(Type ty, Type actual, SourcePos pos, Function<Unifier, Doc> message) {
+    var unifier = new Unifier(unification);
     if (!unifier.type(actual, ty))
       throw new SPE(pos, message.apply(unifier));
   }
 
   private void unify(Term ty, Docile on, @NotNull Term actual, SourcePos pos) {
+    var unifier = new Unifier(unification);
     if (!unifier.untyped(actual, ty))
       throw new SPE(pos, unifyDoc(ty, on, actual, unifier));
   }
@@ -299,7 +301,7 @@ public record Elaborator(
       }
       case Expr.CofibForall forall -> {
         var phi = hof(forall.i(), Type.Lit.I, () -> checkCofib(forall.body()));
-        yield phi.forall(forall.i(), unifier);
+        yield phi.forall(forall.i(), unification);
       }
       default -> Cofib.from(inherit(expr, Type.Lit.F));
     };
@@ -363,6 +365,7 @@ public record Elaborator(
    * @author Alias Qli
    */
   private @NotNull Term.PartEl elaboratePartial(@NotNull Expr.PartEl elem, @NotNull Type type, boolean faceCheck) {
+    var unifier = new Unifier(unification);
     if (!(normalize(type) instanceof Type.PartTy partTy)) throw new SPE(elem.pos(),
       Doc.english("Expects a partial type for"), elem, Doc.plain("got"), type);
     var elems = elem.elems().flatMap(tup -> {
