@@ -7,13 +7,16 @@ import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
 import org.aya.lamett.tyck.Normalizer;
 import org.aya.lamett.tyck.Unification;
+import org.aya.lamett.tyck.Unifier;
 import org.aya.lamett.util.Distiller;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.aya.pretty.doc.Doc;
 import org.aya.pretty.doc.Docile;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, Term.Coe, Term.ConCall, Term.DT, Term.DataCall,
@@ -52,6 +55,7 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   static @NotNull Term mkLam(@NotNull SeqView<LocalVar> telescope, @NotNull Term body) {
     return telescope.foldRight(body, Lam::new);
   }
+
   default @NotNull Term app(@NotNull Term... args) {
     var f = this;
     for (var a : args) f = f instanceof Lam lam ? lam.body.subst(lam.x, a) : new App(f, a);

@@ -52,6 +52,7 @@ public class Normalizer {
       case Type.Sigma sig -> new Type.Sigma(new Param<>(sig.param().x(), type(sig.param().type())), type(sig.cod()));
       case Type.PartTy partTy -> new Type.PartTy(type(partTy.underlying()), term(partTy.restrs()));
       case Type.Sub sub -> new Type.Sub(type(sub.underlying()), partEl(sub.restrs()));
+      case Type.HcomU hcomU -> Type.Lit.U;
     };
   }
 
