@@ -208,7 +208,23 @@ public record Elaborator(
           var type = Type.mkPi(Type.Lit.F, Type.mkPi(Type.Lit.U, Type.Lit.U));
           yield new Synth(term, type);
         }
-        case Coe, Hcom -> throw new UnsupportedOperationException("TODO");
+        case Coe -> {
+          // coe (r s : 𝕀) (A : 𝕀 -> U) : A r → A s
+          var r = new LocalVar("r");
+          var s = new LocalVar("s");
+          var A = new LocalVar("A");
+          var term = Term.mkLam(
+            ImmutableSeq.of(r, s, A).view(),
+            new Term.Coe(new Term.Ref(r), new Term.Ref(s), new Term.Ref(A)));
+          var type = Type.mkPi(ImmutableSeq.of(
+            new Param<>(r, Type.Lit.I),
+            new Param<>(s, Type.Lit.I),
+            new Param<>(A, new Type.Pi(new Param<>(new LocalVar("i"), Type.Lit.I), Type.Lit.U))
+          ), Type.mkPi(new Type.El(new Term.Ref(A).app(new Term.Ref(r))), new Type.El(new Term.Ref(A).app(new Term.Ref(s)))));
+
+          yield new Synth(term, type);
+        }
+        case Hcom -> throw new UnsupportedOperationException("TODO");
         case Sub -> {
           // Sub (A : U) (φ : F) (partEl : Partial φ A) : Set
           var A = new LocalVar("A");

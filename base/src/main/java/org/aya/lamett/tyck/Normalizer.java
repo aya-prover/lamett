@@ -93,6 +93,10 @@ public class Normalizer {
       case Term.PartEl elem -> new Term.PartEl(partEl(elem.elems()));
       case Term.Error error -> error;
       case Term.Coe(var r, var s, var A) -> {
+        r = term(r);
+        s = term(s);
+        A = term(A);
+
         if (unifier.untyped(r, s)) yield identity("c");
 
         var varI = new LocalVar("i");
@@ -102,7 +106,7 @@ public class Normalizer {
           case Term.Sigma sigma -> KanPDF.coeSigma(sigma, varI, r, s);
           case Term.Pi pi -> KanPDF.coePi(pi, new Term.Coe(r, s, A), varI);
           case Term.Lit(var lit) when lit == Keyword.U -> identity("u");
-          default -> term;
+          default -> new Term.Coe(r, s, A);
         };
       }
       case Term.Hcom(var r, var s, var A, var i, var el) -> {

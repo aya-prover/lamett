@@ -130,6 +130,16 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
       return new PartEl(elems.map(t -> Tuple.of(t.component1(), f.apply(t.component2()))));
     }
   }
+
+
+  /**
+   * <pre>
+   * Γ ⊢ {@param r} {@param s} : 𝕀
+   * Γ ⊢ {@param A} : 𝕀 → U
+   * ------------------------------
+   * Γ ⊢ coe r s A : (u : A r) → (A s | r = s ↦ u)
+   * </pre>
+   */
   record Coe(@NotNull Term r, @NotNull Term s, @NotNull Term A) implements Term {
     public @NotNull Coe update(@NotNull Term r, @NotNull Term s, @NotNull Term A) {
       return A == A() && r == r() && s == s() ? this : new Coe(r, s, A);
@@ -166,6 +176,16 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
       return familyI2J(A, r, s);
     }
   }
+
+  /**
+   * <pre>
+   * Γ ⊢ {@param r} {@param s} : 𝕀
+   * Γ ⊢ {@param A} : U
+   * Γ, i : 𝕀 ⊢ {@param el} : {@link PartTy} φ A
+   * --------------------------------------------------
+   * Γ ⊢ hcom r s A el : (u0 : A | φ ↦ el[ i ↦ r ]) → (A | r = s ↦ u0 | φ ↦ el[ i ↦ s ] )
+   * </pre>
+   */
   record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i,
               @NotNull PartEl el) implements Term {}
 

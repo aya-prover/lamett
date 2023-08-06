@@ -125,6 +125,12 @@ public class DeclsTest {
       """);
   }
 
+  @Test public void coe() {
+    tyck("""
+      def foo (A : I -> U) (a : A 0) : [| i |] A 0 { i = 0 := coe 0 0 A a | i = 1 := a } => (fn i => inS (A 0) ((i = 0) ∨ (i = 1)) a)
+      """);
+  }
+
   private static @NotNull Elaborator tyck(@Language("TEXT") String s) {
     return CliMain.tyck(s, false, CliMain.newReporter());
   }
