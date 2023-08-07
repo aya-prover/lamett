@@ -174,7 +174,7 @@ public class Normalizer {
 
         if (floor instanceof Term.Cap cap && phi instanceof Cofib coffee) {
           // unique rule
-          var success = unifier.withCofibDisj(coffee.conjs(), () ->
+          var success = unifier.withCofib(coffee, () ->
               unifier.untyped(ceil, cap.hcompU()),
             true);
           if (success) {

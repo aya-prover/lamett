@@ -5,6 +5,7 @@ import kala.tuple.Tuple;
 import org.aya.lamett.syntax.Keyword;
 import org.aya.lamett.syntax.Term;
 import org.aya.lamett.syntax.Type;
+import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,10 +29,14 @@ public record WeaklyTarski(@NotNull Normalizer n) {
         new Type.Sub(el(A), partEl.elems());
       // composition type
       case Term.Hcom hcom when hcom.A() instanceof Term.Lit tyLit && tyLit.keyword() == Keyword.U -> {
-        // hcom is wellTyped, then hcom.el has type `Partial U φ {| ... |}`
-        // constructing `Partial Type (i = r ∨ φ) {| ... |}` from hcom.el
-        var tyPartEl = hcom.el().elems().map(x -> Tuple.of(x.component1(), el(x.component2())));
-        yield new Type.HcomU(hcom.r(), hcom.s(), hcom.i(), tyPartEl);
+        // hcom is wellTyped, then hcom.u has type `I -> Partial U (i = r ∨ φ) {| ... |}`
+        // constructing `Partial Type (i = r ∨ φ) {| ... |}` from hcom.u under our `i`
+        var i = new LocalVar("i");
+        var inner = n.term(hcom.u().app(new Term.Ref(i)));
+        if (inner instanceof Term.PartEl partEl) {
+          var tyInner = partEl.elems().map(x -> Tuple.of(x.component1(), el(x.component2())));
+          yield new Type.HcomU(hcom.r(), hcom.s(), i, tyInner);
+        } else yield new Type.El(hcom);
       }
       case Term misc -> new Type.El(misc);
     };
