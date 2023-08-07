@@ -88,6 +88,7 @@ public interface LamettPsiElementTypes {
   IElementType KW_EXTENDS = new LamettPsiTokenType("extends");
   IElementType KW_F = new LamettPsiTokenType("KW_F");
   IElementType KW_FORALL = new LamettPsiTokenType("KW_FORALL");
+  IElementType KW_HCOM = new LamettPsiTokenType("KW_HCOM");
   IElementType KW_INEG = new LamettPsiTokenType("KW_INEG");
   IElementType KW_INS = new LamettPsiTokenType("KW_INS");
   IElementType KW_INTERVAL = new LamettPsiTokenType("KW_INTERVAL");

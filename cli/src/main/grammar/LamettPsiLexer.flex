@@ -51,6 +51,7 @@ NUMBER=[0-9]+
   "print"             { return KW_PRINT; }
   "data"              { return KW_DATA; }
   "coe"               { return KW_COE; }
+  "hcom"              { return KW_HCOM; }
   "extends"           { return KW_EXTENDS; }
   "new"               { return KW_NEW; }
   "self"              { return KW_SELF; }

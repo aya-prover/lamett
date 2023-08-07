@@ -291,7 +291,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F | KW_PARTIAL | KW_COE | KW_SUB | KW_INS | KW_OUTS
+  // KW_TYPE | KW_ISET | KW_SET | KW_INTERVAL | NUMBER | KW_F | KW_PARTIAL | KW_COE | KW_HCOM | KW_SUB | KW_INS | KW_OUTS
   public static boolean constExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "constExpr")) return false;
     boolean r;
@@ -304,6 +304,7 @@ public class LamettPsiParser implements PsiParser, LightPsiParser {
     if (!r) r = consumeToken(b, KW_F);
     if (!r) r = consumeToken(b, KW_PARTIAL);
     if (!r) r = consumeToken(b, KW_COE);
+    if (!r) r = consumeToken(b, KW_HCOM);
     if (!r) r = consumeToken(b, KW_SUB);
     if (!r) r = consumeToken(b, KW_INS);
     if (!r) r = consumeToken(b, KW_OUTS);
