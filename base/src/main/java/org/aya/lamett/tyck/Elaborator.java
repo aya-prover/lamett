@@ -302,7 +302,7 @@ public record Elaborator(
       case Expr.Ext ext -> hhof(ext.i().map(x -> Tuple.of(x, Type.Lit.I)), () -> {
         var codeType = synth(ext.type()).wellTyped;
         var ty = el(codeType);
-        var partial = elaboratePartial(ext.partial(), new Type.PartTy(ty, ImmutableSeq.of() /* TODO: face check */), false);
+        var partial = elaboratePartial(ext.partial(), new Type.PartTy(ty, Cofib.known(false) /* TODO: face check */), false);
         var wellTyped = new Term.Path(ext.i(), new Term.Ext<>(codeType, Restr.Cubical.fromPartial(partial)));
         return new Synth(wellTyped, Type.Lit.U);
       });
@@ -429,8 +429,7 @@ public record Elaborator(
 
     if (faceCheck) {
       var ty = new Cofib(elems.map(Tuple2::component1));
-      var restrCofib = new Cofib(partTy.restrs());
-      unify(ty, Term.F, restrCofib, elem.pos());
+      unify(ty, Term.F, partTy.restrs(), elem.pos());
     }
 
     return new Term.PartEl(elems);

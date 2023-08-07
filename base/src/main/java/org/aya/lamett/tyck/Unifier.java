@@ -32,8 +32,8 @@ public class Unifier {
     }
   }
 
-  public boolean withCofibDisj(@NotNull ImmutableSeq<Cofib.Conj> disj, Supplier<Boolean> f, boolean succeed) {
-    return disj.allMatch(conj -> withCofibConj(conj, f, succeed));
+  public boolean withCofib(@NotNull Cofib cofib, Supplier<Boolean> f, boolean succeed) {
+    return cofib.conjs().allMatch(conj -> withCofibConj(conj, f, succeed));
   }
 
   public boolean type(@NotNull Type l, @NotNull Type r) {
@@ -49,7 +49,7 @@ public class Unifier {
         rsub.restrs().allMatch(rtup -> withCofibConj(
           ltup.component1().conj(rtup.component1()), () -> untyped(ltup.component2(), rtup.component2()), true)));
       case Type.PartTy lpty when r instanceof Type.PartTy rpty -> type(lpty.underlying(), rpty.underlying())
-        && cofibDisjImply(lpty.restrs(), rpty.restrs()) && cofibDisjImply(rpty.restrs(), lpty.restrs());
+        && cofibImply(lpty.restrs(), rpty.restrs()) && cofibImply(rpty.restrs(), lpty.restrs());
       default -> false;
     };
   }
@@ -88,7 +88,7 @@ public class Unifier {
       case Term.Ref lphi when r instanceof Cofib rphi -> untypedInner(Cofib.from(lphi), rphi);
       case Cofib lphi when r instanceof Term.Ref rphi -> untypedInner(lphi, Cofib.from(rphi));
       case Cofib lphi when r instanceof Cofib rphi -> // already normalized so `params` is empty
-        cofibDisjImply(lphi.conjs(), rphi.conjs()) && cofibDisjImply(rphi.conjs(), lphi.conjs());
+        cofibImply(lphi, rphi) && cofibImply(rphi, lphi);
       case Term.PartTy lp when r instanceof Term.PartTy rp -> untypedInner(lp.cofib(), rp.cofib())
         && untypedInner(lp.type(), rp.type());
       case Term.PartEl le when r instanceof Term.PartEl re -> le.elems().allMatch(ltup ->
@@ -111,16 +111,16 @@ public class Unifier {
     return happy;
   }
 
-  boolean cofibDisjIsTrue(@NotNull ImmutableSeq<Cofib.Conj> disj) {
-    return disj.anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
+  boolean cofibIsTrue(@NotNull Cofib cofib) {
+    return cofib.conjs().anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
       case Cofib.Eq eq -> untyped(eq.lhs(), eq.rhs());
       case Term.Ref(var ref) -> unification.cofibVars.contains(ref);
       default -> throw new InternalException("Unexpected cofib atom: " + atom);
     }));
   }
 
-  boolean cofibDisjImply(@NotNull ImmutableSeq<Cofib.Conj> p, @NotNull ImmutableSeq<Cofib.Conj> q) {
-    return withCofibDisj(p, () -> cofibDisjIsTrue(q), true);
+  boolean cofibImply(@NotNull Cofib p, @NotNull Cofib q) {
+    return withCofib(p, () -> cofibIsTrue(q), true);
   }
 
   private boolean unifySeq(@NotNull ImmutableSeq<Term> l, @NotNull ImmutableSeq<Term> r) {

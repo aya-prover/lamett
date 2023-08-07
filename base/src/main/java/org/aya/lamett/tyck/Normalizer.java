@@ -49,7 +49,7 @@ public class Normalizer {
       case Type.El(var tm) -> new WeaklyTarski(this).el(tm);
       case Type.Pi pi -> new Type.Pi(new Param<>(pi.param().x(), type(pi.param().type())), type(pi.cod()));
       case Type.Sigma sig -> new Type.Sigma(new Param<>(sig.param().x(), type(sig.param().type())), type(sig.cod()));
-      case Type.PartTy partTy -> new Type.PartTy(type(partTy.underlying()), term(new Cofib(partTy.restrs())).conjs());
+      case Type.PartTy partTy -> new Type.PartTy(type(partTy.underlying()), term(partTy.restrs()));
       case Type.Sub sub -> new Type.Sub(type(sub.underlying()), partEl(sub.restrs()));
     };
   }

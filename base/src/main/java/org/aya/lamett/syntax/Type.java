@@ -65,7 +65,7 @@ public sealed interface Type extends Docile {
 
   record PartTy(
     @NotNull Type underlying,
-    @NotNull ImmutableSeq<Cofib.Conj> restrs
+    @NotNull Cofib restrs
   ) implements Type {
     @Override @NotNull public Doc toDoc() {
       return Doc.plain("PartTy");

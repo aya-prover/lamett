@@ -184,7 +184,7 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
    * Γ ⊢ φ : F (this is {@param f})
    * Γ ⊢ {@param u} : 𝕀 → {@link PartTy} (r = s ∨ φ) A
    * --------------------------------------------------
-   * Γ ⊢ hcom r s A φ u : (A | r = s ∨ φ ↦ outPar (u 0))
+   * Γ ⊢ hcom r s A φ u : (A | i = r ∨ φ ↦ outPar (u 0))
    * </pre>
    */
   record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull Term f, @NotNull Term u) implements Term {}
