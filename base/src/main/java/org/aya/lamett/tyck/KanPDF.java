@@ -43,7 +43,20 @@ public interface KanPDF {
         new Term.App(new Term.Ref(M), arg))));
   }
 
-  static @NotNull Term hcomPi(@NotNull Term.Pi pi, Term hcomR, Term hcomS, LocalVar i, Term.PartEl el) {
+  /**
+   * <pre>
+   *   θ := r = s ∨ φ
+   *   u : I -> Partial θ (A -> B)
+   *   hcom r s _ u : A -> B
+   *   -------------------------------
+   *   λ a. hcom r s (λ i. (u i) a)
+   *   normalize(u(new Ref(i)))
+   * </pre>
+   */
+  static @NotNull Term hcomPi(
+    @NotNull Term.Pi pi, Term hcomR, Term hcomS,
+    Term phi, Term el
+  ) {
     var M = new LocalVar("m");
     var a = new LocalVar("a");
     var refA = new Term.Ref(a);

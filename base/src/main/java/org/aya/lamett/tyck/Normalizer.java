@@ -110,19 +110,20 @@ public class Normalizer {
         };
       }
       // TODO
-      case Term.Hcom(var r, var s, var A, var i, var el) -> {
+      case Term.Hcom(var r, var s, var A, var phi, var el) -> {
         r = term(r);
         s = term(s);
         A = term(A);
+        phi = term(phi);
         el = term(el);
 
         if (unifier.untyped(r, s)) yield identity("u");
 
         yield switch (term(A)) {
-          case Term.Sigma sigma -> KanPDF.hcomSigma(sigma, r, s, i, el);
-          case Term.Pi pi -> KanPDF.hcomPi(pi, r, s, i, el);
+          case Term.Sigma sigma -> KanPDF.hcomSigma(sigma, r, s, phi, el);
+          case Term.Pi pi -> KanPDF.hcomPi(pi, r, s, phi, el);
           case Term.Lit(var lit) when lit == Keyword.U -> identity("u");
-          default -> new Term.Hcom(r, s, A, i, el);
+          default -> new Term.Hcom(r, s, A, phi, el);
         };
       }
       case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type),
