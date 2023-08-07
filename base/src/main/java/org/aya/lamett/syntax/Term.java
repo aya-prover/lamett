@@ -181,20 +181,19 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
    * <pre>
    * Γ ⊢ {@param r} {@param s} : 𝕀
    * Γ ⊢ {@param A} : U
-   * Γ ⊢ φ : F (this is {@param f})
-   * Γ ⊢ {@param u} : 𝕀 → {@link PartTy} (r = s ∨ φ) A
+   * Γ ⊢ φ : F (this is {@param phi})
+   * Γ ⊢ {@param u} : (i : 𝕀) → {@link PartTy} (i = r ∨ φ) A
    * --------------------------------------------------
    * Γ ⊢ hcom r s A φ u : (A | i = r ∨ φ ↦ outPar (u 0))
    * </pre>
    */
-  record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull Term f, @NotNull Term u) implements Term {}
+  record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull Term phi, @NotNull Term u) implements Term {}
 
-  static @NotNull Term com(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i, @NotNull PartEl el) {
-    var M = new LocalVar("f");
+  // com (r s : 𝕀) (A : 𝕀 → U) (φ : F) (u : (i : 𝕀) → Partial (i = r ∨ φ) A) : A
+  static @NotNull Term com(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull Term phi, LocalVar i, Term.PartEl partEl) {
     var coe = new Coe(new Ref(i), s, A);
-    var elems = el.elems().map(tup -> Tuple.of(tup.component1(), coe.app(tup.component2())));
-    return new Lam(M,
-      new App(new Hcom(r, s, A.app(s), i, new PartEl(elems)), new Coe(r, s, A)));
+    var newEl = partEl.map(tup -> Tuple.of(tup.component1(), coe.app(tup.component2())));
+    return new Hcom(r, s, A.app(s), phi, mkPi(ImmutableSeq.of(new Param<>(i, Lit.I)), newEl));
   }
 
   /**

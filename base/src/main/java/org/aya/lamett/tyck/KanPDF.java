@@ -55,25 +55,24 @@ public interface KanPDF {
    */
   static @NotNull Term hcomPi(
     @NotNull Term.Pi pi, Term hcomR, Term hcomS,
-    Term phi, Term el
+    Term phi, LocalVar i, Term.PartEl partEl
   ) {
-    var M = new LocalVar("m");
     var a = new LocalVar("a");
     var refA = new Term.Ref(a);
-    var newEl = el.map2(t -> t.app(refA));
-    return new Term.Lam(M, new Term.Lam(a,
-      new Term.App(new Term.Hcom(hcomR, hcomS, pi.cod(), i, newEl),
-        new Term.App(new Term.Ref(M), refA))));
+    var newEl = partEl.map2(t -> t.app(refA));
+    return new Term.Lam(a, new Term.Hcom(hcomR, hcomS, pi.codomain(refA), phi, new Term.Lam(i, newEl)));
   }
 
-  static @NotNull Term hcomSigma(@NotNull Term.Sigma sigma, Term hcomR, Term hcomS, LocalVar i, Term.PartEl el) {
-    var M = new LocalVar("m");
-    var refM = new Term.Ref(M);
+  static @NotNull Term hcomSigma(
+    @NotNull Term.Sigma sigma, Term hcomR, Term hcomS,
+    Term phi, LocalVar i, Term.PartEl partEl
+  ) {
     UnaryOperator<Term> m0 = z ->
-      new Term.Hcom(hcomR, z, sigma.param().type(), i, el.map2(t -> t.proj(true)));
+      new Term.Hcom(hcomR, z, sigma.param().type(), sigma.param().type(),
+        new Term.Lam(i, partEl.map2(t -> t.proj(true))));
     var z = new LocalVar("z");
-    var comType = new Term.Lam(z, sigma.cod().subst(sigma.param().x(), m0.apply(new Term.Ref(z))));
-    var m1 = Term.com(hcomR, hcomS, comType, i, el.map2(t -> t.proj(false)));
-    return new Term.Lam(M, new Term.Pair(m0.apply(hcomS).app(refM.proj(true)), m1.app(refM.proj(false))));
+    var comType = new Term.Lam(z, sigma.codomain(m0.apply(new Term.Ref(z))));
+    var m1 = Term.com(hcomR, hcomS, comType, phi, i, partEl.map2(t -> t.proj(false)));
+    return new Term.Pair(m0.apply(hcomS), m1);
   }
 }

@@ -109,22 +109,24 @@ public class Normalizer {
           default -> new Term.Coe(r, s, A);
         };
       }
-      // TODO
-      case Term.Hcom(var r, var s, var A, var phi, var el) -> {
+      case Term.Hcom(var r, var s, var A, var phi, var u) -> {
         r = term(r);
         s = term(s);
         A = term(A);
         phi = term(phi);
-        el = term(el);
+        var i = new LocalVar("i");
+        var def = new Term.Hcom(r, s, A, phi, u);
 
-        if (unifier.untyped(r, s)) yield identity("u");
+        if (term(u.app(new Term.Ref(i))) instanceof Term.PartEl body) {
+          var branch = ((Term.PartEl) body.subst(i, s)).elems().firstOrNull(tup -> unifier.cofibIsTrue(Cofib.of(tup.component1())));
+          if (branch != null) yield branch.component2();
 
-        yield switch (term(A)) {
-          case Term.Sigma sigma -> KanPDF.hcomSigma(sigma, r, s, phi, el);
-          case Term.Pi pi -> KanPDF.hcomPi(pi, r, s, phi, el);
-          case Term.Lit(var lit) when lit == Keyword.U -> identity("u");
-          default -> new Term.Hcom(r, s, A, phi, el);
-        };
+          yield switch (A) {
+            case Term.Sigma sigma -> term(KanPDF.hcomSigma(sigma, r, s, phi, i, body));
+            case Term.Pi pi -> term(KanPDF.hcomPi(pi, r, s, phi, i, body));
+            default -> def;
+          };
+        } else yield def;
       }
       case Term.Ext<?>(var type, var face) -> new Term.Ext<>(term(type),
         face.map(this::term, UnaryOperator.identity()));
@@ -192,7 +194,7 @@ public class Normalizer {
           cofib = cofib.conj(cofib1);
           continue;
         }
-        default -> { assert atom instanceof Term.Ref; }
+        default -> {}
       }
       cofib = cofib.conj(Cofib.from(atom));
     }
