@@ -225,23 +225,24 @@ public record Elaborator(
           yield new Synth(term, type);
         }
         case Hcom -> {
-          // hcom (r s : 𝕀) (A : U) (φ : F) (u : 𝕀 → Partial (r = s ∨ φ) A) : A
+          // hcom (r s : 𝕀) (A : U) (φ : F) (u : (i : 𝕀) → Partial (i = r ∨ φ) A) : A
           var r = new LocalVar("r");
           var s = new LocalVar("s");
           var A = new LocalVar("A");
           var f = new LocalVar("φ");
           var u = new LocalVar("u");
+          var i = new LocalVar("i");
           var term = Term.mkLam(
             ImmutableSeq.of(r, s, A, f, u).view(),
             new Term.Hcom(new Term.Ref(r), new Term.Ref(s), new Term.Ref(A), new Term.Ref(f), new Term.Ref(u)));
-          // TODO: replace new Term.Ref(f) with f ∨ r = s
-          var ret = new Type.El(new Term.PartTy(new Term.Ref(f), new Term.Ref(A)));
+          var cofib = Cofib.of(Cofib.Conj.of(new Cofib.Eq(new Term.Ref(i), new Term.Ref(r)), new Term.Ref(f)));
+          var ret = new Type.El(new Term.PartTy(cofib, new Term.Ref(A)));
           var type = Type.mkPi(ImmutableSeq.of(
               new Param<>(r, Type.Lit.I),
               new Param<>(s, Type.Lit.I),
               new Param<>(A, Type.Lit.U),
               new Param<>(f, Type.Lit.F),
-              new Param<>(u, Type.mkPi(Type.Lit.I, ret))),
+              new Param<>(u, Type.mkPi(ImmutableSeq.of(new Param<>(i, Type.Lit.I)), ret))),
             new Type.El(new Term.Ref(A)));
           yield new Synth(term, type);
         }
