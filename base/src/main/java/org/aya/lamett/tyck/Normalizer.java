@@ -178,12 +178,21 @@ public class Normalizer {
     var cofib = Cofib.known(true);
     for (var atom : conj.atoms()) {
       atom = term(atom);
-      if (atom instanceof Cofib cofib1) {
-        if (cofib1.isFalse()) return Cofib.known(false);
-        cofib.conj(cofib1);
-        continue;
+      switch (atom) {
+        case Cofib.Eq eq -> {
+          var unifier = new Unifier(unification);
+          // I guess in fact `eq.lhs().equal(eq.rhs())` is enough
+          if (unifier.untyped(eq.lhs(), eq.rhs())) continue;
+          if (unifier.untyped(eq.lhs().neg(), eq.rhs())) return Cofib.known(false);
+        }
+        case Cofib cofib1 -> {
+          if (cofib1.isFalse()) return Cofib.known(false);
+          cofib = cofib.conj(cofib1);
+          continue;
+        }
+        default -> { assert atom instanceof Term.Ref; }
       }
-      cofib.conj(Cofib.from(atom));
+      cofib = cofib.conj(Cofib.from(atom));
     }
     return cofib;
   }
