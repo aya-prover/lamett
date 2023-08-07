@@ -181,13 +181,13 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
    * <pre>
    * Γ ⊢ {@param r} {@param s} : 𝕀
    * Γ ⊢ {@param A} : U
-   * Γ, i : 𝕀 ⊢ {@param el} : {@link PartTy} φ A
+   * Γ ⊢ φ : F (this is {@param f})
+   * Γ ⊢ {@param u} : 𝕀 → {@link PartTy} (r = s ∨ φ) A
    * --------------------------------------------------
-   * Γ ⊢ hcom r s A el : (u0 : A | φ ↦ el[ i ↦ r ]) → (A | r = s ↦ u0 | φ ↦ el[ i ↦ s ] )
+   * Γ ⊢ hcom r s A φ u : (A | r = s ∨ φ ↦ outPar (u 0))
    * </pre>
    */
-  record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i,
-              @NotNull PartEl el) implements Term {}
+  record Hcom(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull Term f, @NotNull Term u) implements Term {}
 
   static @NotNull Term com(@NotNull Term r, @NotNull Term s, @NotNull Term A, @NotNull LocalVar i, @NotNull PartEl el) {
     var M = new LocalVar("f");

@@ -209,7 +209,7 @@ public record Elaborator(
           yield new Synth(term, type);
         }
         case Coe -> {
-          // coe (r s : 𝕀) (A : 𝕀 -> U) : A r → A s
+          // coe (r s : 𝕀) (A : 𝕀 → U) : A r → A s
           var r = new LocalVar("r");
           var s = new LocalVar("s");
           var A = new LocalVar("A");
@@ -224,7 +224,27 @@ public record Elaborator(
 
           yield new Synth(term, type);
         }
-        case Hcom -> throw new UnsupportedOperationException("TODO");
+        case Hcom -> {
+          // hcom (r s : 𝕀) (A : U) (φ : F) (u : 𝕀 → Partial (r = s ∨ φ) A) : A
+          var r = new LocalVar("r");
+          var s = new LocalVar("s");
+          var A = new LocalVar("A");
+          var f = new LocalVar("φ");
+          var u = new LocalVar("u");
+          var term = Term.mkLam(
+            ImmutableSeq.of(r, s, A, f, u).view(),
+            new Term.Hcom(new Term.Ref(r), new Term.Ref(s), new Term.Ref(A), new Term.Ref(f), new Term.Ref(u)));
+          // TODO: replace new Term.Ref(f) with f ∨ r = s
+          var ret = new Type.El(new Term.PartTy(new Term.Ref(f), new Term.Ref(A)));
+          var type = Type.mkPi(ImmutableSeq.of(
+              new Param<>(r, Type.Lit.I),
+              new Param<>(s, Type.Lit.I),
+              new Param<>(A, Type.Lit.U),
+              new Param<>(f, Type.Lit.F),
+              new Param<>(u, Type.mkPi(Type.Lit.I, ret))),
+            new Type.El(new Term.Ref(A)));
+          yield new Synth(term, type);
+        }
         case Sub -> {
           // Sub (A : U) (φ : F) (partEl : Partial φ A) : Set
           var A = new LocalVar("A");
