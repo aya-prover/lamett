@@ -150,11 +150,7 @@ public interface Distiller {
       }
       case Term.Error(var msg) -> Doc.plain(msg);
       case Term.Coe(var r, var s, var A) -> call(envPrec, "coe", r, s, A);
-      case Term.Hcom(var r, var s, var A, var i, var el) -> Doc.sep(call(envPrec, "hcom", r, s, A),
-        Doc.parened(Doc.sep(
-          Doc.symbol(i.name()),
-          Doc.plain("=>"),
-          term(el, Free))));
+      case Term.Hcom(var r, var s, var A, var phi, var u) -> call(envPrec, "hcom", r, s, A, phi, term(u, AppSpine));
       case Term.Ext<?>(var type, var faces) -> call(envPrec, "Ext", type, faces); // TODO: faces
       case Term.Path path -> {
         var last = restr(path.ext().restr(), envPrec);

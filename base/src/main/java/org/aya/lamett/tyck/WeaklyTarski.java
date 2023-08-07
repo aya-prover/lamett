@@ -22,10 +22,7 @@ public record WeaklyTarski(@NotNull Normalizer n) {
         yield Type.mkPi(binders.map(i -> new Param<>(i, Type.Lit.I)), sub);
       }
       // `el(PartTy())` is stuck when c !is Cofib
-      case Term.PartTy(var c, var type) when c instanceof Cofib cofib -> {
-        var conjs = n.term(cofib).conjs();
-        yield new Type.PartTy(el(type), conjs);
-      }
+      case Term.PartTy(var c, var type) when c instanceof Cofib cofib -> new Type.PartTy(el(type), n.term(cofib));
       case Term.Sub(var A, var p) when p instanceof Term.PartEl partEl ->
         new Type.Sub(el(A), partEl.elems());
       case Term misc -> new Type.El(misc);
