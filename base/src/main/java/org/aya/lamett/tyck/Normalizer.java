@@ -109,11 +109,12 @@ public class Normalizer {
           default -> new Term.Coe(r, s, A);
         };
       }
+      // TODO
       case Term.Hcom(var r, var s, var A, var i, var el) -> {
         r = term(r);
         s = term(s);
         A = term(A);
-        el = (Term.PartEl) term(el);
+        el = term(el);
 
         if (unifier.untyped(r, s)) yield identity("u");
 
@@ -233,10 +234,8 @@ public class Normalizer {
           new Term.PartEl(elems.map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
         case Term.Error error -> error;
         case Term.Coe(var r, var s, var A) -> new Term.Coe(term(r), term(s), term(A));
-        case Term.Hcom(var r, var s, var A, var i, var partial) -> {
-          var paramI = param(i);
-          yield new Term.Hcom(term(r), term(s), term(A), paramI, (Term.PartEl) term(partial));
-        }
+        case Term.Hcom(var r, var s, var A, var f, var partial) ->
+          new Term.Hcom(term(r), term(s), term(A), term(f), term(partial));
         case Term.Ext<?> e -> ext(e);
         case Term.Path(var binders, var ext) -> new Term.Path(localVars(binders), ext(ext));
         case Term.Sub(var A, var partEl) -> new Term.Sub(term(A), term(partEl));
