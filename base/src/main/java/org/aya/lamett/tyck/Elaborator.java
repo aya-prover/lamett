@@ -51,17 +51,30 @@ public record Elaborator(
   public Term inherit(Expr expr, Type type) {
     return switch (expr) {
       case Expr.Lam lam -> {
-        if (normalize(type) instanceof Type.Pi dt)
-          yield new Term.Lam(lam.x(), hof(lam.x(), dt.param().type(), () ->
-            inherit(lam.a(), dt.codomain(new Term.Ref(lam.x())))));
-        else throw new SPE(lam.pos(),
-          Doc.english("Expects a right adjoint for"), expr, Doc.plain("got"), type);
+        Function<Type.Pi, Term> f = dt -> new Term.Lam(lam.x(), hof(lam.x(), dt.param().type(), () ->
+          inherit(lam.a(), dt.codomain(new Term.Ref(lam.x())))));
+        yield switch (normalize(type)) {
+          case Type.Pi dt -> f.apply(dt);
+          case Type.Sub sub when sub.underlying() instanceof Type.Pi dt
+              && restrCheck(f.apply(dt), sub.restrs(), new Unifier(unification)) ->
+            new Term.InS(new Cofib(sub.restrs().map(Tuple::component1)), f.apply(dt));
+          default -> throw new SPE(lam.pos(),
+            Doc.english("Expects a right adjoint for"), expr, Doc.plain("got"), type);
+        };
       }
       case Expr.Pair two -> {
-        if (!(normalize(type) instanceof Type.Sigma dt)) throw new SPE(two.pos(),
-          Doc.english("Expects a left adjoint for"), expr, Doc.plain("got"), type);
-        var lhs = inherit(two.a(), dt.param().type());
-        yield new Term.Pair(lhs, inherit(two.b(), dt.codomain(lhs)));
+        Function<Type.Sigma, Term> f = dt -> {
+          var lhs = inherit(two.a(), dt.param().type());
+          return new Term.Pair(lhs, inherit(two.b(), dt.codomain(lhs)));
+        };
+        yield switch (normalize(type)) {
+          case Type.Sigma dt -> f.apply(dt);
+          case Type.Sub sub when sub.underlying() instanceof Type.Sigma dt
+            && restrCheck(f.apply(dt), sub.restrs(), new Unifier(unification)) ->
+            new Term.InS(new Cofib(sub.restrs().map(Tuple::component1)), f.apply(dt));
+          default -> throw new SPE(two.pos(),
+            Doc.english("Expects a left adjoint for"), expr, Doc.plain("got"), type);
+        };
       }
       case Expr.PartEl elem -> elaboratePartial(elem, type, true);
       case Expr.Hole hole -> {
@@ -84,7 +97,29 @@ public record Elaborator(
       }
       default -> {
         var synth = synth(expr);
-        unify(normalize(type), synth.wellTyped, synth.type, expr.pos());
+        type = normalize(type);
+        var unifier = new Unifier(unification);
+
+        if (type instanceof Type.Sub sub && unifier.type(sub.underlying(), synth.type)
+            && restrCheck(synth.wellTyped, sub.restrs(), unifier)) {
+          var cofib = new Cofib(sub.restrs().map(Tuple::component1));
+          if (synth.wellTyped instanceof Term.OutS outS) {
+            // assert unifier.untyped(cofib, inS.phi());
+            yield outS.of();
+          }
+          yield new Term.InS(cofib, synth.wellTyped);
+        }
+
+        if (synth.type instanceof Type.Sub sub && unifier.type(type, sub.underlying())) {
+          var cofib = new Cofib(sub.restrs().map(Tuple::component1));
+          if (synth.wellTyped instanceof Term.InS inS) {
+            // assert unifier.untyped(cofib, inS.phi());
+            yield inS.of();
+          }
+          yield new Term.OutS(cofib, new Term.PartEl(sub.restrs()), synth.wellTyped);
+        }
+
+        unify(type, synth.wellTyped, synth.type, expr.pos());
         if (synth.type == Type.Lit.F && synth.wellTyped instanceof Term.Ref) {
           yield Cofib.from(synth.wellTyped);
         } else {
@@ -92,6 +127,11 @@ public record Elaborator(
         }
       }
     };
+  }
+
+  private static boolean restrCheck(Term term, ImmutableSeq<Tuple2<Cofib.Conj, Term>> restrs, Unifier unifier) {
+    return restrs.allMatch(restr -> unifier.withCofibConj(restr.component1(),
+      () -> unifier.untyped(term, restr.component2()), true));
   }
 
   private void unify(Type ty, Docile on, @NotNull Type actual, SourcePos pos) {
