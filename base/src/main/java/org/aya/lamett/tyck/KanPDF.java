@@ -114,7 +114,7 @@ public interface KanPDF {
     // i : I, i = r ∨ φ ⊢ ?2 := cap { r' <~ s' } ψ (u i)
     BiFunction<Term, Cofib.Conj, Term> Q = (i, proof) -> {
       var result = unifier.withCofibConj(proof, () -> {
-        var realU = hcomU.simplify(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
+        var realU = hcomU.simplify(unifier);
         assert realU != null : "φ ∧ ¬ φ";
         return new Term.Cap(hcomUr, hcomUs, hcomUphi, hcomUA, realU.component2().subst(hcomI, i));
       }, null);   // TODO: I am not sure !!
@@ -145,9 +145,11 @@ public interface KanPDF {
     // (i : I) -> Partial (i = r ∨ φ ∨ ψ ∨ r' = s') (A r')
     var termT = Term.mkLam("i", i -> T.apply(ref(i)));
 
-    var realAr = ((Term.PartEl) hcomUA.subst(hcomUi, hcomUr))
-      .simplify(unifier)     // since `i : I ⊢ A : Partial (i = r' ∨ ψ) U`, we have a clause with cof `r' = r'`
-      .component2();
+    var halfRealAr = ((Term.PartEl) hcomUA.subst(hcomUi, hcomUr))
+      .simplify(unifier);     // since `i : I ⊢ A : Partial (i = r' ∨ ψ) U`, we have a clause with cof `r' = r'`
+    assert halfRealAr != null : "φ ∧ ¬ φ";
+    var realAr = halfRealAr.component2();
+
 
     return new Term.Box(hcomUr, hcomUs, hcomUphi, new Term.Lam(hcomUi, hcomUA),
       new Term.PartEl(ImmutableSeq.of(Tuple.of(conjHcomUphi, P.apply(hcomUs)))),
