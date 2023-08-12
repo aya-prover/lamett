@@ -154,8 +154,12 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
      *
      * @param simplifier a simplifier, should confluent.
      */
-    public @Nullable Tuple2<Cofib.Conj, Term> simplifyUnder(@NotNull Predicate<Cofib.Conj> simplifier) {
+    public @Nullable Tuple2<Cofib.Conj, Term> simplify(@NotNull Predicate<Cofib.Conj> simplifier) {
       return elems.firstOrNull(pair -> simplifier.test(pair.component1()));
+    }
+
+    public @Nullable Tuple2<Cofib.Conj, Term> simplify(@NotNull Unifier unifier) {
+      return simplify(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
     }
   }
 

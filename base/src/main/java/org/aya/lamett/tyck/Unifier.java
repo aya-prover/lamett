@@ -112,7 +112,7 @@ public class Unifier {
     return happy;
   }
 
-  boolean cofibIsTrue(@NotNull Cofib cofib) {
+  public boolean cofibIsTrue(@NotNull Cofib cofib) {
     return cofib.conjs().anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
       case Cofib.Eq eq -> untyped(eq.lhs(), eq.rhs());
       case Term.Ref(var ref) -> unification.cofibVars.contains(ref);

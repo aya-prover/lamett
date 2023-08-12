@@ -8,7 +8,6 @@ import org.aya.lamett.syntax.*;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.function.UnaryOperator;
 
@@ -179,14 +178,14 @@ public class Normalizer {
         if (unifier.untyped(r, s)) yield floor;
 
         // φ true
-        var branch = eave.simplifyUnder(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
+        var branch = eave.simplify(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
         if (branch != null) yield branch.component2();    // FIXME: term(...) if we switch to whnf
 
         // unique rule
         if (floor instanceof Term.Cap cap && phi instanceof Cofib coffee) {
           var mEave = eave;
           var success = unifier.withCofib(coffee, () -> {
-            var realEave = mEave.simplifyUnder(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
+            var realEave = mEave.simplify(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
             assert realEave != null : "φ ∧ ¬ φ";
             return unifier.untyped(realEave.component2(), cap.hcomU());
           }, true);
@@ -213,7 +212,7 @@ public class Normalizer {
           // since `A : (i : I) → Partial (i = r ∨ φ) U` and we are under `φ`
           // We have `A i : Partial ⊤ U` for any i,
           // and `realAi := outPartial (A i) : U`
-          var realAi = wall.simplifyUnder(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
+          var realAi = wall.simplify(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
           assert realAi != null : "φ ∧ ¬ φ";
           // coe { s ~> r } A hcomU
           yield term(new Term.Coe(s, r, new Term.Lam(i, realAi.component2())).app(hcomU));
