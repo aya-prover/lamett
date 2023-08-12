@@ -306,8 +306,7 @@ public class Normalizer {
         case Cofib.Eq eq -> new Cofib.Eq(term(eq.lhs()), term(eq.rhs()));
         case Term.INeg t -> new Term.INeg(term(t));
         case Term.PartTy(var cof, var ty) -> new Term.PartTy(term(cof), term(ty));
-        case Term.PartEl(var elems) ->
-          new Term.PartEl(elems.map(tup -> Tuple.of(term(tup.component1()), term(tup.component2()))));
+        case Term.PartEl partEl -> partEl(partEl);
         case Term.Error error -> error;
         case Term.Coe(var r, var s, var A) -> new Term.Coe(term(r), term(s), term(A));
         case Term.Hcom(var r, var s, var A, var f, var partial) ->
@@ -318,7 +317,7 @@ public class Normalizer {
         case Term.InS(var phi, var of) -> new Term.InS(term(phi), term(of));
         case Term.OutS(var phi, var partEl, var of) -> new Term.OutS(term(phi), term(partEl), term(of));
         case Term.Box(var r, var s, var phi, var A, var eave, var floor) ->
-          new Term.Box(term(r), term(s), term(phi), term(A), (Term.PartEl) term(eave), term(floor));
+          new Term.Box(term(r), term(s), term(phi), term(A), partEl(eave), term(floor));
         case Term.Cap(var r, var s, var phi, var A, var hcom) ->
           new Term.Cap(term(r), term(s), term(phi), term(A), term(hcom));
       };
@@ -326,6 +325,14 @@ public class Normalizer {
 
     public <F extends Restr> Term.@NotNull Ext<F> ext(@NotNull Term.Ext<F> ext) {
       return new Term.Ext<>(term(ext.type()), (F) ext.restr().map(this::term, this::term));
+    }
+
+    // avoiding explicitly casting
+    public @NotNull Term.PartEl partEl(@NotNull Term.PartEl partEl) {
+      return new Term.PartEl(
+        partEl.elems().map(tup ->
+          Tuple.of(term(tup.component1()), term(tup.component2())))
+      );
     }
 
     public @NotNull Cofib.Conj term(@NotNull Cofib.Conj conj) {
