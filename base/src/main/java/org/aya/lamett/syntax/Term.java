@@ -37,7 +37,12 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   }
 
   record Error(@NotNull String msg) implements Term {}
-  record Ref(@NotNull LocalVar var) implements Term {}
+  record Ref(@NotNull LocalVar var) implements Term {
+    // For import static
+    public static @NotNull Term.Ref ref(@NotNull LocalVar var) {
+      return new Ref(var);
+    }
+  }
   record FnCall(@NotNull DefVar<Def.Fn> fn, @NotNull ImmutableSeq<Term> args) implements Term {}
   record DataCall(@NotNull DefVar<Def.Data> fn, @NotNull ImmutableSeq<Term> args) implements Term {}
   record ConCall(@NotNull DefVar<Def.Cons> fn, @NotNull ImmutableSeq<Term> args,
@@ -143,6 +148,15 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
     public @NotNull Cofib phi() {
       return new Cofib(elems.map(Tuple2::component1));
     }
+
+    /**
+     * Returns the first clause who makes simplifier happy.
+     *
+     * @param simplifier a simplifier, should confluent.
+     */
+    public @Nullable Tuple2<Cofib.Conj, Term> simplifyUnder(@NotNull Predicate<Cofib.Conj> simplifier) {
+      return elems.firstOrNull(pair -> simplifier.test(pair.component1()));
+    }
   }
 
 
@@ -211,6 +225,19 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   }
 
   /**
+   * <pre>
+   * Γ ⊢ {@param A}   : U
+   * Γ ⊢ {@param phi} : F
+   * Γ ⊢ {@param u}   : {@link PartTy} phi A
+   * -------------------------------------------
+   * Γ, phi ⊢ outPartial A phi u = hcom 0 1 phi (λ i. u) : A
+   * </pre>
+   */
+  static @NotNull Term outPartial(@NotNull Term A, @NotNull Term phi, @NotNull Term u) {
+    return new Hcom(Lit.Zero, Lit.One, A, phi, mkLam("i", $ -> u));
+  }
+
+  /**
    * Generalized extension type.
    *
    * @see Restr
@@ -244,20 +271,34 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   // ) implements Term {
   // }
 
+  /**
+   * <pre>
+   * Γ ⊢ {@param r} {@param s} : I
+   * Γ ⊢ {@param phi} : F
+   * Γ ⊢ {@param A} : (i : I) → {@link PartTy} (i = r ∨ φ) U
+   * Γ ⊢ {@param eave} : Partial φ (A s)
+   * Γ ⊢ {@param floor} : A r | φ ↦ coe s r A eave
+   * outPartial (A s)
+   * ------------------------------- outS floor : A r
+   * Γ ⊢ box r s phi A eave floor : hcom r s U phi A
+   *                              | r = s ↦ outS (floor) : outPartial (A r)
+   * </pre>
+   */
   record Box(
     @NotNull Term r, @NotNull Term s,
     @NotNull Term phi,
-    @NotNull Term ceiling /* : A[ i ↦ s ] // under φ */,
-    @NotNull Term floor
-    /* : A[ i ↦ r ] for user
-     * : Sub (A[ i ↦ r ]) {| φ ↦ coe^{s ~> r}_{λ i, A i} ceiling |} for compiler */
+    @NotNull Term A /* : (i : I) → Partial (i = r ∨ φ) U */,
+    // omit metalanguage-level `outPartial : (Partial ⊤ A) → A` below
+    @NotNull PartEl eave /* Partial φ (A s) */,
+    @NotNull Term floor /* : A r | φ ↦ coe s r A eave */
   ) implements Term {
   }
 
   record Cap(
     @NotNull Term r, @NotNull Term s,
     @NotNull Term phi,
-    @NotNull Term hcompU /* : HcomU (r ~> s) i A */
+    @NotNull Term A /* : (i : I) → Partial (i = r ∨ φ) U */,
+    @NotNull Term hcomU /* : hcom (r ~> s) U φ A */
   ) implements Term {
   }
 

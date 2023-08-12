@@ -19,7 +19,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.aya.lamett.syntax.Term.*;
 import static org.aya.lamett.tyck.Normalizer.rename;
+import static org.aya.lamett.syntax.Term.Ref.ref;
 
 public record Elaborator(
   @NotNull MutableMap<DefVar<?>, Def> sigma,

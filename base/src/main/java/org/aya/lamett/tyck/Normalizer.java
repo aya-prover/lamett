@@ -1,6 +1,5 @@
 package org.aya.lamett.tyck;
 
-import kala.collection.SeqView;
 import kala.collection.immutable.ImmutableSeq;
 import kala.collection.mutable.MutableMap;
 import kala.tuple.Tuple;
@@ -9,8 +8,11 @@ import org.aya.lamett.syntax.*;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.UnaryOperator;
+
+import static org.aya.lamett.syntax.Term.Ref.ref;
 
 
 public class Normalizer {
@@ -52,7 +54,7 @@ public class Normalizer {
       case Type.Sigma sig -> new Type.Sigma(new Param<>(sig.param().x(), type(sig.param().type())), type(sig.cod()));
       case Type.PartTy partTy -> new Type.PartTy(type(partTy.underlying()), term(partTy.restrs()));
       case Type.Sub sub -> new Type.Sub(type(sub.underlying()), partEl(sub.restrs()));
-      case Type.HcomU hcomU -> Type.Lit.U;
+      case Type.HcomU(var r, var s, var i, var restr) -> new Type.HcomU(term(r), term(s), i, partEl(restr, this::type));
     };
   }
 
@@ -165,37 +167,64 @@ public class Normalizer {
         }
         yield new Term.OutS(outPhi, outPartEl, outOf);
       }
-      case Term.Box box -> {
-        var r = term(box.r());
-        var s = term(box.s());
-        var phi = term(box.phi());
-        var ceil = term(box.ceiling());
-        var floor = term(box.floor());
+      case Term.Box(var r, var s, var phi, var A, var eave, var floor) -> {
+        r = term(r);
+        s = term(s);
+        phi = term(phi);
+        A = term(A);
+        eave = (Term.PartEl) term(eave);
+        floor = term(floor);
 
+        // r = s
+        if (unifier.untyped(r, s)) yield floor;
+
+        // φ true
+        var branch = eave.simplifyUnder(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
+        if (branch != null) yield branch.component2();    // FIXME: term(...) if we switch to whnf
+
+        // unique rule
         if (floor instanceof Term.Cap cap && phi instanceof Cofib coffee) {
-          // unique rule
-          var success = unifier.withCofib(coffee, () ->
-              unifier.untyped(ceil, cap.hcompU()),
-            true);
+          var mEave = eave;
+          var success = unifier.withCofib(coffee, () -> {
+            var realEave = mEave.simplifyUnder(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
+            assert realEave != null : "φ ∧ ¬ φ";
+            return unifier.untyped(realEave.component2(), cap.hcomU());
+          }, true);
           if (success) {
-            yield term(cap.hcompU());
+            yield term(cap.hcomU());
           }
         }
 
-        yield new Term.Box(r, s, phi, ceil, floor);
+        yield new Term.Box(r, s, phi, A, eave, floor);
       }
-      case Term.Cap cap -> {
-        var r = term(cap.r());
-        var s = term(cap.s());
-        var phi = term(cap.phi());
-        var hcomU = term(cap.hcompU());
+      case Term.Cap(var r, var s, var phi, var A, var hcomU) -> {
+        r = term(r);
+        s = term(s);
+        phi = term(phi);
+        A = term(A);
+        hcomU = term(hcomU);
+
+        if (unifier.untyped(r, s)) yield hcomU;
+
+        var i = new LocalVar("i");
+        if (term(A.app(ref(i))) instanceof Term.PartEl wall
+          && phi instanceof Cofib coffee
+          && unifier.cofibIsTrue(coffee)) {
+          // since `A : (i : I) → Partial (i = r ∨ φ) U` and we are under `φ`
+          // We have `A i : Partial ⊤ U` for any i,
+          // and `realAi := outPartial (A i) : U`
+          var realAi = wall.simplifyUnder(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
+          assert realAi != null : "φ ∧ ¬ φ";
+          // coe { s ~> r } A hcomU
+          yield term(new Term.Coe(s, r, new Term.Lam(i, realAi.component2())).app(hcomU));
+        }
 
         if (hcomU instanceof Term.Box box) {
           // computation rule
           yield term(box.floor());
         }
 
-        yield new Term.Cap(r, s, phi, hcomU);
+        yield new Term.Cap(r, s, phi, A, hcomU);
       }
     };
   }
@@ -228,17 +257,28 @@ public class Normalizer {
           cofib = cofib.conj(cofib1);
           continue;
         }
-        default -> {}
+        default -> {
+        }
       }
       cofib = cofib.conj(Cofib.from(atom));
     }
     return cofib;
   }
 
-  private @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> partEl(@NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems) {
+  private @NotNull <T> ImmutableSeq<Tuple2<Cofib.Conj, T>> partEl(
+    @NotNull ImmutableSeq<Tuple2<Cofib.Conj, T>> elems,
+    @NotNull UnaryOperator<T> checker
+  ) {
     return elems.flatMap(tup ->
-      term(tup.component1()).conjs().map(conj -> Tuple.of(conj, term(tup.component2()))));
+      term(tup.component1()).conjs().map(conj -> Tuple.of(conj, checker.apply(tup.component2()))));
   }
+
+  private @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> partEl(
+    @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Term>> elems
+  ) {
+    return partEl(elems, this::term);
+  }
+
 
   public @NotNull Normalizer derive() {
     return new Normalizer(MutableMap.from(rho), unification.derive());
@@ -278,9 +318,10 @@ public class Normalizer {
         case Term.Sub(var A, var partEl) -> new Term.Sub(term(A), term(partEl));
         case Term.InS(var phi, var of) -> new Term.InS(term(phi), term(of));
         case Term.OutS(var phi, var partEl, var of) -> new Term.OutS(term(phi), term(partEl), term(of));
-        case Term.Box(var r, var s, var phi, var ceil, var floor) ->
-          new Term.Box(term(r), term(s), term(phi), term(ceil), term(floor));
-        case Term.Cap(var r, var s, var phi, var hcom) -> new Term.Cap(term(r), term(s), term(phi), term(hcom));
+        case Term.Box(var r, var s, var phi, var A, var eave, var floor) ->
+          new Term.Box(term(r), term(s), term(phi), term(A), (Term.PartEl) term(eave), term(floor));
+        case Term.Cap(var r, var s, var phi, var A, var hcom) ->
+          new Term.Cap(term(r), term(s), term(phi), term(A), term(hcom));
       };
     }
 
