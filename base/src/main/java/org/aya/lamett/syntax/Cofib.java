@@ -13,15 +13,18 @@ import java.util.function.UnaryOperator;
  * `Forall`s eleminated in elaboration. */
 public record Cofib(@NotNull ImmutableSeq<Conj> conjs) implements Term {
   public @NotNull Cofib forall(@NotNull LocalVar i, Unification unification) {
-    var cofib = MutableList.<Cofib.Conj>create();
-      for (Conj(var atoms) : conjs) {
+    var unifier = new Unifier(unification);
+    var cofib = MutableList.<Conj>create();
+      label: for (Conj(var atoms) : conjs) {
+        var conj = MutableList.<Term>create();
         for (var atom : atoms) {
           if (atom instanceof Eq eq) {
-            if ((new Unifier(unification)).untyped(eq.lhs(), eq.lhs())) continue;
-            if (eq.freeVars().contains(i)) break;
+            if (unifier.untyped(eq.lhs(), eq.rhs())) continue;
+            if (eq.freeVars().contains(i)) continue label;
           }
-          cofib.append(Conj.of(atom));
+          conj.append(atom);
         }
+        cofib.append(new Conj(conj.toImmutableSeq()));
       }
 
     return new Cofib(cofib.toImmutableSeq());
