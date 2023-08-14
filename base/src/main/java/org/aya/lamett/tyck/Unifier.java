@@ -104,6 +104,7 @@ public class Unifier {
       case Term.INeg(var ll) when r instanceof Term.INeg(var rr) -> untypedInner(ll, rr);
       case Term.Coe(var r1, var s1, var A1) when r instanceof Term.Coe(var r2, var s2, var A2) ->
         untypedInner(r1, r2) && untypedInner(s1, s2) && untypedInner(A1, A2);
+      case Term.Hcom hcom -> throw new UnsupportedOperationException();
       default -> false;
     };
     if (!happy && data == null) data = new FailureData(l, r);
@@ -111,7 +112,7 @@ public class Unifier {
     return happy;
   }
 
-  boolean cofibIsTrue(@NotNull Cofib cofib) {
+  public boolean cofibIsTrue(@NotNull Cofib cofib) {
     return cofib.conjs().anyMatch(conj -> conj.atoms().allMatch(atom -> switch (atom) {
       case Cofib.Eq eq -> untyped(eq.lhs(), eq.rhs());
       case Term.Ref(var ref) -> unification.cofibVars.contains(ref);

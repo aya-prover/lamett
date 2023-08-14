@@ -7,18 +7,22 @@ import kala.tuple.Tuple;
 import kala.tuple.Tuple2;
 import org.aya.lamett.tyck.Normalizer;
 import org.aya.lamett.tyck.Unification;
+import org.aya.lamett.tyck.Unifier;
 import org.aya.lamett.util.Distiller;
 import org.aya.lamett.util.LocalVar;
 import org.aya.lamett.util.Param;
 import org.aya.pretty.doc.Doc;
 import org.aya.pretty.doc.Docile;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, Term.Coe, Term.ConCall, Term.DT, Term.DataCall,
   Term.Error, Term.Ext, Term.FnCall, Term.Hcom, Term.INeg, Term.InS, Term.Lam, Term.Lit, Term.OutS, Term.Pair, Term.PartEl,
-  Term.PartTy, Term.Path, Term.Proj, Term.Ref, Term.Sub {
+  Term.PartTy, Term.Path, Term.Proj, Term.Ref, Term.Sub, Term.Box, Term.Cap {
   @Override default @NotNull Doc toDoc() {
     return Distiller.term(this, Distiller.Prec.Free);
   }
@@ -33,7 +37,12 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   }
 
   record Error(@NotNull String msg) implements Term {}
-  record Ref(@NotNull LocalVar var) implements Term {}
+  record Ref(@NotNull LocalVar var) implements Term {
+    // For import static
+    public static @NotNull Term.Ref ref(@NotNull LocalVar var) {
+      return new Ref(var);
+    }
+  }
   record FnCall(@NotNull DefVar<Def.Fn> fn, @NotNull ImmutableSeq<Term> args) implements Term {}
   record DataCall(@NotNull DefVar<Def.Data> fn, @NotNull ImmutableSeq<Term> args) implements Term {}
   record ConCall(@NotNull DefVar<Def.Cons> fn, @NotNull ImmutableSeq<Term> args,
@@ -52,6 +61,12 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   static @NotNull Term mkLam(@NotNull SeqView<LocalVar> telescope, @NotNull Term body) {
     return telescope.foldRight(body, Lam::new);
   }
+
+  static @NotNull Term mkLam(@NotNull String name, @NotNull Function<LocalVar, Term> closeBody) {
+    var i = new LocalVar(name);
+    return new Lam(i, closeBody.apply(i));
+  }
+
   default @NotNull Term app(@NotNull Term... args) {
     var f = this;
     for (var a : args) f = f instanceof Lam lam ? lam.body.subst(lam.x, a) : new App(f, a);
@@ -129,6 +144,23 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
     public @NotNull PartEl map2(UnaryOperator<Term> f) {
       return new PartEl(elems.map(t -> Tuple.of(t.component1(), f.apply(t.component2()))));
     }
+
+    public @NotNull Cofib phi() {
+      return new Cofib(elems.map(Tuple2::component1));
+    }
+
+    /**
+     * Returns the first clause who makes simplifier happy.
+     *
+     * @param simplifier a simplifier, should confluent.
+     */
+    public @Nullable Tuple2<Cofib.Conj, Term> simplify(@NotNull Predicate<Cofib.Conj> simplifier) {
+      return elems.firstOrNull(pair -> simplifier.test(pair.component1()));
+    }
+
+    public @Nullable Tuple2<Cofib.Conj, Term> simplify(@NotNull Unifier unifier) {
+      return simplify(conj -> unifier.cofibIsTrue(Cofib.of(conj)));
+    }
   }
 
 
@@ -197,6 +229,19 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   }
 
   /**
+   * <pre>
+   * Γ ⊢ {@param A}   : U
+   * Γ ⊢ {@param phi} : F
+   * Γ ⊢ {@param u}   : {@link PartTy} phi A
+   * -------------------------------------------
+   * Γ, phi ⊢ outPartial A phi u = hcom 0 1 phi (λ i. u) : A
+   * </pre>
+   */
+  static @NotNull Term outPartial(@NotNull Term A, @NotNull Term phi, @NotNull Term u) {
+    return new Hcom(Lit.Zero, Lit.One, A, phi, mkLam("i", $ -> u));
+  }
+
+  /**
    * Generalized extension type.
    *
    * @see Restr
@@ -210,9 +255,58 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   record Path(@NotNull ImmutableSeq<LocalVar> binders, @NotNull Ext<Restr.Cubical> ext) implements Term {
   }
 
+  /// region Cubical Subtype
+
   record Sub(@NotNull Term type, @NotNull Term partEl) implements Term {}
   record InS(@NotNull Term phi, @NotNull Term of) implements Term {}
   record OutS(@NotNull Term phi, @NotNull Term partEl, @NotNull Term of) implements Term {}
+
+  /// endregion Cubical Subtype
+
+  /// region HcompU
+
+  // Composition type in Kan.pdf, but there is already a class Hcom! So I use HcomU.
+  // record HcomU(
+  //   @NotNull Term r /* : I */,
+  //   @NotNull Term s /* : I */,
+  //   @NotNull LocalVar i /* : I*/,
+  //   // @NotNull Cofib φ, // come from PartEl
+  //   @NotNull PartEl A /* Partial (i = r \/ φ) code(U) // under i */
+  // ) implements Term {
+  // }
+
+  /**
+   * <pre>
+   * Γ ⊢ {@param r} {@param s} : I
+   * Γ ⊢ {@param phi} : F
+   * Γ ⊢ {@param A} : (i : I) → {@link PartTy} (i = r ∨ φ) U
+   * Γ ⊢ {@param eave} : Partial φ (A s)
+   * Γ ⊢ {@param floor} : A r | φ ↦ coe s r A eave
+   * outPartial (A s)
+   * ------------------------------- outS floor : A r
+   * Γ ⊢ box r s phi A eave floor : hcom r s U phi A
+   *                              | r = s ↦ outS (floor) : outPartial (A r)
+   * </pre>
+   */
+  record Box(
+    @NotNull Term r, @NotNull Term s,
+    @NotNull Term phi,
+    @NotNull Term A /* : (i : I) → Partial (i = r ∨ φ) U */,
+    // omit metalanguage-level `outPartial : (Partial ⊤ A) → A` below
+    @NotNull PartEl eave /* Partial φ (A s) */,
+    @NotNull Term floor /* : A r | φ ↦ coe s r A eave */
+  ) implements Term {
+  }
+
+  record Cap(
+    @NotNull Term r, @NotNull Term s,
+    @NotNull Term phi,
+    @NotNull Term A /* : (i : I) → Partial (i = r ∨ φ) U */,
+    @NotNull Term hcomU /* : hcom (r ~> s) U φ A */
+  ) implements Term {
+  }
+
+  /// endregion HcompU
 
   /** Let A be argument, then <code>A i -> A j</code> */
   static @NotNull Pi familyI2J(Term term, Term i, Term j) {

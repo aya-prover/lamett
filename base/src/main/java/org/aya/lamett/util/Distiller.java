@@ -160,6 +160,8 @@ public interface Distiller {
       case Term.Sub(Term A, Term partEl) -> call(envPrec, "Sub", A, Doc.plain("φ"), partEl);
       case Term.InS(var phi, var of) -> insideOut(envPrec, phi, of, "inS");
       case Term.OutS(var phi, var partEl, var of) -> insideOut(envPrec, phi, of, "outS");
+      case Term.Box box -> throw new UnsupportedOperationException("TODO");
+      case Term.Cap cap -> throw new UnsupportedOperationException("TODO");
     };
   }
 

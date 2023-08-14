@@ -81,6 +81,17 @@ public sealed interface Type extends Docile {
     }
   }
 
+  record HcomU(
+    @NotNull Term r, @NotNull Term s,
+    @NotNull LocalVar i,
+    @NotNull ImmutableSeq<Tuple2<Cofib.Conj, Type>> restrs // under i
+  ) implements Type {
+    @Override
+    public @NotNull Doc toDoc() {
+      return Doc.plain("HcomU");
+    }
+  }
+
   default @NotNull Type subst(@NotNull LocalVar x, @NotNull Term t) {
     return subst(MutableMap.of(x, t));
   }
