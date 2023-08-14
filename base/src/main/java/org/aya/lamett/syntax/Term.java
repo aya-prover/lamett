@@ -52,6 +52,7 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   static @NotNull Term mkLam(@NotNull SeqView<LocalVar> telescope, @NotNull Term body) {
     return telescope.foldRight(body, Lam::new);
   }
+
   default @NotNull Term app(@NotNull Term... args) {
     var f = this;
     for (var a : args) f = f instanceof Lam lam ? lam.body.subst(lam.x, a) : new App(f, a);
@@ -73,7 +74,7 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
   static @NotNull Term mkPi(@NotNull ImmutableSeq<Param<Term>> telescope, @NotNull Term body) {
     return telescope.view().foldRight(body, Pi::new);
   }
-  static @NotNull Term mkPi(@NotNull Term dom, @NotNull Term cod) {
+  static @NotNull Pi mkPi(@NotNull Term dom, @NotNull Term cod) {
     return new Pi(new Param<>(new LocalVar("_"), dom), cod);
   }
   @NotNull Lit U = new Lit(Keyword.U);
@@ -216,6 +217,6 @@ public sealed interface Term extends Docile permits Cofib, Cofib.Eq, Term.App, T
 
   /** Let A be argument, then <code>A i -> A j</code> */
   static @NotNull Pi familyI2J(Term term, Term i, Term j) {
-    return (Pi) mkPi(new App(term, i), new App(term, j));
+    return mkPi(new App(term, i), new App(term, j));
   }
 }

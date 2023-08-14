@@ -131,7 +131,7 @@ public class DeclsTest {
       """);
   }
 
-  private static @NotNull Elaborator tyck(@Language("TEXT") String s) {
+  public static @NotNull Elaborator tyck(@Language("TEXT") String s) {
     return CliMain.tyck(s, false, CliMain.newReporter());
   }
 }
